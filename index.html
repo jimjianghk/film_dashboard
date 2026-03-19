@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026 Cinema Log</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0c;
+  --surface: #111115;
+  --surface2: #18181e;
+  --border: #2a2a35;
+  --text: #e8e6e1;
+  --text-dim: #8a8892;
+  --accent: #d4a44c;
+  --accent-dim: rgba(212,164,76,0.15);
+  --red: #c44d4d;
+  --green: #5aad6a;
+  --blue: #5a7fc4;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* Grain overlay */
+body::before {
+  content:'';
+  position:fixed; inset:0; z-index:9999;
+  pointer-events:none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  opacity: 0.5;
+}
+
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+/* HEADER */
+header {
+  padding: 64px 0 48px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+header::after {
+  content:'';
+  position:absolute; bottom:0; left:0; right:0; height:1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+}
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+h1 {
+  font-family: 'Playfair Display', serif;
+  font-weight: 900;
+  font-size: 4.5rem;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.header-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding-bottom: 8px;
+}
+
+/* STAT CARDS */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--border);
+  margin: 48px 0;
+  border: 1px solid var(--border);
+}
+.stat-card {
+  background: var(--surface);
+  padding: 28px 24px;
+  text-align: center;
+  transition: background 0.3s;
+}
+.stat-card:hover { background: var(--surface2); }
+.stat-val {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.6rem;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1.1;
+}
+.stat-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--text-dim);
+  margin-top: 8px;
+}
+
+/* SECTIONS */
+.section {
+  margin: 56px 0;
+}
+.section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.section-title::before {
+  content:'';
+  width: 3px; height: 24px;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+/* CHARTS GRID */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 28px;
+  border-radius: 2px;
+}
+.chart-card.full { grid-column: 1 / -1; }
+.chart-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--text-dim);
+  margin-bottom: 20px;
+}
+
+/* BAR CHARTS */
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  cursor: default;
+}
+.bar-row:hover .bar-fill { filter: brightness(1.2); }
+.bar-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  width: 60px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.bar-track {
+  flex: 1;
+  height: 22px;
+  background: var(--surface2);
+  border-radius: 1px;
+  overflow: hidden;
+  position: relative;
+}
+.bar-fill {
+  height: 100%;
+  border-radius: 1px;
+  transition: width 0.8s cubic-bezier(0.22,1,0.36,1);
+  position: relative;
+}
+.bar-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--text);
+  width: 30px;
+  flex-shrink: 0;
+}
+
+/* RATING BAR COLORS */
+.rating-1 { background: #6b2c2c; } .rating-2 { background: #8b3a3a; }
+.rating-3 { background: #a04848; } .rating-4 { background: #b05a3a; }
+.rating-5 { background: #b87840; } .rating-6 { background: #a89050; }
+.rating-7 { background: #8a9a50; } .rating-8 { background: #609860; }
+.rating-9 { background: #40a070; } .rating-10 { background: #28b088; }
+
+/* VENUE COLORS */
+.venue-bar { background: var(--accent); opacity: 0.85; }
+
+/* DECADE SCATTER */
+.decade-grid {
+  display: flex;
+  gap: 2px;
+  align-items: flex-end;
+  height: 120px;
+  padding-top: 12px;
+}
+.decade-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  position: relative;
+}
+.decade-bar {
+  width: 100%;
+  background: var(--accent);
+  border-radius: 1px 1px 0 0;
+  transition: height 0.8s cubic-bezier(0.22,1,0.36,1);
+  min-width: 8px;
+}
+.decade-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  margin-top: 6px;
+  transform: rotate(-45deg);
+  transform-origin: top center;
+  white-space: nowrap;
+}
+.decade-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+/* FORMAT PILLS */
+.format-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+.format-pill {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 14px 12px;
+  border-radius: 2px;
+  text-align: center;
+  transition: border-color 0.3s;
+}
+.format-pill:hover { border-color: var(--accent); }
+.format-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.format-count {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.format-pct {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+}
+
+/* CALENDAR HEATMAP */
+.heatmap-wrap {
+  overflow-x: auto;
+}
+.calendars-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 24px;
+}
+.heatmap-month {
+  min-width: 0;
+}
+.heatmap-month-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+.cal-dayname {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.55rem;
+  color: var(--text-dim);
+  text-align: center;
+  padding-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.heatmap-cell {
+  aspect-ratio: 1;
+  background: var(--surface2);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.2s;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.58rem;
+  color: var(--text-dim);
+}
+.heatmap-cell:hover { transform: scale(1.25); z-index: 2; }
+.heatmap-cell.empty { background: transparent; pointer-events: none; }
+.heatmap-cell.future { background: transparent; border: 1px solid var(--border); opacity: 0.3; pointer-events: none; }
+.heatmap-cell.watched-1 { background: rgba(212,164,76,0.35); color: var(--text); }
+.heatmap-cell.watched-2 { background: rgba(212,164,76,0.6); color: var(--text); }
+.heatmap-cell.watched-3 { background: rgba(212,164,76,0.85); color: var(--text); }
+
+/* TOOLTIP */
+.tooltip {
+  position: fixed;
+  background: #1e1e28;
+  border: 1px solid var(--accent);
+  padding: 12px 16px;
+  border-radius: 3px;
+  font-size: 0.78rem;
+  max-width: 320px;
+  pointer-events: none;
+  z-index: 10000;
+  display: none;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.tooltip-title {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+.tooltip-meta {
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+}
+
+/* SERIES TABLE */
+.series-list {
+  display: grid;
+  gap: 6px;
+}
+.series-list.collapsed .series-row:nth-child(n+6) { display: none; }
+.series-list.expanded { max-height: 320px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border) var(--surface); }
+.series-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border-left: 2px solid transparent;
+  transition: border-color 0.3s, background 0.3s;
+  cursor: default;
+}
+.series-row:hover { border-left-color: var(--accent); background: var(--surface2); }
+.series-name {
+  flex: 1;
+  font-size: 0.85rem;
+}
+.series-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--accent);
+  background: var(--accent-dim);
+  padding: 3px 10px;
+  border-radius: 2px;
+}
+.series-venue {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  width: 60px;
+  text-align: right;
+}
+.series-toggle {
+  margin-top: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  background: none;
+  border: 1px solid var(--border);
+  padding: 8px 20px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.series-toggle:hover { border-color: var(--accent); background: var(--accent-dim); }
+
+/* FILM TABLE */
+.film-table-wrap {
+  overflow-x: auto;
+  max-height: 560px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) var(--surface);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+thead { position: sticky; top: 0; z-index: 5; }
+th {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+  text-align: left;
+  padding: 12px 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--accent);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}
+th:hover { color: var(--accent); }
+th .sort-arrow { margin-left: 4px; font-size: 0.55rem; }
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+tr { transition: background 0.2s; }
+tbody tr:hover { background: var(--surface2); }
+.title-cell {
+  font-family: 'Playfair Display', serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.rating-badge {
+  display: inline-block;
+  width: 28px; height: 28px;
+  line-height: 28px;
+  text-align: center;
+  border-radius: 50%;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+.rating-high { background: rgba(64,160,112,0.25); color: #5adb8a; }
+.rating-mid { background: rgba(168,144,80,0.2); color: #c8b860; }
+.rating-low { background: rgba(176,68,68,0.2); color: #d06060; }
+.rewatch-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  background: var(--accent-dim);
+  color: var(--accent);
+  padding: 2px 6px;
+  border-radius: 2px;
+  margin-left: 6px;
+}
+.format-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--text-dim);
+}
+.format-tag.special { color: var(--accent); }
+.price-free {
+  color: var(--green);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+}
+.price-paid {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+}
+
+/* FILTER TABS */
+.filter-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.filter-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 6px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 1px;
+}
+.filter-btn:hover { border-color: var(--accent); color: var(--text); }
+.filter-btn.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+footer {
+  padding: 48px 0;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 0.72rem;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.08em;
+}
+
+/* ANIMATIONS */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate { animation: fadeUp 0.6s ease forwards; opacity: 0; }
+.delay-1 { animation-delay: 0.1s; }
+.delay-2 { animation-delay: 0.2s; }
+.delay-3 { animation-delay: 0.3s; }
+.delay-4 { animation-delay: 0.4s; }
+.delay-5 { animation-delay: 0.5s; }
+
+@media (max-width: 800px) {
+  h1 { font-size: 2.8rem; }
+  .charts-grid { grid-template-columns: 1fr; }
+  .container { padding: 0 16px; }
+  .stat-val { font-size: 2rem; }
+  .stats-row { grid-template-columns: repeat(3, 1fr); }
+  .calendars-row { grid-template-columns: 1fr; }
+  .format-grid { grid-template-columns: repeat(3, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<div class="tooltip" id="tooltip">
+  <div class="tooltip-title" id="tt-title"></div>
+  <div class="tooltip-meta" id="tt-meta"></div>
+</div>
+
+<div class="container">
+  <header>
+    <div class="header-top">
+      <div>
+        <div class="header-sub">Film Journal</div>
+        <h1>2026</h1>
+      </div>
+      <div class="header-sub" style="text-align:right" id="date-range"></div>
+    </div>
+  </header>
+
+  <div class="stats-row animate delay-1" id="stats-row"></div>
+
+  <div class="charts-grid">
+    <div class="chart-card animate delay-2">
+      <div class="chart-label">Rating Distribution</div>
+      <div id="rating-chart"></div>
+    </div>
+    <div class="chart-card animate delay-2">
+      <div class="chart-label">Screenings by Venue</div>
+      <div id="venue-chart"></div>
+    </div>
+    <div class="chart-card animate delay-3">
+      <div class="chart-label">Decades Explored</div>
+      <div id="decade-chart"></div>
+    </div>
+    <div class="chart-card animate delay-3">
+      <div class="chart-label">Format &amp; Presentation</div>
+      <div id="format-chart" class="format-grid"></div>
+    </div>
+    <div class="chart-card full animate delay-4">
+      <div class="chart-label">Screening Calendar</div>
+      <div id="heatmap" class="heatmap-wrap"></div>
+    </div>
+  </div>
+
+  <div class="section animate delay-4">
+    <div class="section-title">Series &amp; Retrospectives</div>
+    <div id="series-list" class="series-list collapsed"></div>
+    <button class="series-toggle" id="series-toggle">Show all series</button>
+  </div>
+
+  <div class="section animate delay-5">
+    <div class="section-title">Complete Log</div>
+    <div class="filter-row" id="filter-row"></div>
+    <div class="film-table-wrap">
+      <table>
+        <thead id="table-head"></thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer id="footer-text"></footer>
+</div>
+
+<script>
+fetch('data.json')
+  .then(r => r.json())
+  .then(FILMS => {
+
+// ====== DATE RANGE HEADER ======
+const firstDate = FILMS[0].date;
+const lastDate = FILMS[FILMS.length - 1].date;
+const fmtDate = ds => new Date(ds+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+document.getElementById('date-range').innerHTML = `${fmtDate(firstDate)} — ${fmtDate(lastDate)} &bull; New York City`;
+
+// ====== STATS ======
+const totalFilms = FILMS.length;
+const avgRating = (FILMS.reduce((s,f) => s+f.rating, 0) / totalFilms).toFixed(1);
+const totalRuntime = FILMS.reduce((s,f) => s+f.runtime, 0);
+const totalHrs = Math.floor(totalRuntime/60);
+const totalMins = totalRuntime % 60;
+const totalSpent = FILMS.reduce((s,f) => s+f.price, 0);
+const rewatches = FILMS.filter(f => f.rewatch).length;
+const uniqueVenues = new Set(FILMS.map(f => f.venue)).size;
+
+document.getElementById('stats-row').innerHTML = [
+  { val: totalFilms, label: 'Films Watched' },
+  { val: avgRating, label: 'Average Rating' },
+  { val: `${totalHrs}h ${totalMins}m`, label: 'Total Runtime' },
+  { val: `$${totalSpent.toFixed(0)}`, label: 'Total Spent' },
+  { val: uniqueVenues, label: 'Venues Visited' },
+  { val: rewatches, label: 'Rewatches' }
+].map(s => `<div class="stat-card"><div class="stat-val">${s.val}</div><div class="stat-label">${s.label}</div></div>`).join('');
+
+// ====== RATING CHART ======
+const ratingCounts = {};
+for (let i=1;i<=10;i++) ratingCounts[i] = 0;
+FILMS.forEach(f => ratingCounts[f.rating]++);
+const maxRating = Math.max(...Object.values(ratingCounts));
+document.getElementById('rating-chart').innerHTML = Object.entries(ratingCounts).map(([r,c]) =>
+  `<div class="bar-row">
+    <div class="bar-label">${r}/10</div>
+    <div class="bar-track"><div class="bar-fill rating-${r}" style="width:${(c/maxRating)*100}%"></div></div>
+    <div class="bar-count">${c}</div>
+  </div>`
+).join('');
+
+// ====== VENUE CHART ======
+const venueCounts = {};
+FILMS.forEach(f => venueCounts[f.venue] = (venueCounts[f.venue]||0)+1);
+const venueArr = Object.entries(venueCounts).sort((a,b) => b[1]-a[1]);
+const maxVenue = venueArr[0][1];
+document.getElementById('venue-chart').innerHTML = venueArr.map(([v,c]) =>
+  `<div class="bar-row">
+    <div class="bar-label">${v}</div>
+    <div class="bar-track"><div class="bar-fill venue-bar" style="width:${(c/maxVenue)*100}%"></div></div>
+    <div class="bar-count">${c}</div>
+  </div>`
+).join('');
+
+// ====== DECADE CHART ======
+const decadeCounts = {};
+FILMS.forEach(f => {
+  const d = Math.floor(f.year/10)*10;
+  decadeCounts[d] = (decadeCounts[d]||0)+1;
+});
+const decadeArr = Object.entries(decadeCounts).sort((a,b) => a[0]-b[0]);
+const maxDecade = Math.max(...decadeArr.map(d => d[1]));
+document.getElementById('decade-chart').innerHTML =
+  `<div class="decade-grid">${decadeArr.map(([d,c]) =>
+    `<div class="decade-col">
+      <div class="decade-count">${c}</div>
+      <div class="decade-bar" style="height:${(c/maxDecade)*90}%"></div>
+      <div class="decade-label">${d}s</div>
+    </div>`
+  ).join('')}</div>`;
+
+// ====== FORMAT CHART ======
+const formatCounts = {};
+FILMS.forEach(f => formatCounts[f.format] = (formatCounts[f.format]||0)+1);
+const formatArr = Object.entries(formatCounts).sort((a,b) => b[1]-a[1]);
+document.getElementById('format-chart').innerHTML = formatArr.map(([f,c]) =>
+  `<div class="format-pill">
+    <div class="format-name">${f}</div>
+    <div class="format-count">${c}</div>
+    <div class="format-pct">${((c/totalFilms)*100).toFixed(0)}%</div>
+  </div>`
+).join('');
+
+// ====== HEATMAP ======
+const filmsByDate = {};
+FILMS.forEach(f => {
+  if (!filmsByDate[f.date]) filmsByDate[f.date] = [];
+  filmsByDate[f.date].push(f);
+});
+// Build months dynamically from first to last film date
+const fd = new Date(firstDate+'T12:00:00');
+const ld = new Date(lastDate+'T12:00:00');
+const months = [];
+let cursor = new Date(fd.getFullYear(), fd.getMonth(), 1);
+while (cursor <= ld) {
+  const y = cursor.getFullYear();
+  const m = cursor.getMonth();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  months.push({ name: cursor.toLocaleString('en-US',{month:'long'}), year: y, month: m, days: daysInMonth });
+  cursor = new Date(y, m+1, 1);
+}
+const dayNames = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+const heatmapEl = document.getElementById('heatmap');
+const calRow = document.createElement('div');
+calRow.className = 'calendars-row';
+months.forEach(m => {
+  const div = document.createElement('div');
+  div.className = 'heatmap-month';
+  let html = `<div class="heatmap-month-label">${m.name}</div><div class="cal-grid">`;
+  // Day-of-week headers
+  dayNames.forEach(dn => { html += `<div class="cal-dayname">${dn}</div>`; });
+  // Pad empty cells before first day
+  const startDay = new Date(m.year, m.month, 1).getDay();
+  for (let i = 0; i < startDay; i++) html += `<div class="heatmap-cell empty"></div>`;
+  // Days
+  for (let d = 1; d <= m.days; d++) {
+    const ds = `${m.year}-${String(m.month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const films = filmsByDate[ds] || [];
+    const isFuture = ds > lastDate;
+    if (isFuture) {
+      html += `<div class="heatmap-cell future">${d}</div>`;
+    } else {
+      const cls = films.length >= 3 ? 'watched-3' : films.length === 2 ? 'watched-2' : films.length === 1 ? 'watched-1' : '';
+      html += `<div class="heatmap-cell ${cls}" data-date="${ds}" data-films='${JSON.stringify(films.map(f=>f.title))}'>${d}</div>`;
+    }
+  }
+  html += '</div>';
+  div.innerHTML = html;
+  calRow.appendChild(div);
+});
+heatmapEl.appendChild(calRow);
+
+// Tooltip for heatmap
+const tooltip = document.getElementById('tooltip');
+document.querySelectorAll('.heatmap-cell').forEach(cell => {
+  cell.addEventListener('mouseenter', e => {
+    const date = cell.dataset.date;
+    const films = JSON.parse(cell.dataset.films || '[]');
+    if (films.length === 0) {
+      document.getElementById('tt-title').textContent = new Date(date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+      document.getElementById('tt-meta').textContent = 'No screenings';
+    } else {
+      document.getElementById('tt-title').textContent = films.join(' \u2022 ');
+      document.getElementById('tt-meta').textContent = new Date(date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+    }
+    tooltip.style.display = 'block';
+    const r = cell.getBoundingClientRect();
+    tooltip.style.left = r.left + 'px';
+    tooltip.style.top = (r.top - tooltip.offsetHeight - 8) + 'px';
+  });
+  cell.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+});
+
+// ====== SERIES LIST ======
+const seriesCounts = {};
+const seriesVenues = {};
+FILMS.forEach(f => {
+  if (f.series) {
+    seriesCounts[f.series] = (seriesCounts[f.series]||0)+1;
+    seriesVenues[f.series] = f.venue;
+  }
+});
+const seriesArr = Object.entries(seriesCounts).sort((a,b) => b[1]-a[1]);
+document.getElementById('series-list').innerHTML = seriesArr.map(([s,c]) =>
+  `<div class="series-row">
+    <span class="series-name">${s}</span>
+    <span class="series-venue">${seriesVenues[s]}</span>
+    <span class="series-count">${c} film${c>1?'s':''}</span>
+  </div>`
+).join('');
+
+// Series toggle
+const seriesListEl = document.getElementById('series-list');
+const seriesToggleBtn = document.getElementById('series-toggle');
+seriesToggleBtn.addEventListener('click', () => {
+  const isCollapsed = seriesListEl.classList.contains('collapsed');
+  seriesListEl.classList.toggle('collapsed');
+  seriesListEl.classList.toggle('expanded');
+  seriesToggleBtn.textContent = isCollapsed ? 'Show fewer' : 'Show all series';
+});
+
+// ====== FILM TABLE ======
+let currentSort = { col: 'date', dir: 'asc' };
+let activeFilter = 'all';
+
+const columns = [
+  { key:'date', label:'Date', w:'100px' },
+  { key:'title', label:'Title', w:'auto' },
+  { key:'year', label:'Year', w:'60px' },
+  { key:'runtime', label:'Min', w:'50px' },
+  { key:'rating', label:'Rating', w:'70px' },
+  { key:'format', label:'Format', w:'70px' },
+  { key:'price', label:'Price', w:'60px' },
+  { key:'venue', label:'Venue', w:'70px' },
+  { key:'series', label:'Series', w:'auto' }
+];
+
+// Filter buttons
+const venues = [...new Set(FILMS.map(f => f.venue))].sort();
+document.getElementById('filter-row').innerHTML =
+  `<button class="filter-btn active" data-filter="all">All</button>` +
+  venues.map(v => `<button class="filter-btn" data-filter="${v}">${v}</button>`).join('');
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter = btn.dataset.filter;
+    renderTable();
+  });
+});
+
+function renderTable() {
+  const arrow = dir => dir === 'asc' ? '\u25B2' : '\u25BC';
+  document.getElementById('table-head').innerHTML = '<tr>' + columns.map(c =>
+    `<th data-col="${c.key}" style="width:${c.w}">${c.label}${currentSort.col===c.key ? `<span class="sort-arrow">${arrow(currentSort.dir)}</span>` : ''}</th>`
+  ).join('') + '</tr>';
+
+  let filtered = activeFilter === 'all' ? [...FILMS] : FILMS.filter(f => f.venue === activeFilter);
+
+  filtered.sort((a,b) => {
+    let va = a[currentSort.col], vb = b[currentSort.col];
+    if (va == null) va = '';
+    if (vb == null) vb = '';
+    if (typeof va === 'string') va = va.toLowerCase();
+    if (typeof vb === 'string') vb = vb.toLowerCase();
+    if (va < vb) return currentSort.dir === 'asc' ? -1 : 1;
+    if (va > vb) return currentSort.dir === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  document.getElementById('table-body').innerHTML = filtered.map(f => {
+    const rClass = f.rating >= 8 ? 'rating-high' : f.rating >= 5 ? 'rating-mid' : 'rating-low';
+    const fmtClass = f.format !== 'DCP' ? 'special' : '';
+    const dateStr = new Date(f.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    const priceStr = f.price === 0 ? '<span class="price-free">free</span>' : `<span class="price-paid">$${f.price % 1 === 0 ? f.price : f.price.toFixed(2)}</span>`;
+    return `<tr>
+      <td><span style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:var(--text-dim)">${dateStr}</span></td>
+      <td><span class="title-cell">${f.title}</span>${f.rewatch ? '<span class="rewatch-badge">R</span>' : ''}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:var(--text-dim)">${f.year}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:0.78rem">${f.runtime}</td>
+      <td><span class="rating-badge ${rClass}">${f.rating}</span></td>
+      <td><span class="format-tag ${fmtClass}">${f.format}</span></td>
+      <td>${priceStr}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:0.78rem">${f.venue}</td>
+      <td style="font-size:0.78rem;color:var(--text-dim);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.series||'\u2014'}</td>
+    </tr>`;
+  }).join('');
+
+  document.querySelectorAll('th').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.col;
+      if (currentSort.col === col) currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
+      else { currentSort.col = col; currentSort.dir = 'asc'; }
+      renderTable();
+    });
+  });
+}
+
+renderTable();
+document.getElementById('footer-text').textContent = totalFilms + ' films \u2022 built from the logbook';
+
+}); // end fetch .then()
+</script>
+</body>
+</html>
