@@ -846,14 +846,15 @@ const seriesVenues = {};
 FILMS.forEach(f => {
   if (f.series) {
     seriesCounts[f.series] = (seriesCounts[f.series]||0)+1;
-    seriesVenues[f.series] = f.venue;
+    if (!seriesVenues[f.series]) seriesVenues[f.series] = new Set();
+    seriesVenues[f.series].add(f.venue);
   }
 });
 const seriesArr = Object.entries(seriesCounts).sort((a,b) => b[1]-a[1]);
 document.getElementById('series-list').innerHTML = seriesArr.map(([s,c]) =>
   `<div class="series-row">
     <span class="series-name">${s}</span>
-    <span class="series-venue">${seriesVenues[s]}</span>
+    <span class="series-venue">${[...seriesVenues[s]].join(', ')}</span>
     <span class="series-count">${c} film${c>1?'s':''}</span>
   </div>`
 ).join('');
