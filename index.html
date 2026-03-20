@@ -361,7 +361,7 @@ h1 {
   background: var(--surface2);
   border-radius: 2px;
   cursor: pointer;
-  transition: transform 0.2s, background 0.2s;
+  transition: border-color 0.2s, background 0.2s;
   position: relative;
   display: flex;
   align-items: center;
@@ -370,8 +370,10 @@ h1 {
   font-size: 0.58rem;
   color: var(--text-dim);
   overflow: hidden;
+  border: 1px solid transparent;
 }
-.heatmap-cell:hover { transform: scale(1.25); z-index: 2; }
+.heatmap-cell:hover { border-color: var(--accent); z-index: 2; }
+.heatmap-cell:not(.watched-1):not(.watched-2):not(.watched-3):hover { border-color: var(--text-dim); }
 .heatmap-cell.empty { background: transparent; pointer-events: none; }
 .heatmap-cell.future { background: transparent; border: 1px solid var(--border); opacity: 0.3; pointer-events: none; }
 .heatmap-cell.watched-1 { background: rgba(212,164,76,0.35); color: var(--text); }
@@ -679,7 +681,7 @@ const fmtDate = ds => new Date(ds+'T12:00:00').toLocaleDateString('en-US',{month
 const dashYear = firstDate.slice(0,4);
 const todayStr = new Date().toISOString().slice(0,10);
 const endDate = todayStr > `${dashYear}-12-31` ? `${dashYear}-12-31` : todayStr;
-document.getElementById('date-range').innerHTML = `${fmtDate(firstDate)} — ${fmtDate(endDate)} &bull; New York City`;
+document.getElementById('date-range').innerHTML = `${fmtDate(dashYear+'-01-01')} — ${fmtDate(endDate)} &bull; New York City`;
 
 // ====== STATS ======
 const totalFilms = FILMS.length;
@@ -771,12 +773,11 @@ FILMS.forEach(f => {
   if (!filmsByDate[f.date]) filmsByDate[f.date] = [];
   filmsByDate[f.date].push(f);
 });
-// Build months dynamically from first to last film date
-const fd = new Date(firstDate+'T12:00:00');
-const ld = new Date(lastDate+'T12:00:00');
+// Build months dynamically from Jan 1 to current date (or Dec 31 if future year)
+const ed = new Date(endDate+'T12:00:00');
 const months = [];
-let cursor = new Date(fd.getFullYear(), fd.getMonth(), 1);
-while (cursor <= ld) {
+let cursor = new Date(parseInt(dashYear), 0, 1);
+while (cursor <= ed) {
   const y = cursor.getFullYear();
   const m = cursor.getMonth();
   const daysInMonth = new Date(y, m+1, 0).getDate();
@@ -830,6 +831,7 @@ document.querySelectorAll('.heatmap-cell').forEach(cell => {
       }).join('<br>');
       document.getElementById('tt-meta').textContent = new Date(date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
     }
+    tooltip.style.borderColor = films.length === 0 ? 'var(--text-dim)' : 'var(--accent)';
     tooltip.style.display = 'block';
     const r = cell.getBoundingClientRect();
     tooltip.style.left = r.left + 'px';
