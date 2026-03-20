@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>2026 Cinema Log</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400&family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg: #0a0a0c;
@@ -169,9 +169,27 @@ h1 {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.75rem;
   color: var(--text-dim);
-  width: 60px;
+  width: 40px;
   text-align: right;
   flex-shrink: 0;
+}
+.bar-label.rating-stars {
+  width: 72px;
+  font-size: 1.1rem;
+  line-height: 22px;
+  height: 22px;
+  letter-spacing: -0.5px;
+  text-align: left;
+  padding-left: 4px;
+  margin-right: -8px;
+  overflow: hidden;
+}
+.bar-label.rating-stars .half-star {
+  font-size: 0.8rem;
+  vertical-align: 0px;
+}
+.bar-label.rating-stars .half-star.after-star {
+  margin-left: 2px;
 }
 .bar-track {
   flex: 1;
@@ -375,7 +393,7 @@ h1 {
   box-shadow: 0 8px 32px rgba(0,0,0,0.5);
 }
 .tooltip-title {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Playfair Display', 'Noto Serif SC', 'Songti SC', 'STSong', serif;
   font-weight: 700;
   font-size: 0.95rem;
   margin-bottom: 4px;
@@ -477,7 +495,7 @@ td {
 tr { transition: background 0.2s; }
 tbody tr:hover { background: var(--surface2); }
 .title-cell {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Playfair Display', 'Noto Serif SC', 'Songti SC', 'STSong', serif;
   font-weight: 600;
   font-size: 0.9rem;
 }
@@ -609,19 +627,19 @@ footer {
 
   <div class="charts-grid">
     <div class="chart-card animate delay-2">
-      <div class="chart-label">Rating Distribution</div>
+      <div class="chart-label">Rating</div>
       <div id="rating-chart"></div>
     </div>
     <div class="chart-card animate delay-2">
-      <div class="chart-label">Decades Explored</div>
+      <div class="chart-label">Production Decade</div>
       <div id="decade-chart"></div>
     </div>
     <div class="chart-card full animate delay-3">
-      <div class="chart-label">Format &amp; Presentation</div>
+      <div class="chart-label">Screening Format</div>
       <div id="format-chart" class="format-bubbles"></div>
     </div>
     <div class="chart-card full animate delay-3">
-      <div class="chart-label">Screenings by Venue</div>
+      <div class="chart-label">Screening Venue</div>
       <div id="venue-chart" class="venue-grid"></div>
     </div>
     <div class="chart-card full animate delay-4">
@@ -631,7 +649,7 @@ footer {
   </div>
 
   <div class="section animate delay-4">
-    <div class="section-title">Series &amp; Retrospectives</div>
+    <div class="section-title">Festivals &amp; Series</div>
     <div id="series-list" class="series-list collapsed"></div>
     <button class="series-toggle" id="series-toggle">Show all series</button>
   </div>
@@ -684,9 +702,10 @@ const ratingCounts = {};
 for (let i=1;i<=10;i++) ratingCounts[i] = 0;
 FILMS.forEach(f => ratingCounts[f.rating]++);
 const maxRating = Math.max(...Object.values(ratingCounts));
+const toStars = r => { const full = Math.floor(r/2); const half = r%2; return '★'.repeat(full) + (half ? `<span class="half-star${full ? ' after-star' : ''}">½</span>` : ''); };
 document.getElementById('rating-chart').innerHTML = Object.entries(ratingCounts).map(([r,c]) =>
   `<div class="bar-row">
-    <div class="bar-label">${r}/10</div>
+    <div class="bar-label rating-stars">${toStars(Number(r))}</div>
     <div class="bar-track"><div class="bar-fill rating-${r}" style="width:${(c/maxRating)*100}%"></div></div>
     <div class="bar-count">${c}</div>
   </div>`
@@ -799,10 +818,13 @@ document.querySelectorAll('.heatmap-cell').forEach(cell => {
     const date = cell.dataset.date;
     const films = JSON.parse(cell.dataset.films || '[]');
     if (films.length === 0) {
-      document.getElementById('tt-title').textContent = 'No screenings';
+      document.getElementById('tt-title').innerHTML = '<span style="color:var(--text-dim)">No screenings</span>';
       document.getElementById('tt-meta').textContent = new Date(date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
     } else {
-      document.getElementById('tt-title').textContent = films.join(' \u2022 ');
+      document.getElementById('tt-title').innerHTML = films.map((f,i) => {
+        const safe = f.replace(/</g,'&lt;');
+        return i < films.length - 1 ? safe + ' &nbsp;<span class="tooltip-meta">&amp;</span>' : safe;
+      }).join('<br>');
       document.getElementById('tt-meta').textContent = new Date(date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
     }
     tooltip.style.display = 'block';
@@ -932,7 +954,7 @@ function renderTable() {
     const priceStr = f.price === 0 ? '<span class="price-free">free</span>' : `<span class="price-paid">$${f.price % 1 === 0 ? f.price : f.price.toFixed(2)}</span>`;
     return `<tr>
       <td><span style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:var(--text-dim)">${dateStr}</span></td>
-      <td><span class="title-cell">${f.title}</span>${f.rewatch ? '<span class="rewatch-badge">R</span>' : ''}</td>
+      <td><span class="title-cell">${f.title}</span>${f.rewatch ? '<span class="rewatch-badge">rewatch</span>' : ''}</td>
       <td style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:var(--text-dim)">${f.year}</td>
       <td style="font-family:'JetBrains Mono',monospace;font-size:0.78rem">${f.runtime}</td>
       <td><span class="rating-badge ${rClass}">${f.rating}</span></td>
