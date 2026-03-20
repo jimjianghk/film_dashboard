@@ -797,7 +797,8 @@ months.forEach(m => {
   for (let d = 1; d <= m.days; d++) {
     const ds = `${m.year}-${String(m.month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const films = filmsByDate[ds] || [];
-    const isFuture = ds > lastDate;
+    const today = new Date().toISOString().slice(0, 10);
+    const isFuture = ds > today;
     if (isFuture) {
       html += `<div class="heatmap-cell future">${d}</div>`;
     } else {
