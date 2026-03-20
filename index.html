@@ -676,7 +676,10 @@ fetch('data.json')
 const firstDate = FILMS[0].date;
 const lastDate = FILMS[FILMS.length - 1].date;
 const fmtDate = ds => new Date(ds+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
-document.getElementById('date-range').innerHTML = `${fmtDate(firstDate)} — ${fmtDate(lastDate)} &bull; New York City`;
+const dashYear = firstDate.slice(0,4);
+const todayStr = new Date().toISOString().slice(0,10);
+const endDate = todayStr > `${dashYear}-12-31` ? `${dashYear}-12-31` : todayStr;
+document.getElementById('date-range').innerHTML = `${fmtDate(firstDate)} — ${fmtDate(endDate)} &bull; New York City`;
 
 // ====== STATS ======
 const totalFilms = FILMS.length;
@@ -797,8 +800,7 @@ months.forEach(m => {
   for (let d = 1; d <= m.days; d++) {
     const ds = `${m.year}-${String(m.month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const films = filmsByDate[ds] || [];
-    const today = new Date().toISOString().slice(0, 10);
-    const isFuture = ds > today;
+    const isFuture = ds > endDate;
     if (isFuture) {
       html += `<div class="heatmap-cell future">${d}</div>`;
     } else {
