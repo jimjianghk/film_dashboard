@@ -697,7 +697,7 @@ const uniqueVenues = new Set(FILMS.map(f => f.venue)).size;
 document.getElementById('stats-row').innerHTML = [
   { val: totalFilms, label: 'Films Watched' },
   { val: avgRating, label: 'Average Rating' },
-  { val: `${(totalRuntime/60).toFixed(1)} h`, label: 'Total Runtime' },
+  { val: `${(totalRuntime/60).toFixed(1)}h`, label: 'Total Runtime' },
   { val: `$${totalSpent.toFixed(0)}`, label: 'Total Spent' },
   { val: uniqueVenues, label: 'Venues Visited' },
   { val: rewatches, label: 'Rewatches' }
