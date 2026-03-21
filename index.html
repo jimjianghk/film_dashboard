@@ -932,7 +932,7 @@ function renderTable() {
     const options = getFilterOptions(c.key);
     const curVal = activeFilters[c.key] || '';
     return `<td><select class="col-filter${curVal ? ' active' : ''}${c.key === 'year' ? ' no-uppercase' : ''}" data-filter-col="${c.key}">
-      <option value="">All</option>
+      <option value="">${c.key === 'year' ? 'ALL' : 'All'}</option>
       ${options.map(v => `<option value="${v}"${v === curVal ? ' selected' : ''}>${v}</option>`).join('')}
     </select></td>`;
   }).join('') + '</tr>';
