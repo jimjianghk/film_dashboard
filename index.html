@@ -823,7 +823,7 @@ document.querySelectorAll('.heatmap-cell').forEach(cell => {
     const date = cell.dataset.date;
     const films = JSON.parse(cell.dataset.films || '[]');
     if (films.length === 0) {
-      document.getElementById('tt-title').innerHTML = '<span style="color:var(--text-dim)">No screenings</span>';
+      document.getElementById('tt-title').innerHTML = '<span style="color:var(--text-dim)">' + (date === todayStr ? 'Awaiting data' : 'No screenings') + '</span>';
       document.getElementById('tt-meta').textContent = new Date(date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
     } else {
       document.getElementById('tt-title').innerHTML = films.map((f,i) => {
