@@ -172,7 +172,25 @@ h1 {
   width: 40px;
   text-align: right;
   flex-shrink: 0;
+  position: relative;
 }
+.venue-tip {
+  display: none;
+  position: absolute;
+  left: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  color: var(--text);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  z-index: 20;
+  pointer-events: none;
+}
+.bar-label:hover .venue-tip { display: block; }
 .bar-label.rating-stars {
   width: 72px;
   font-size: 1.1rem;
@@ -771,9 +789,20 @@ FILMS.forEach(f => venueCounts[f.venue] = (venueCounts[f.venue]||0)+1);
 const venueArr = Object.entries(venueCounts).sort((a,b) => b[1]-a[1]);
 const maxVenue = venueArr[0][1];
 const venueHalf = Math.ceil(venueArr.length / 2);
+const venueFullNames = {
+  METRO:'Metrograph', MOMA:'Museum of Modern Art', LINC:'Film at Lincoln Center',
+  AMC68:'AMC Lincoln Square', IFC:'IFC Center', AMC42:'AMC Empire', PARIS:'Paris Theater',
+  FORUM:'Film Forum', BAM:'Brooklyn Academy of Music', MOMI:'Museum of the Moving Image',
+  QUAD:'Quad Cinema', JAPSO:'Japan Society', ROXY:'Roxy Cinema',
+  ANTHO:'Anthology Film Archives', SVA:'SVA Theatre', VILL:'Cinema Village',
+  AMC31:'AMC Kips Bay', REG14:'Regal Union Square', ANGEL:'Angelika Film Center',
+  NITEP:'Nitehawk Prospect Park', NITEW:'Nitehawk Williamsburg',
+  MET:'Metropolitan Museum of Art', AMC34:'AMC 34th Street', VEAST:'Village East Cinema',
+  SKIR:'NYU Skirball Center'
+};
 const venueCol = arr => arr.map(([v,c]) =>
-  `<div class="bar-row">
-    <div class="bar-label">${v}</div>
+  `<div class="bar-row venue-has-tip">
+    <div class="bar-label">${v}${venueFullNames[v] ? `<span class="venue-tip">${venueFullNames[v]}</span>` : ''}</div>
     <div class="bar-track"><div class="bar-fill venue-bar" style="width:${(c/maxVenue)*100}%"></div></div>
     <div class="bar-count">${c}</div>
   </div>`).join('');
