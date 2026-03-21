@@ -876,15 +876,15 @@ const activeFilters = {};
 
 const filterableKeys = ['date', 'year', 'rating', 'format', 'venue', 'series'];
 const columns = [
-  { key:'date', label:'Date', w:'7%' },
-  { key:'title', label:'Title', w:'24%' },
-  { key:'year', label:'Year', w:'6%' },
-  { key:'runtime', label:'Length', w:'5%' },
-  { key:'rating', label:'Rating', w:'7%' },
-  { key:'format', label:'Format', w:'7%' },
+  { key:'date', label:'Date', w:'8%' },
+  { key:'title', label:'Title', w:'21%' },
+  { key:'year', label:'Year', w:'8%' },
+  { key:'runtime', label:'Length', w:'6%' },
+  { key:'rating', label:'Rating', w:'8%' },
+  { key:'format', label:'Format', w:'8%' },
   { key:'price', label:'Price', w:'6%' },
-  { key:'venue', label:'Venue', w:'7%' },
-  { key:'series', label:'Series', w:'31%' }
+  { key:'venue', label:'Venue', w:'8%' },
+  { key:'series', label:'Series', w:'27%' }
 ];
 
 function getFilterOptions(key) {
@@ -968,7 +968,7 @@ function renderTable() {
       <td><span class="format-tag ${fmtClass}">${f.format}</span></td>
       <td>${priceStr}</td>
       <td style="font-family:'JetBrains Mono',monospace;font-size:0.78rem">${f.venue}</td>
-      <td style="font-size:0.78rem;color:var(--text-dim);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.series||'\u2014'}</td>
+      <td style="font-size:0.78rem;color:var(--text-dim);line-height:1.3">${f.series||'\u2014'}</td>
     </tr>`;
   }).join('');
 
