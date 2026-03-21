@@ -697,7 +697,7 @@ const uniqueVenues = new Set(FILMS.map(f => f.venue)).size;
 document.getElementById('stats-row').innerHTML = [
   { val: totalFilms, label: 'Films Watched' },
   { val: avgRating, label: 'Average Rating' },
-  { val: `${totalHrs}h ${totalMins}m`, label: 'Total Runtime' },
+  { val: `${(totalRuntime/60).toFixed(1)} hrs`, label: 'Total Runtime' },
   { val: `$${totalSpent.toFixed(0)}`, label: 'Total Spent' },
   { val: uniqueVenues, label: 'Venues Visited' },
   { val: rewatches, label: 'Rewatches' }
@@ -943,6 +943,7 @@ function renderTable() {
     if (val) filtered = filtered.filter(f => matchesFilter(f, key, val));
   }
 
+  filtered.forEach((f,i) => f._idx = i);
   filtered.sort((a,b) => {
     let va = a[currentSort.col], vb = b[currentSort.col];
     if (va == null) va = '';
@@ -951,7 +952,7 @@ function renderTable() {
     if (typeof vb === 'string') vb = vb.toLowerCase();
     if (va < vb) return currentSort.dir === 'asc' ? -1 : 1;
     if (va > vb) return currentSort.dir === 'asc' ? 1 : -1;
-    return 0;
+    return currentSort.dir === 'asc' ? a._idx - b._idx : b._idx - a._idx;
   });
 
   document.getElementById('table-body').innerHTML = filtered.map(f => {
