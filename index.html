@@ -568,6 +568,7 @@ tbody tr:hover { background: var(--surface2); }
 .filter-row-tr select.col-filter { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .filter-row-tr select.col-filter:focus { border-color: var(--accent); outline: none; }
 .filter-row-tr select.col-filter.active { border-color: var(--accent); color: var(--accent); }
+.filter-row-tr select.col-filter.no-uppercase { text-transform: none; }
 
 footer {
   padding: 48px 0;
@@ -930,7 +931,7 @@ function renderTable() {
     if (!filterable) return '<td></td>';
     const options = getFilterOptions(c.key);
     const curVal = activeFilters[c.key] || '';
-    return `<td><select class="col-filter${curVal ? ' active' : ''}" data-filter-col="${c.key}">
+    return `<td><select class="col-filter${curVal ? ' active' : ''}${c.key === 'year' ? ' no-uppercase' : ''}" data-filter-col="${c.key}">
       <option value="">All</option>
       ${options.map(v => `<option value="${v}"${v === curVal ? ' selected' : ''}>${v}</option>`).join('')}
     </select></td>`;
