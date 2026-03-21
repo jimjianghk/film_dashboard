@@ -213,12 +213,12 @@ h1 {
   flex-shrink: 0;
 }
 
-/* RATING BAR COLORS */
-.rating-1 { background: #6b2c2c; } .rating-2 { background: #8b3a3a; }
-.rating-3 { background: #a04848; } .rating-4 { background: #b05a3a; }
-.rating-5 { background: #b87840; } .rating-6 { background: #a89050; }
-.rating-7 { background: #8a9a50; } .rating-8 { background: #609860; }
-.rating-9 { background: #40a070; } .rating-10 { background: #28b088; }
+/* RATING BAR COLORS — red → orange → yellow → green */
+.rating-1 { background: #c05050; } .rating-2 { background: #c06040; }
+.rating-3 { background: #b87038; } .rating-4 { background: #b08030; }
+.rating-5 { background: #a89030; } .rating-6 { background: #a09830; }
+.rating-7 { background: #90a030; } .rating-8 { background: #78a838; }
+.rating-9 { background: #58b040; } .rating-10 { background: #40b050; }
 
 /* VENUE COLORS */
 .venue-bar { background: var(--accent); opacity: 0.85; }
@@ -348,7 +348,7 @@ h1 {
 }
 .cal-dayname {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.55rem;
+  font-size: 0.62rem;
   color: var(--text-dim);
   text-align: center;
   padding-bottom: 4px;
@@ -367,18 +367,52 @@ h1 {
   align-items: center;
   justify-content: center;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.58rem;
+  font-size: 0.65rem;
   color: var(--text-dim);
   overflow: hidden;
   border: 1px solid transparent;
 }
 .heatmap-cell:hover { border-color: var(--accent); z-index: 2; }
-.heatmap-cell:not(.watched-1):not(.watched-2):not(.watched-3):hover { border-color: var(--text-dim); }
+.heatmap-cell:not(.watched-1):not(.watched-2):not(.watched-3):not(.rating-colored):hover { border-color: var(--text-dim); }
 .heatmap-cell.empty { background: transparent; pointer-events: none; }
 .heatmap-cell.future { background: transparent; border: 1px solid var(--border); opacity: 0.3; pointer-events: none; }
 .heatmap-cell.watched-1 { background: rgba(212,164,76,0.35); color: var(--text); }
 .heatmap-cell.watched-2 { background: rgba(212,164,76,0.6); color: var(--text); }
 .heatmap-cell.watched-3 { background: rgba(212,164,76,0.85); color: var(--text); }
+.heatmap-cell.rating-colored { color: #1a1a24; }
+
+/* CALENDAR TOGGLE */
+.cal-toggle-wrap { display: flex; gap: 0; }
+.cal-toggle {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+}
+.cal-toggle:first-child { border-radius: 3px 0 0 3px; }
+.cal-toggle:last-child { border-radius: 0 3px 3px 0; margin-left: -1px; }
+.cal-toggle.active { background: var(--accent-dim); border-color: var(--accent); color: var(--text); z-index: 1; position: relative; }
+.cal-toggle:hover:not(.active) { border-color: var(--accent); }
+
+/* TOOLTIP RATING BADGE (smaller for tooltip) */
+.tt-rating-badge {
+  display: inline-block;
+  width: 20px; height: 20px;
+  line-height: 20px;
+  text-align: center;
+  border-radius: 50%;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  font-size: 0.6rem;
+  margin-left: 6px;
+  vertical-align: middle;
+}
 
 /* TOOLTIP */
 .tooltip {
@@ -388,7 +422,8 @@ h1 {
   padding: 12px 16px;
   border-radius: 3px;
   font-size: 0.78rem;
-  max-width: 320px;
+  max-width: none;
+  white-space: nowrap;
   pointer-events: none;
   z-index: 10000;
   display: none;
@@ -512,9 +547,16 @@ tbody tr:hover { background: var(--surface2); }
   font-weight: 600;
   font-size: 0.75rem;
 }
-.rating-high { background: rgba(64,160,112,0.25); color: #5adb8a; }
-.rating-mid { background: rgba(168,144,80,0.2); color: #c8b860; }
-.rating-low { background: rgba(176,68,68,0.2); color: #d06060; }
+.rating-badge.rating-1 { background: rgba(192,80,80,0.25); color: #e07070; }
+.rating-badge.rating-2 { background: rgba(192,96,64,0.25); color: #e08860; }
+.rating-badge.rating-3 { background: rgba(184,112,56,0.25); color: #d8a058; }
+.rating-badge.rating-4 { background: rgba(176,128,48,0.25); color: #d0b050; }
+.rating-badge.rating-5 { background: rgba(168,144,48,0.25); color: #c8c050; }
+.rating-badge.rating-6 { background: rgba(160,152,48,0.25); color: #c0c850; }
+.rating-badge.rating-7 { background: rgba(144,160,48,0.25); color: #b0d050; }
+.rating-badge.rating-8 { background: rgba(120,168,56,0.25); color: #98d858; }
+.rating-badge.rating-9 { background: rgba(88,176,64,0.25); color: #78e060; }
+.rating-badge.rating-10 { background: rgba(64,176,80,0.25); color: #60e070; }
 .rewatch-badge {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.6rem;
@@ -647,7 +689,12 @@ footer {
       <div id="venue-chart" class="venue-grid"></div>
     </div>
     <div class="chart-card full animate delay-4">
-      <div class="chart-label">Screening Calendar</div>
+      <div class="chart-label" style="display:flex;align-items:center;gap:12px;">Screening Calendar
+        <span class="cal-toggle-wrap">
+          <button class="cal-toggle active" id="cal-toggle-screenings"># of Screenings</button>
+          <button class="cal-toggle" id="cal-toggle-rating">Avg Rating</button>
+        </span>
+      </div>
       <div id="heatmap" class="heatmap-wrap"></div>
     </div>
   </div>
@@ -808,7 +855,7 @@ months.forEach(m => {
       html += `<div class="heatmap-cell future">${d}</div>`;
     } else {
       const cls = films.length >= 3 ? 'watched-3' : films.length === 2 ? 'watched-2' : films.length === 1 ? 'watched-1' : '';
-      html += `<div class="heatmap-cell ${cls}" data-date="${ds}" data-films='${JSON.stringify(films.map(f=>f.title))}'>${d}</div>`;
+      html += `<div class="heatmap-cell ${cls}" data-date="${ds}" data-films='${JSON.stringify(films.map(f=>f.title))}' data-ratings='${JSON.stringify(films.map(f=>f.rating))}'>${d}</div>`;
     }
   }
   html += '</div>';
@@ -817,19 +864,84 @@ months.forEach(m => {
 });
 heatmapEl.appendChild(calRow);
 
+// ====== CALENDAR TOGGLE ======
+const ratingColors = [
+  null, // index 0 unused
+  [192,80,80],   // 1: #c05050 red
+  [192,96,64],   // 2: #c06040 red-orange
+  [184,112,56],  // 3: #b87038 orange
+  [176,128,48],  // 4: #b08030 amber
+  [168,144,48],  // 5: #a89030 gold
+  [160,152,48],  // 6: #a09830 yellow
+  [144,160,48],  // 7: #90a030 yellow-green
+  [120,168,56],  // 8: #78a838 olive-green
+  [88,176,64],   // 9: #58b040 green
+  [64,176,80]    // 10: #40b050 green
+];
+function avgRatingColor(avg) {
+  if (avg <= 1) return ratingColors[1];
+  if (avg >= 10) return ratingColors[10];
+  const lo = Math.floor(avg), hi = Math.ceil(avg);
+  if (lo === hi) return ratingColors[lo];
+  const t = avg - lo;
+  return ratingColors[lo].map((v,i) => Math.round(v + t * (ratingColors[hi][i] - v)));
+}
+let calMode = 'screenings';
+function applyCalMode() {
+  document.querySelectorAll('.heatmap-cell:not(.empty):not(.future)').forEach(cell => {
+    const ratings = JSON.parse(cell.dataset.ratings || '[]');
+    const films = JSON.parse(cell.dataset.films || '[]');
+    if (calMode === 'screenings') {
+      cell.style.background = '';
+      cell.classList.remove('rating-colored');
+      const cls = films.length >= 3 ? 'watched-3' : films.length === 2 ? 'watched-2' : films.length === 1 ? 'watched-1' : '';
+      cell.classList.remove('watched-1','watched-2','watched-3');
+      if (cls) cell.classList.add(cls);
+    } else {
+      cell.classList.remove('watched-1','watched-2','watched-3');
+      if (ratings.length > 0) {
+        const avg = ratings.reduce((a,b) => a+b, 0) / ratings.length;
+        const [r,g,b] = avgRatingColor(avg);
+        cell.style.background = `rgba(${r},${g},${b},0.7)`;
+        cell.classList.add('rating-colored');
+      } else {
+        cell.style.background = '';
+        cell.classList.remove('rating-colored');
+      }
+    }
+  });
+}
+document.getElementById('cal-toggle-screenings').addEventListener('click', () => {
+  calMode = 'screenings';
+  document.getElementById('cal-toggle-screenings').classList.add('active');
+  document.getElementById('cal-toggle-rating').classList.remove('active');
+  applyCalMode();
+});
+document.getElementById('cal-toggle-rating').addEventListener('click', () => {
+  calMode = 'rating';
+  document.getElementById('cal-toggle-rating').classList.add('active');
+  document.getElementById('cal-toggle-screenings').classList.remove('active');
+  applyCalMode();
+});
+
 // Tooltip for heatmap
 const tooltip = document.getElementById('tooltip');
+function ttRatingBadge(rating) {
+  const [r,g,b] = ratingColors[rating] || [128,128,128];
+  return `<span class="tt-rating-badge" style="background:rgba(${r},${g},${b},0.3);color:rgb(${Math.min(255,r+60)},${Math.min(255,g+60)},${Math.min(255,b+60)})">${rating}</span>`;
+}
 document.querySelectorAll('.heatmap-cell').forEach(cell => {
   cell.addEventListener('mouseenter', e => {
     const date = cell.dataset.date;
     const films = JSON.parse(cell.dataset.films || '[]');
+    const ratings = JSON.parse(cell.dataset.ratings || '[]');
     if (films.length === 0) {
       document.getElementById('tt-title').innerHTML = '<span style="color:var(--text-dim)">' + (date === todayStr ? 'Awaiting data' : 'No screenings') + '</span>';
       document.getElementById('tt-meta').textContent = new Date(date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
     } else {
       document.getElementById('tt-title').innerHTML = films.map((f,i) => {
         const safe = f.replace(/</g,'&lt;');
-        return i < films.length - 1 ? safe + ' &nbsp;<span class="tooltip-meta">&amp;</span>' : safe;
+        return safe + ttRatingBadge(ratings[i]);
       }).join('<br>');
       document.getElementById('tt-meta').textContent = new Date(date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
     }
@@ -957,7 +1069,7 @@ function renderTable() {
   });
 
   document.getElementById('table-body').innerHTML = filtered.map(f => {
-    const rClass = f.rating >= 8 ? 'rating-high' : f.rating >= 5 ? 'rating-mid' : 'rating-low';
+    const rClass = 'rating-' + f.rating;
     const fmtClass = f.format !== 'DCP' ? 'special' : '';
     const dateStr = new Date(f.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
     const priceStr = f.price === 0 ? '<span class="price-free">free</span>' : `<span class="price-paid">$${f.price % 1 === 0 ? f.price : f.price.toFixed(2)}</span>`;
