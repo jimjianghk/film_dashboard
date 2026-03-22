@@ -784,17 +784,20 @@ document.getElementById('stats-row').innerHTML = [
 
 // ====== RATING CHART ======
 const toStars = r => { const full = Math.floor(r/2); const half = r%2; return '★'.repeat(full) + (half ? `<span class="half-star${full ? ' after-star' : ''}">½</span>` : ''); };
+const allRatingCounts = {};
+for (let i=1;i<=10;i++) allRatingCounts[i] = 0;
+FILMS.forEach(f => allRatingCounts[f.rating]++);
+const maxRatingAll = Math.max(...Object.values(allRatingCounts), 1);
 function renderRatingChart(filter) {
   const subset = filter === 'new' ? FILMS.filter(f => f.year >= 2025)
     : filter === 'rep' ? FILMS.filter(f => f.year < 2025) : FILMS;
   const ratingCounts = {};
   for (let i=1;i<=10;i++) ratingCounts[i] = 0;
   subset.forEach(f => ratingCounts[f.rating]++);
-  const maxRating = Math.max(...Object.values(ratingCounts), 1);
   document.getElementById('rating-chart').innerHTML = Object.entries(ratingCounts).map(([r,c]) =>
     `<div class="bar-row">
       <div class="bar-label rating-stars">${toStars(Number(r))}</div>
-      <div class="bar-track"><div class="bar-fill rating-${r}" style="width:${(c/maxRating)*100}%"></div></div>
+      <div class="bar-track"><div class="bar-fill rating-${r}" style="width:${(c/maxRatingAll)*100}%"></div></div>
       <div class="bar-count">${c}</div>
     </div>`
   ).join('');
