@@ -419,7 +419,7 @@ h1 {
 .cal-toggle:not(:first-child) { margin-left: -1px; }
 .cal-toggle:last-child { border-radius: 0 3px 3px 0; }
 .cal-toggle.active { background: var(--accent-dim); border-color: var(--accent); color: var(--text); z-index: 1; position: relative; }
-.cal-toggle:hover:not(.active) { border-color: var(--accent); }
+.cal-toggle:hover:not(.active) { border-color: var(--accent); z-index: 1; position: relative; }
 
 /* TOOLTIP RATING BADGE (smaller for tooltip) */
 .tt-rating-badge {
