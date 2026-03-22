@@ -234,11 +234,11 @@ h1 {
 }
 
 /* RATING BAR COLORS — red → orange → yellow → green */
-.rating-1 { background: #c05050; } .rating-2 { background: #c06040; }
-.rating-3 { background: #b87038; } .rating-4 { background: #b08030; }
-.rating-5 { background: #a89030; } .rating-6 { background: #a09830; }
-.rating-7 { background: #90a030; } .rating-8 { background: #78a838; }
-.rating-9 { background: #58b040; } .rating-10 { background: #40b050; }
+.rating-1 { background: #d04040; } .rating-2 { background: #d05038; }
+.rating-3 { background: #cc6830; } .rating-4 { background: #c48028; }
+.rating-5 { background: #b89820; } .rating-6 { background: #b0b014; }
+.rating-7 { background: #94b428; } .rating-8 { background: #60b830; }
+.rating-9 { background: #38b840; } .rating-10 { background: #20a848; }
 
 /* VENUE COLORS */
 .venue-bar { background: var(--accent); opacity: 0.85; }
@@ -568,16 +568,16 @@ tbody tr:hover { background: var(--surface2); }
   font-weight: 600;
   font-size: 0.75rem;
 }
-.rating-badge.rating-1 { background: rgba(192,80,80,0.25); color: #e07070; }
-.rating-badge.rating-2 { background: rgba(192,96,64,0.25); color: #e08860; }
-.rating-badge.rating-3 { background: rgba(184,112,56,0.25); color: #d8a058; }
-.rating-badge.rating-4 { background: rgba(176,128,48,0.25); color: #d0b050; }
-.rating-badge.rating-5 { background: rgba(168,144,48,0.25); color: #c8c050; }
-.rating-badge.rating-6 { background: rgba(160,152,48,0.25); color: #c0c850; }
-.rating-badge.rating-7 { background: rgba(144,160,48,0.25); color: #b0d050; }
-.rating-badge.rating-8 { background: rgba(120,168,56,0.25); color: #98d858; }
-.rating-badge.rating-9 { background: rgba(88,176,64,0.25); color: #78e060; }
-.rating-badge.rating-10 { background: rgba(64,176,80,0.25); color: #60e070; }
+.rating-badge.rating-1 { background: rgba(208,64,64,0.25); color: #e86060; }
+.rating-badge.rating-2 { background: rgba(208,80,56,0.25); color: #e87058; }
+.rating-badge.rating-3 { background: rgba(204,104,48,0.25); color: #e48840; }
+.rating-badge.rating-4 { background: rgba(196,128,40,0.25); color: #dca438; }
+.rating-badge.rating-5 { background: rgba(184,152,32,0.25); color: #d0c038; }
+.rating-badge.rating-6 { background: rgba(176,176,20,0.25); color: #d0d030; }
+.rating-badge.rating-7 { background: rgba(148,180,40,0.25); color: #b8d848; }
+.rating-badge.rating-8 { background: rgba(96,184,48,0.25); color: #80d850; }
+.rating-badge.rating-9 { background: rgba(56,184,64,0.25); color: #58e060; }
+.rating-badge.rating-10 { background: rgba(32,168,72,0.25); color: #38d868; }
 .rewatch-badge {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.6rem;
@@ -978,16 +978,16 @@ heatmapEl.appendChild(calRow);
 // ====== CALENDAR TOGGLE ======
 const ratingColors = [
   null, // index 0 unused
-  [192,80,80],   // 1: #c05050 red
-  [192,96,64],   // 2: #c06040 red-orange
-  [184,112,56],  // 3: #b87038 orange
-  [176,128,48],  // 4: #b08030 amber
-  [168,144,48],  // 5: #a89030 gold
-  [160,152,48],  // 6: #a09830 yellow
-  [144,160,48],  // 7: #90a030 yellow-green
-  [120,168,56],  // 8: #78a838 olive-green
-  [88,176,64],   // 9: #58b040 green
-  [64,176,80]    // 10: #40b050 green
+  [208,64,64],   // 1: red (0°)
+  [208,80,56],   // 2: red (8°)
+  [204,104,48],  // 3: red-orange (18°)
+  [196,128,40],  // 4: orange (30°)
+  [184,152,32],  // 5: amber (42°)
+  [176,176,20],  // 6: yellow (60°)
+  [148,180,40],  // 7: yellow-green (70°) lum=144
+  [96,184,48],   // 8: yellow-green (85°)
+  [56,184,64],   // 9: green (105°)
+  [32,168,72]    // 10: deep green (120°)
 ];
 function avgRatingColor(avg) {
   if (avg <= 1) return ratingColors[1];
