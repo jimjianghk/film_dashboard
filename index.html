@@ -846,7 +846,7 @@ function dedupFilms(films) {
   const result = [];
   Object.values(groups).forEach(g => {
     const rewatchCount = g.filter(f => f.rewatch).length;
-    if (rewatchCount >= g.length - 1 && g.length > 1) result.push(g[0]);
+    if (rewatchCount >= g.length - 1 && g.length > 1) result.push(g[g.length - 1]);
     else g.forEach(f => result.push(f));
   });
   return result;
