@@ -632,6 +632,22 @@ tbody tr:hover { background: var(--surface2); }
 .filter-row-tr select.col-filter:focus { border-color: var(--accent); outline: none; }
 .filter-row-tr select.col-filter.active { border-color: var(--accent); color: var(--accent); }
 .filter-row-tr select.col-filter.no-uppercase { text-transform: none; }
+.filter-row-tr input.col-search {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 3px 6px;
+  border-radius: 2px;
+  width: 100%;
+  box-sizing: border-box;
+  letter-spacing: 0.04em;
+  transition: border-color 0.2s;
+}
+.filter-row-tr input.col-search::placeholder { color: var(--text-dim); opacity: 0.6; }
+.filter-row-tr input.col-search:focus { border-color: var(--accent); outline: none; }
+.filter-row-tr input.col-search.active { border-color: var(--accent); }
 
 footer {
   padding: 48px 0;
@@ -1153,6 +1169,10 @@ function renderTable() {
 
   // Filter row
   const filterRow = '<tr class="filter-row-tr">' + columns.map(c => {
+    if (c.key === 'title') {
+      const curVal = activeFilters._titleSearch || '';
+      return `<td><input type="text" class="col-search${curVal ? ' active' : ''}" data-filter-col="title" placeholder="Search\u2026" value="${curVal.replace(/"/g,'&quot;')}"></td>`;
+    }
     const filterable = filterableKeys.includes(c.key);
     if (!filterable) return '<td></td>';
     const options = getFilterOptions(c.key);
@@ -1167,7 +1187,12 @@ function renderTable() {
 
   let filtered = [...FILMS];
   for (const [key, val] of Object.entries(activeFilters)) {
+    if (key === '_titleSearch') continue;
     if (val) filtered = filtered.filter(f => matchesFilter(f, key, val));
+  }
+  if (activeFilters._titleSearch) {
+    const q = activeFilters._titleSearch.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+    filtered = filtered.filter(f => f.title.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes(q));
   }
 
   filtered.forEach((f,i) => f._idx = i);
@@ -1219,6 +1244,27 @@ function renderTable() {
       renderTable();
     });
   });
+
+  // Title search handler (IME-aware)
+  const searchInput = document.querySelector('input.col-search');
+  if (searchInput) {
+    let composing = false;
+    searchInput.addEventListener('compositionstart', () => { composing = true; });
+    searchInput.addEventListener('compositionend', e => {
+      composing = false;
+      activeFilters._titleSearch = e.target.value;
+      renderTable();
+      const inp = document.querySelector('input.col-search');
+      if (inp) { inp.focus(); inp.selectionStart = inp.selectionEnd = inp.value.length; }
+    });
+    searchInput.addEventListener('input', e => {
+      if (composing) return;
+      activeFilters._titleSearch = e.target.value;
+      renderTable();
+      const inp = document.querySelector('input.col-search');
+      if (inp) { inp.focus(); inp.selectionStart = inp.selectionEnd = inp.value.length; }
+    });
+  }
 }
 
 renderTable();
