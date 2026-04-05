@@ -432,6 +432,11 @@ h1 {
   .rating-filter-toggle { order: 3; }
 }
 
+/* RUNTIME HISTOGRAM — skip every other label on narrow screens */
+@media (max-width: 499px) {
+  .rt-label-odd { display: none; }
+}
+
 /* CALENDAR HEADER — responsive wrap */
 .calendar-header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 @media (min-width: 500px) {
@@ -935,8 +940,9 @@ function renderRuntimeChart() {
   barsHtml += `<div style="position:absolute;bottom:0;left:0;right:0;display:flex;gap:2px;">`;
   binEntries.forEach(([b, c], i) => {
     const val = Number(binEntries[0][0]) + i * binSize;
+    const oddClass = i % 2 !== 0 ? ' rt-label-odd' : '';
     barsHtml += `<div style="flex:1;position:relative;min-width:0;">
-      <span style="position:absolute;left:0;top:0;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:0.55rem;color:var(--text-dim);white-space:nowrap;">${val}</span>
+      <span class="rt-label${oddClass}" style="position:absolute;left:0;top:0;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:0.55rem;color:var(--text-dim);white-space:nowrap;">${val}</span>
     </div>`;
   });
   const lastVal = Number(binEntries[0][0]) + n * binSize;
