@@ -1133,6 +1133,13 @@ function ttRatingBadge(rating) {
   return `<span class="tt-rating-badge" style="background:rgba(${r},${g},${b},0.3);color:rgb(${Math.min(255,r+60)},${Math.min(255,g+60)},${Math.min(255,b+60)})">${rating}</span>`;
 }
 document.querySelectorAll('.heatmap-cell').forEach(cell => {
+  cell.addEventListener('touchstart', e => {
+    e.preventDefault();
+    // dismiss any previous tooltip-owning cell
+    document.querySelectorAll('.heatmap-cell.tt-active').forEach(c => c.classList.remove('tt-active'));
+    cell.classList.add('tt-active');
+    cell.dispatchEvent(new MouseEvent('mouseenter'));
+  }, {passive: false});
   cell.addEventListener('mouseenter', e => {
     const date = cell.dataset.date;
     const films = JSON.parse(cell.dataset.films || '[]');
@@ -1150,10 +1157,20 @@ document.querySelectorAll('.heatmap-cell').forEach(cell => {
     tooltip.style.borderColor = films.length === 0 ? 'var(--text-dim)' : 'var(--accent)';
     tooltip.style.display = 'block';
     const r = cell.getBoundingClientRect();
-    tooltip.style.left = r.left + 'px';
+    let left = r.left;
+    const ttWidth = tooltip.offsetWidth;
+    if (left + ttWidth > window.innerWidth - 8) left = window.innerWidth - ttWidth - 8;
+    if (left < 8) left = 8;
+    tooltip.style.left = left + 'px';
     tooltip.style.top = (r.top - tooltip.offsetHeight - 8) + 'px';
   });
   cell.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+});
+document.addEventListener('touchstart', e => {
+  if (!e.target.closest('.heatmap-cell')) {
+    tooltip.style.display = 'none';
+    document.querySelectorAll('.heatmap-cell.tt-active').forEach(c => c.classList.remove('tt-active'));
+  }
 });
 
 // ====== SERIES LIST ======
