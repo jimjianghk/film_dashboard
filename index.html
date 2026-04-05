@@ -425,6 +425,19 @@ h1 {
 .cal-toggle.active { background: var(--accent-dim); border-color: var(--accent); color: var(--text); z-index: 1; position: relative; }
 .cal-toggle:hover:not(.active) { border-color: var(--accent); z-index: 1; position: relative; }
 
+/* RATING HEADER — responsive wrap */
+.rating-header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.rating-dedup-toggle { margin-left: auto; }
+@media (max-width: 499px) {
+  .rating-filter-toggle { order: 3; }
+}
+
+/* CALENDAR HEADER — responsive wrap */
+.calendar-header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+@media (min-width: 500px) {
+  .calendar-header { flex-wrap: nowrap; }
+}
+
 /* TOOLTIP RATING BADGE (smaller for tooltip) */
 .tt-rating-badge {
   display: inline-block;
@@ -722,15 +735,14 @@ footer {
 
   <div class="charts-grid">
     <div class="chart-card animate delay-2">
-      <div class="chart-label" style="display:flex;align-items:center;justify-content:space-between;">
-        <span style="display:flex;align-items:center;gap:12px;">Rating
-          <span class="cal-toggle-wrap">
-            <button class="cal-toggle active" id="rat-toggle-all">All</button>
-            <button class="cal-toggle" id="rat-toggle-new">New Releases</button>
-            <button class="cal-toggle" id="rat-toggle-rep">Repertory</button>
-          </span>
+      <div class="chart-label rating-header">
+        <span>Rating</span>
+        <span class="cal-toggle-wrap rating-filter-toggle">
+          <button class="cal-toggle active" id="rat-toggle-all">All</button>
+          <button class="cal-toggle" id="rat-toggle-new">New Releases</button>
+          <button class="cal-toggle" id="rat-toggle-rep">Repertory</button>
         </span>
-        <span style="display:flex;align-items:center;gap:10px;">
+        <span class="rating-dedup-toggle" style="display:flex;align-items:center;gap:10px;">
           <label class="switch-toggle" title="De-duplicate rewatches">
             <input type="checkbox" id="rating-dedup">
             <span class="switch-slider"></span>
@@ -773,7 +785,8 @@ footer {
       <div id="venue-chart" class="venue-grid"></div>
     </div>
     <div class="chart-card full animate delay-4">
-      <div class="chart-label" style="display:flex;align-items:center;gap:12px;">Screening Calendar
+      <div class="chart-label calendar-header">
+        <span>Screening Calendar</span>
         <span class="cal-toggle-wrap">
           <button class="cal-toggle active" id="cal-toggle-screenings"># of Screenings</button>
           <button class="cal-toggle" id="cal-toggle-rating">Avg Rating</button>
