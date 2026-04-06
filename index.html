@@ -715,6 +715,9 @@ footer {
 .delay-4 { animation-delay: 0.4s; }
 .delay-5 { animation-delay: 0.5s; }
 
+@media (max-width: 1200px) {
+  .calendars-row { flex-wrap: wrap; }
+}
 @media (max-width: 1000px) {
   .stats-row { grid-template-columns: repeat(3, 1fr); }
 }
@@ -723,7 +726,6 @@ footer {
   .chart-card { flex-basis: 100%; }
   .container { padding: 0 16px; }
   .stat-val { font-size: 2rem; }
-  .calendars-row { flex-wrap: wrap; }
   .format-grid { grid-template-columns: repeat(3, 1fr); }
   .venue-grid { grid-template-columns: 1fr; }
 }
