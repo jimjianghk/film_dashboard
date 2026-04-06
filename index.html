@@ -1374,7 +1374,7 @@ function renderTable() {
 }
 
 renderTable();
-document.getElementById('footer-text').textContent = totalFilms + ' films \u2022 built from the logbook';
+document.getElementById('footer-text').textContent = totalFilms + (totalFilms === 1 ? ' film' : ' films') + ' \u2022 built from the cinema log spreadsheet \u2022 updated daily';
 
 }); // end fetch .then()
 </script>
