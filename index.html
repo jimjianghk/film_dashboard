@@ -47,41 +47,55 @@ body::before {
 
 /* HEADER */
 header {
-  padding: 64px 0 48px;
+  padding: 40px 0 56px;
   border-bottom: 1px solid var(--border);
   position: relative;
   overflow: hidden;
+  text-align: center;
 }
 header::after {
   content:'';
   position:absolute; bottom:0; left:0; right:0; height:1px;
   background: linear-gradient(90deg, transparent, var(--accent), transparent);
 }
-.header-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 32px;
-  flex-wrap: wrap;
+.header-label, .header-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.header-label {
+  margin-bottom: 0;
 }
 h1 {
   font-family: 'Playfair Display', serif;
   font-weight: 900;
-  font-size: 4.5rem;
-  letter-spacing: -0.03em;
+  font-size: 5.5rem;
+  letter-spacing: -0.02em;
   line-height: 1;
-  background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%);
+  background: linear-gradient(135deg, var(--text) 0%, var(--accent) 60%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  margin-bottom: 20px;
 }
-.header-sub {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.8rem;
-  color: var(--text-dim);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  padding-bottom: 8px;
+.header-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.header-divider::before, .header-divider::after {
+  display: none;
+}
+.header-diamond {
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+  transform: rotate(45deg);
+  flex-shrink: 0;
 }
 
 /* STAT CARDS */
@@ -727,13 +741,10 @@ footer {
 
 <div class="container">
   <header>
-    <div class="header-top">
-      <div>
-        <div class="header-sub">Film Journal</div>
-        <h1>2026</h1>
-      </div>
-      <div class="header-sub" style="text-align:right" id="date-range"></div>
-    </div>
+    <div class="header-label">Film Journal</div>
+    <h1>2026</h1>
+    <div class="header-divider"><span class="header-diamond"></span></div>
+    <div class="header-date" id="date-range"></div>
   </header>
 
   <div class="stats-row animate delay-1" id="stats-row"></div>
