@@ -1086,7 +1086,7 @@ months.forEach(m => {
       html += `<div class="heatmap-cell future">${d}</div>`;
     } else {
       const cls = films.length >= 4 ? 'watched-4' : films.length === 3 ? 'watched-3' : films.length === 2 ? 'watched-2' : films.length === 1 ? 'watched-1' : '';
-      html += `<div class="heatmap-cell ${cls}" data-date="${ds}" data-films='${JSON.stringify(films.map(f=>f.title))}' data-ratings='${JSON.stringify(films.map(f=>f.rating))}'>${d}</div>`;
+      html += `<div class="heatmap-cell ${cls}" data-date="${ds}" data-films='${JSON.stringify(films.map(f=>f.title)).replace(/'/g,"&#39;")}' data-ratings='${JSON.stringify(films.map(f=>f.rating)).replace(/'/g,"&#39;")}'>${d}</div>`;
     }
   }
   html += '</div>';
