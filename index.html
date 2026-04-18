@@ -403,15 +403,22 @@ h1 {
   overflow-x: auto;
 }
 .calendars-row {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid;
   gap: 32px;
+  justify-content: center;
+  grid-template-columns: repeat(4, minmax(0, 280px));
+}
+@media (max-width: 1199px) {
+  .calendars-row { grid-template-columns: repeat(3, minmax(0, 280px)); }
+}
+@media (max-width: 899px) {
+  .calendars-row { grid-template-columns: repeat(2, minmax(0, 280px)); }
+}
+@media (max-width: 599px) {
+  .calendars-row { grid-template-columns: minmax(0, 280px); }
 }
 .heatmap-month {
-  flex: 0 1 calc(25% - 24px);
-  min-width: 180px;
-  max-width: 280px;
+  min-width: 0;
 }
 .heatmap-month-label {
   font-family: 'JetBrains Mono', monospace;
@@ -786,7 +793,7 @@ footer {
 
 <div class="container">
   <header>
-    <div class="header-label">Film Journal</div>
+    <div class="header-label">Cinema Log</div>
     <h1>2026</h1>
     <div class="header-divider"><span class="header-diamond"></span></div>
     <div class="header-date" id="date-range"></div>
