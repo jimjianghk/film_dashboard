@@ -210,7 +210,7 @@ h1 {
   z-index: 20;
   pointer-events: none;
 }
-.bar-label:hover .venue-tip { display: block; }
+.bar-label:hover .venue-tip, .bar-label.tip-active .venue-tip { display: block; }
 .bar-label.rating-stars {
   width: 72px;
   font-size: 1.1rem;
@@ -1088,6 +1088,20 @@ const venueCol = arr => arr.map(([v,c]) =>
 document.getElementById('venue-chart').innerHTML =
   `<div class="venue-col">${venueCol(venueArr.slice(0, venueHalf))}</div>` +
   `<div class="venue-col">${venueCol(venueArr.slice(venueHalf))}</div>`;
+
+document.querySelectorAll('#venue-chart .bar-label').forEach(label => {
+  if (!label.querySelector('.venue-tip')) return;
+  label.addEventListener('touchstart', e => {
+    e.preventDefault();
+    document.querySelectorAll('.bar-label.tip-active').forEach(l => l.classList.remove('tip-active'));
+    label.classList.add('tip-active');
+  }, {passive: false});
+});
+document.addEventListener('touchstart', e => {
+  if (!e.target.closest('.bar-label')) {
+    document.querySelectorAll('.bar-label.tip-active').forEach(l => l.classList.remove('tip-active'));
+  }
+});
 
 // ====== DECADE CHART ======
 function renderDecadeChart() {
