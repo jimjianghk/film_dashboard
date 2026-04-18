@@ -210,7 +210,7 @@ h1 {
   z-index: 20;
   pointer-events: none;
 }
-.bar-label:hover .venue-tip, .bar-label.tip-active .venue-tip { display: block; }
+.bar-label:hover .venue-tip { display: block; }
 .bar-label.rating-stars {
   width: 72px;
   font-size: 1.1rem;
@@ -1089,20 +1089,6 @@ document.getElementById('venue-chart').innerHTML =
   `<div class="venue-col">${venueCol(venueArr.slice(0, venueHalf))}</div>` +
   `<div class="venue-col">${venueCol(venueArr.slice(venueHalf))}</div>`;
 
-document.querySelectorAll('#venue-chart .bar-label').forEach(label => {
-  if (!label.querySelector('.venue-tip')) return;
-  label.addEventListener('touchstart', e => {
-    e.preventDefault();
-    document.querySelectorAll('.bar-label.tip-active').forEach(l => l.classList.remove('tip-active'));
-    label.classList.add('tip-active');
-  }, {passive: false});
-});
-document.addEventListener('touchstart', e => {
-  if (!e.target.closest('.bar-label')) {
-    document.querySelectorAll('.bar-label.tip-active').forEach(l => l.classList.remove('tip-active'));
-  }
-});
-
 // ====== DECADE CHART ======
 function renderDecadeChart() {
   const dedup = document.getElementById('decade-dedup').checked;
@@ -1217,22 +1203,31 @@ const legendHtml = `<div class="format-legend">
 
 document.getElementById('format-chart').innerHTML = `<div class="format-stacked">${rowsHtml}</div>${legendHtml}`;
 
-// Segment hover tooltip
+// Segment hover / tap tooltip
 const segTooltip = document.getElementById('seg-tooltip');
+function showSegTooltip(seg) {
+  const label = seg.dataset.label;
+  const count = Number(seg.dataset.count);
+  segTooltip.textContent = `${label} · ${count} film${count === 1 ? '' : 's'}`;
+  segTooltip.style.display = 'block';
+  const r = seg.getBoundingClientRect();
+  let left = r.left + r.width / 2 - segTooltip.offsetWidth / 2;
+  if (left + segTooltip.offsetWidth > window.innerWidth - 8) left = window.innerWidth - segTooltip.offsetWidth - 8;
+  if (left < 8) left = 8;
+  segTooltip.style.left = left + 'px';
+  segTooltip.style.top = (r.top - segTooltip.offsetHeight - 6) + 'px';
+}
+function hideSegTooltip() { segTooltip.style.display = 'none'; }
 document.querySelectorAll('.format-seg').forEach(seg => {
-  seg.addEventListener('mouseenter', () => {
-    const label = seg.dataset.label;
-    const count = Number(seg.dataset.count);
-    segTooltip.textContent = `${label} · ${count} film${count === 1 ? '' : 's'}`;
-    segTooltip.style.display = 'block';
-    const r = seg.getBoundingClientRect();
-    let left = r.left + r.width / 2 - segTooltip.offsetWidth / 2;
-    if (left + segTooltip.offsetWidth > window.innerWidth - 8) left = window.innerWidth - segTooltip.offsetWidth - 8;
-    if (left < 8) left = 8;
-    segTooltip.style.left = left + 'px';
-    segTooltip.style.top = (r.top - segTooltip.offsetHeight - 6) + 'px';
-  });
-  seg.addEventListener('mouseleave', () => { segTooltip.style.display = 'none'; });
+  seg.addEventListener('mouseenter', () => showSegTooltip(seg));
+  seg.addEventListener('mouseleave', hideSegTooltip);
+  seg.addEventListener('touchstart', e => {
+    e.preventDefault();
+    showSegTooltip(seg);
+  }, {passive: false});
+});
+document.addEventListener('touchstart', e => {
+  if (!e.target.closest('.format-seg')) hideSegTooltip();
 });
 
 // ====== HEATMAP ======
