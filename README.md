@@ -22,11 +22,11 @@ Horizontal bar chart grouping films by the decade they were produced. Has its ow
 
 ### Screening format chart
 
-Bubble chart sized by log-scaled count. Shows format name, count, and percentage.
+Horizontal stacked bar chart with one row per base projection format (DCP / 35mm / 70mm / 16mm). Within each bar, segments are grouped by premium tier (IMAX, Dolby Cinema, AMC Prime, VistaVision) and ordered by count; 3D variants render as a diagonal-stripe overlay within their tier's segment. Bar widths are proportional to the largest base-format total, so the DCP row dominates and rarer formats read accurately at scale. Hovering any segment shows the subcategory name and count. A legend below the bars lists every premium tier present with its total, sorted by count.
 
 ### Runtime distribution
 
-Vertical histogram with 5-minute bins. Has its own dedup toggle. Alternate x-axis labels are hidden on narrow screens.
+Vertical histogram with 5-minute bins. Has its own dedup toggle. Alternate x-axis labels are hidden on narrow screens. When an outlier bin is separated from the main mass by 5+ consecutive empty bins, those empty bins collapse into a single narrow gap marker (three dots at the bar baseline) with a label for the start of the elided range.
 
 ### Screening venue chart
 
@@ -34,7 +34,7 @@ Two-column horizontal bar chart sorted by count. Hovering a venue code reveals t
 
 ### Screening calendar
 
-Monthly heatmap grid from January 1 through the current date. Two modes toggled by buttons:
+Monthly heatmap grid from January 1 through the current date. Rows cap at 4 months wide regardless of viewport, wrapping to fewer per row on narrower screens. Two modes toggled by buttons:
 
 - **Number of screenings** — tile opacity increases with count (30% / 55% / 80% / 100% for 1–4+ films).
 - **Average rating** — tile color interpolates across the red-to-green rating scale. Days with only unrated screenings are grey.
