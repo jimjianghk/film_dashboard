@@ -307,54 +307,95 @@ h1 {
   margin-bottom: 4px;
 }
 
-/* FORMAT BUBBLES */
-.format-bubbles {
+/* FORMAT STACKED BARS */
+.format-stacked { display: flex; flex-direction: column; gap: 8px; }
+.format-row { display: flex; align-items: center; gap: 12px; }
+.format-row-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  width: 40px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.format-bar-outer { flex: 1; height: 22px; display: flex; align-items: center; }
+.format-bar-track {
+  height: 100%;
+  background: var(--surface2);
+  border-radius: 1px;
   display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 28px;
-  padding: 0;
+  overflow: hidden;
+  transition: width 0.8s cubic-bezier(0.22,1,0.36,1);
+}
+.format-seg {
+  height: 100%;
+  cursor: default;
+  transition: filter 0.15s;
+  min-width: 3px;
+  position: relative;
+  opacity: 0.85;
+}
+.format-seg:hover { filter: brightness(1.2); opacity: 1; }
+.format-seg.seg-standard { background: var(--accent); }
+.format-seg.seg-imax { background: #5a7fc4; }
+.format-seg.seg-dolby { background: #a06bc4; }
+.format-seg.seg-prime { background: #c46b5a; }
+.format-seg.seg-vista { background: #6bc4a0; }
+.format-seg.seg-3d::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(-45deg,
+    transparent 0 2px,
+    rgba(255,255,255,0.55) 2px 4px);
+  pointer-events: none;
+}
+.format-row-total {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--text);
+  width: 30px;
+  flex-shrink: 0;
+}
+.format-legend {
+  display: flex;
   flex-wrap: wrap;
-}
-.format-bubble {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: -8px;
   align-items: center;
-  gap: 10px;
-}
-.format-circle {
-  border-radius: 50%;
-  background: var(--accent);
-  opacity: 0.8;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: opacity 0.3s, transform 0.3s;
-}
-.format-circle:hover { opacity: 1; transform: scale(1.08); }
-.format-circle-count {
-  font-family: 'Playfair Display', serif;
-  font-weight: 700;
-  font-size: 1.6rem;
-  color: var(--bg);
-}
-.format-circle-count.outside {
-  color: var(--accent);
-  margin-bottom: -4px;
-}
-.format-bubble-label {
+  gap: 8px 16px;
+  margin: 20px 12px 0 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   color: var(--text-dim);
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
 }
-.format-bubble-pct {
+.legend-chip { display: inline-flex; align-items: center; gap: 6px; }
+.legend-swatch { width: 14px; height: 10px; border-radius: 1px; display: inline-block; flex-shrink: 0; position: relative; overflow: hidden; opacity: 0.85; }
+.legend-swatch.swatch-3d { background: #5a5a65; }
+.legend-swatch.swatch-3d::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(-45deg, transparent 0 2px, rgba(255,255,255,0.55) 2px 4px);
+}
+.legend-count { color: var(--text); margin-left: 2px; }
+
+.seg-tooltip {
+  position: fixed;
+  display: none;
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  color: var(--text);
+  padding: 3px 10px;
+  border-radius: 4px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
-  color: var(--text-dim);
-  margin-top: -4px;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  z-index: 10000;
+  pointer-events: none;
 }
 
 /* CALENDAR HEATMAP */
@@ -363,12 +404,14 @@ h1 {
 }
 .calendars-row {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: 32px;
 }
 .heatmap-month {
-  flex: 0 1 280px;
+  flex: 0 1 calc(25% - 24px);
   min-width: 180px;
+  max-width: 280px;
 }
 .heatmap-month-label {
   font-family: 'JetBrains Mono', monospace;
@@ -717,9 +760,6 @@ footer {
 .delay-4 { animation-delay: 0.4s; }
 .delay-5 { animation-delay: 0.5s; }
 
-@media (max-width: 1200px) {
-  .calendars-row { flex-wrap: wrap; }
-}
 @media (max-width: 1000px) {
   .stats-row { grid-template-columns: repeat(3, 1fr); }
 }
@@ -742,6 +782,7 @@ footer {
   <div class="tooltip-title" id="tt-title"></div>
   <div class="tooltip-meta" id="tt-meta"></div>
 </div>
+<div class="seg-tooltip" id="seg-tooltip"></div>
 
 <div class="container">
   <header>
@@ -786,7 +827,7 @@ footer {
     </div>
     <div class="chart-card full animate delay-3">
       <div class="chart-label">Screening Format</div>
-      <div id="format-chart" class="format-bubbles"></div>
+      <div id="format-chart"></div>
     </div>
     <div class="chart-card full animate delay-3">
       <div class="chart-label" style="display:flex;align-items:center;justify-content:space-between;">Runtime Distribution
@@ -948,27 +989,65 @@ function renderRuntimeChart() {
   for (let b = minBin; b <= maxBin; b += binSize) bins[b] = 0;
   runtimes.forEach(r => { bins[Math.floor(r / binSize) * binSize]++; });
   const barMaxH = 140;
-  const binEntries = Object.entries(bins);
-  const n = binEntries.length;
+  const binArr = Object.entries(bins).map(([b, c]) => ({ bin: Number(b), count: c }));
+
+  // Collapse runs of 5+ empty bins between non-empty bins into a single gap marker
+  const items = [];
+  {
+    let i = 0;
+    let lastBarBin = null;
+    while (i < binArr.length) {
+      if (binArr[i].count === 0) {
+        let j = i;
+        while (j < binArr.length && binArr[j].count === 0) j++;
+        const hasLeft = binArr.slice(0, i).some(x => x.count > 0);
+        const hasRight = binArr.slice(j).some(x => x.count > 0);
+        if (j - i >= 5 && hasLeft && hasRight) {
+          items.push({ type: 'gap', gapStartBin: lastBarBin + binSize });
+        } else {
+          for (let k = i; k < j; k++) items.push({ type: 'bar', ...binArr[k] });
+        }
+        i = j;
+      } else {
+        items.push({ type: 'bar', ...binArr[i] });
+        lastBarBin = binArr[i].bin;
+        i++;
+      }
+    }
+  }
+
   const chartEl = document.getElementById('runtime-chart');
   chartEl.style.cssText += `;display:flex;align-items:flex-end;gap:2px;position:relative;padding-bottom:4px;`;
+  const gapDot = `<span style="width:1.5px;height:1.5px;background:var(--text-dim);border-radius:50%;display:block;"></span>`;
   let barsHtml = '';
-  binEntries.forEach(([b, c], i) => {
-    const h = Math.round((c / maxBinCount) * barMaxH);
-    barsHtml += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:0;">
-      <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:${c ? 'var(--text)' : 'var(--text-dim)'};margin-bottom:4px;">${c || ''}</div>
-      <div class="hist-bar" style="width:100%;height:${h}px;background:var(--accent);border-radius:2px 2px 0 0;${c ? '' : 'visibility:hidden;'}"></div>
-    </div>`;
+  items.forEach(it => {
+    if (it.type === 'gap') {
+      barsHtml += `<div style="flex:0 0 28px;display:flex;align-items:flex-end;justify-content:center;gap:3px;padding-bottom:1px;">${gapDot}${gapDot}${gapDot}</div>`;
+    } else {
+      const h = Math.round((it.count / maxBinCount) * barMaxH);
+      barsHtml += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:0;">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:${it.count ? 'var(--text)' : 'var(--text-dim)'};margin-bottom:4px;">${it.count || ''}</div>
+        <div class="hist-bar" style="width:100%;height:${h}px;background:var(--accent);border-radius:2px 2px 0 0;${it.count ? '' : 'visibility:hidden;'}"></div>
+      </div>`;
+    }
   });
   barsHtml += `<div style="position:absolute;bottom:0;left:0;right:0;display:flex;gap:2px;">`;
-  binEntries.forEach(([b, c], i) => {
-    const val = Number(binEntries[0][0]) + i * binSize;
-    const oddClass = i % 2 !== 0 ? ' rt-label-odd' : '';
-    barsHtml += `<div style="flex:1;position:relative;min-width:0;">
-      <span class="rt-label${oddClass}" style="position:absolute;left:0;top:0;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:0.55rem;color:var(--text-dim);white-space:nowrap;">${val}</span>
-    </div>`;
+  let barIdx = 0;
+  items.forEach(it => {
+    if (it.type === 'gap') {
+      barsHtml += `<div style="flex:0 0 28px;position:relative;">
+        <span class="rt-label" style="position:absolute;left:0;top:0;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:0.55rem;color:var(--text-dim);white-space:nowrap;">${it.gapStartBin}</span>
+      </div>`;
+    } else {
+      const oddClass = barIdx % 2 !== 0 ? ' rt-label-odd' : '';
+      barsHtml += `<div style="flex:1;position:relative;min-width:0;">
+        <span class="rt-label${oddClass}" style="position:absolute;left:0;top:0;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:0.55rem;color:var(--text-dim);white-space:nowrap;">${it.bin}</span>
+      </div>`;
+      barIdx++;
+    }
   });
-  const lastVal = Number(binEntries[0][0]) + n * binSize;
+  const lastBar = [...items].reverse().find(x => x.type === 'bar');
+  const lastVal = lastBar ? lastBar.bin + binSize : maxBin + binSize;
   barsHtml += `<div style="flex:0 0 0;position:relative;"><span style="position:absolute;right:0;top:0;transform:translateX(50%);font-family:'JetBrains Mono',monospace;font-size:0.55rem;color:var(--text-dim);white-space:nowrap;">${lastVal}</span></div>`;
   barsHtml += `</div>`;
   chartEl.innerHTML = barsHtml;
@@ -1029,23 +1108,111 @@ renderDecadeChart();
 document.getElementById('decade-dedup').addEventListener('change', renderDecadeChart);
 
 // ====== FORMAT CHART ======
-const formatCounts = {};
-FILMS.forEach(f => formatCounts[f.format] = (formatCounts[f.format]||0)+1);
-const formatArr = Object.entries(formatCounts).sort((a,b) => b[1]-a[1]);
-const maxFormat = formatArr[0][1];
-const maxSize = 140;
-document.getElementById('format-chart').innerHTML = formatArr.map(([f,c]) => {
-  const size = Math.max(28, Math.round(maxSize * Math.log(1 + c) / Math.log(1 + maxFormat)));
-  const inside = size >= 56;
-  return `<div class="format-bubble">
-    ${!inside ? `<div class="format-circle-count outside">${c}</div>` : ''}
-    <div class="format-circle" style="width:${size}px;height:${size}px">
-      ${inside ? `<span class="format-circle-count">${c}</span>` : ''}
-    </div>
-    <div class="format-bubble-label">${f}</div>
-    <div class="format-bubble-pct">${((c/totalFilms)*100).toFixed(0)}%</div>
+function parseFormat(raw) {
+  const f = (raw || 'DCP').toString().trim();
+  const threeD = /\b3D\b/i.test(f);
+  const clean = f.replace(/\b3D\b/ig, '').trim();
+  if (/VistaVision/i.test(clean)) return { base: '35mm', premium: 'VistaVision', threeD };
+  if (/IMAX.*70mm|70mm.*IMAX/i.test(clean)) return { base: '70mm', premium: 'IMAX', threeD };
+  if (/IMAX/i.test(clean)) return { base: 'DCP', premium: 'IMAX', threeD };
+  if (/Dolby/i.test(clean)) return { base: 'DCP', premium: 'Dolby', threeD };
+  if (/Prime/i.test(clean)) return { base: 'DCP', premium: 'Prime', threeD };
+  if (/70mm/i.test(clean)) return { base: '70mm', premium: null, threeD };
+  if (/35mm/i.test(clean)) return { base: '35mm', premium: null, threeD };
+  if (/16mm/i.test(clean)) return { base: '16mm', premium: null, threeD };
+  return { base: 'DCP', premium: null, threeD };
+}
+const BASE_ORDER = ['DCP', '35mm', '70mm', '16mm'];
+const PREMIUM_ORDER = ['__std', 'IMAX', 'Dolby', 'Prime', 'VistaVision'];
+const PREMIUM_CLASS = { '__std': 'standard', 'IMAX': 'imax', 'Dolby': 'dolby', 'Prime': 'prime', 'VistaVision': 'vista' };
+const PREMIUM_LABEL = { '__std': 'Standard', 'IMAX': 'IMAX', 'Dolby': 'Dolby Cinema', 'Prime': 'AMC Prime', 'VistaVision': 'VistaVision' };
+
+const formatBreakdown = {};
+const premiumTotals = { '__std': 0, 'IMAX': 0, 'Dolby': 0, 'Prime': 0, 'VistaVision': 0 };
+let threeDTotal = 0;
+FILMS.forEach(f => {
+  const { base, premium, threeD } = parseFormat(f.format);
+  if (!formatBreakdown[base]) formatBreakdown[base] = { total: 0, segs: {} };
+  formatBreakdown[base].total++;
+  const pKey = premium || '__std';
+  const key = pKey + (threeD ? '|3D' : '');
+  formatBreakdown[base].segs[key] = (formatBreakdown[base].segs[key] || 0) + 1;
+  premiumTotals[pKey]++;
+  if (threeD) threeDTotal++;
+});
+const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].total > 0);
+const maxBaseTotal = Math.max(...bases.map(b => formatBreakdown[b].total), 1);
+
+function segLabel(b, p, threeD) {
+  if (p === '__std') return threeD ? 'Standard 3D' : 'Standard ' + b;
+  if (p === 'IMAX' && b === '70mm') return 'IMAX 70mm' + (threeD ? ' 3D' : '');
+  return PREMIUM_LABEL[p] + (threeD ? ' 3D' : '');
+}
+const rowsHtml = bases.map(b => {
+  const data = formatBreakdown[b];
+  const trackPct = (data.total / maxBaseTotal) * 100;
+  const premiumsByCount = PREMIUM_ORDER
+    .map(p => ({ p, total: (data.segs[p] || 0) + (data.segs[p + '|3D'] || 0) }))
+    .filter(x => x.total > 0)
+    .sort((a, b) => b.total - a.total)
+    .map(x => x.p);
+  const segs = premiumsByCount.flatMap(p => {
+    const cls = PREMIUM_CLASS[p];
+    const out = [];
+    const plain = data.segs[p] || 0;
+    const threeD = data.segs[p + '|3D'] || 0;
+    if (plain > 0) {
+      out.push(`<div class="format-seg seg-${cls}" style="flex:${plain};" data-label="${segLabel(b, p, false)}" data-count="${plain}"></div>`);
+    }
+    if (threeD > 0) {
+      out.push(`<div class="format-seg seg-${cls} seg-3d" style="flex:${threeD};" data-label="${segLabel(b, p, true)}" data-count="${threeD}"></div>`);
+    }
+    return out;
+  }).join('');
+  return `<div class="format-row">
+    <div class="format-row-label">${b}</div>
+    <div class="format-bar-outer"><div class="format-bar-track" style="width:${trackPct}%;">${segs}</div></div>
+    <div class="format-row-total">${data.total}</div>
   </div>`;
 }).join('');
+
+const legendItems = [
+  ['imax', 'IMAX', premiumTotals['IMAX']],
+  ['dolby', 'Dolby Cinema', premiumTotals['Dolby']],
+  ['prime', 'AMC Prime', premiumTotals['Prime']],
+  ['vista', 'VistaVision', premiumTotals['VistaVision']],
+  ['3d', '3D', threeDTotal],
+].filter(([,,n]) => n > 0)
+  .sort((a, b) => b[2] - a[2]);
+const swatchBg = { imax: '#5a7fc4', dolby: '#a06bc4', prime: '#c46b5a', vista: '#6bc4a0' };
+const legendHtml = `<div class="format-legend">
+  ${legendItems.map(([cls, lbl, n]) => {
+    const swatch = cls === '3d'
+      ? '<span class="legend-swatch swatch-3d"></span>'
+      : `<span class="legend-swatch" style="background:${swatchBg[cls]}"></span>`;
+    return `<span class="legend-chip">${swatch}${lbl} <span class="legend-count">${n}</span></span>`;
+  }).join('')}
+</div>`;
+
+document.getElementById('format-chart').innerHTML = `<div class="format-stacked">${rowsHtml}</div>${legendHtml}`;
+
+// Segment hover tooltip
+const segTooltip = document.getElementById('seg-tooltip');
+document.querySelectorAll('.format-seg').forEach(seg => {
+  seg.addEventListener('mouseenter', () => {
+    const label = seg.dataset.label;
+    const count = Number(seg.dataset.count);
+    segTooltip.textContent = `${label} · ${count} film${count === 1 ? '' : 's'}`;
+    segTooltip.style.display = 'block';
+    const r = seg.getBoundingClientRect();
+    let left = r.left + r.width / 2 - segTooltip.offsetWidth / 2;
+    if (left + segTooltip.offsetWidth > window.innerWidth - 8) left = window.innerWidth - segTooltip.offsetWidth - 8;
+    if (left < 8) left = 8;
+    segTooltip.style.left = left + 'px';
+    segTooltip.style.top = (r.top - segTooltip.offsetHeight - 6) + 'px';
+  });
+  seg.addEventListener('mouseleave', () => { segTooltip.style.display = 'none'; });
+});
 
 // ====== HEATMAP ======
 const filmsByDate = {};
