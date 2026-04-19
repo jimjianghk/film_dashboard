@@ -60,7 +60,7 @@ Sortable, filterable table of every screening. Nine columns: date, title, year, 
 - Film-grain SVG noise overlay at low opacity
 - Four fonts: Playfair Display (headings/values), DM Sans (body), JetBrains Mono (labels/data), Noto Serif SC (CJK fallback)
 - Fade-up entrance animations with staggered delays
-- Responsive at 1200 / 1000 / 800 / 500px breakpoints
+- Responsive at 1200 / 1000 / 900 / 800 / 600 / 500px breakpoints
 
 ## Data pipeline
 
