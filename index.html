@@ -338,9 +338,9 @@ h1 {
 .format-seg:hover { filter: brightness(1.2); opacity: 1; }
 .format-seg.seg-standard { background: var(--accent); }
 .format-seg.seg-imax { background: #5a7fc4; }
-.format-seg.seg-dolby { background: #a06bc4; }
+.format-seg.seg-dolby { background: #6bc4a0; }
 .format-seg.seg-prime { background: #c46b5a; }
-.format-seg.seg-vista { background: #6bc4a0; }
+.format-seg.seg-vista { background: #a06bc4; }
 .format-seg.seg-3d::after {
   content: '';
   position: absolute;
@@ -1191,7 +1191,7 @@ const legendItems = [
   ['3d', '3D', threeDTotal],
 ].filter(([,,n]) => n > 0)
   .sort((a, b) => b[2] - a[2]);
-const swatchBg = { imax: '#5a7fc4', dolby: '#a06bc4', prime: '#c46b5a', vista: '#6bc4a0' };
+const swatchBg = { imax: '#5a7fc4', dolby: '#6bc4a0', prime: '#c46b5a', vista: '#a06bc4' };
 const legendHtml = `<div class="format-legend">
   ${legendItems.map(([cls, lbl, n]) => {
     const swatch = cls === '3d'
