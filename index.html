@@ -901,7 +901,7 @@ document.getElementById('date-range').innerHTML = `${fmtDate(dashYear+'-01-01')}
 // ====== STATS ======
 const totalFilms = FILMS.length;
 const ratedFilms = FILMS.filter(f => f.rating != null);
-const avgRating = ratedFilms.length ? (ratedFilms.reduce((s,f) => s+f.rating, 0) / ratedFilms.length).toFixed(1) : '—';
+const avgRating = ratedFilms.length ? (ratedFilms.reduce((s,f) => s+f.rating, 0) / ratedFilms.length).toFixed(2) : '—';
 const totalRuntime = FILMS.reduce((s,f) => s+f.runtime, 0);
 const totalHrs = Math.floor(totalRuntime/60);
 const totalMins = totalRuntime % 60;
