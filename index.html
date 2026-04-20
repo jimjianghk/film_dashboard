@@ -959,7 +959,7 @@ function renderRatingChart(filter) {
       <div class="bar-count">${c}</div>
     </div>`
   ).join('') + (allRatingCounts['unrated'] ? `<div class="bar-row">
-      <div class="bar-label rating-stars" style="font-size:0.68rem;color:var(--text-dim);letter-spacing:0;padding-left:5px">UNRATED</div>
+      <div class="bar-label rating-stars" style="font-size:0.75rem;color:var(--text-dim);letter-spacing:0;padding-left:5px">UNRATED</div>
       <div class="bar-track"><div class="bar-fill" style="width:${(unrated/maxRatingAll)*100}%;background:#555"></div></div>
       <div class="bar-count">${unrated}</div>
     </div>` : '');
