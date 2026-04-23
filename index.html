@@ -1047,20 +1047,20 @@ function renderRuntimeChart() {
   items.forEach(it => {
     if (it.type === 'gap') {
       barsHtml += `<div style="flex:2 2 0;min-width:0;position:relative;">
-        <span class="rt-label" style="position:absolute;left:0;top:0;transform:translateX(-50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim);white-space:nowrap;">${it.gapStartBin}</span>
-        <span style="position:absolute;left:calc(50% + 2px);top:0;transform:translateX(-50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim);white-space:nowrap;letter-spacing:2px;pointer-events:none;">···</span>
+        <span class="rt-label" style="position:absolute;left:0;top:0;transform:translateX(-50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim);white-space:nowrap;font-variant-numeric:tabular-nums;">${it.gapStartBin}</span>
+        <span style="position:absolute;left:calc(50% + 2px);top:0;transform:translateX(-50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim);white-space:nowrap;font-variant-numeric:tabular-nums;letter-spacing:2px;pointer-events:none;">···</span>
       </div>`;
     } else {
       const oddClass = barIdx % 2 !== 0 ? ' rt-label-odd' : '';
       barsHtml += `<div style="flex:1;position:relative;min-width:0;">
-        <span class="rt-label${oddClass}" style="position:absolute;left:0;top:0;transform:translateX(-50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim);white-space:nowrap;">${it.bin}</span>
+        <span class="rt-label${oddClass}" style="position:absolute;left:0;top:0;transform:translateX(-50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim);white-space:nowrap;font-variant-numeric:tabular-nums;">${it.bin}</span>
       </div>`;
       barIdx++;
     }
   });
   const lastBar = [...items].reverse().find(x => x.type === 'bar');
   const lastVal = lastBar ? lastBar.bin + binSize : maxBin + binSize;
-  barsHtml += `<div style="flex:0 0 0;position:relative;"><span style="position:absolute;right:0;top:0;transform:translateX(50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim);white-space:nowrap;">${lastVal}</span></div>`;
+  barsHtml += `<div style="flex:0 0 0;position:relative;"><span style="position:absolute;right:0;top:0;transform:translateX(50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim);white-space:nowrap;font-variant-numeric:tabular-nums;">${lastVal}</span></div>`;
   barsHtml += `</div>`;
   chartEl.innerHTML = barsHtml;
 }
