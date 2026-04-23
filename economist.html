@@ -22,16 +22,16 @@
   --text: #121212;
   --text-dim: #5a564d;
   --text-dimmer: #8a867a;
-  --accent: #c8321c;
-  --accent-bright: #a52816;
-  --accent-dim: rgba(200,50,28,0.12);
-  --accent-glow: rgba(200,50,28,0.18);
-  --peach: #e8a894;
+  --accent: #d8232a;
+  --accent-bright: #b21d23;
+  --accent-dim: rgba(216,35,42,0.12);
+  --accent-glow: rgba(216,35,42,0.18);
+  --peach: #efa489;
   --peach-light: #f0c4b4;
-  --blue-dark: #1e3a5f;
+  --blue-dark: #293f84;
   --blue-mid: #4a6d94;
-  --blue-light: #8aabc4;
-  --red: #c8321c;
+  --blue-light: #6290bf;
+  --red: #d8232a;
   --green: #3e7a4c;
 }
 
@@ -301,10 +301,10 @@ h1 {
 }
 .format-seg:hover { filter: brightness(1.08); }
 .format-seg.seg-standard { background: var(--accent); }
-.format-seg.seg-imax { background: var(--blue-dark); }
-.format-seg.seg-dolby { background: #3e7a4c; }
-.format-seg.seg-prime { background: #e8a894; }
-.format-seg.seg-vista { background: var(--blue-light); }
+.format-seg.seg-imax { background: var(--blue-light); }
+.format-seg.seg-dolby { background: var(--peach); }
+.format-seg.seg-prime { background: var(--blue-dark); }
+.format-seg.seg-vista { background: #7e7f71; }
 .format-seg.seg-3d::after {
   content: '';
   position: absolute;
@@ -434,8 +434,8 @@ h1 {
 .heatmap-cell.watched-1 { background: #f0c4b4; color: var(--text); }
 .heatmap-cell.watched-2 { background: #e8a894; color: var(--text); }
 .heatmap-cell.watched-3 { background: #dc5a3e; color: #fff; }
-.heatmap-cell.watched-4 { background: #c8321c; color: #fff; }
-.heatmap-cell.watched-5 { background: #8c1f10; color: #fff; }
+.heatmap-cell.watched-4 { background: #d8232a; color: #fff; }
+.heatmap-cell.watched-5 { background: #9c1d23; color: #fff; }
 .heatmap-cell.rating-colored { color: var(--text); }
 
 /* PILL TOGGLE */
@@ -764,6 +764,8 @@ footer {
 
 @media (max-width: 1000px) {
   .stats-row { grid-template-columns: repeat(3, 1fr); }
+  .stat-card { border-right: 1px solid var(--border); }
+  .stat-card:nth-child(3n) { border-right: none; }
 }
 @media (max-width: 800px) {
   h1 { font-size: 3.2rem; }
@@ -774,6 +776,8 @@ footer {
 }
 @media (max-width: 500px) {
   .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .stat-card:nth-child(2n+1) { border-right: 1px solid var(--border); }
+  .stat-card:nth-child(2n) { border-right: none; }
   header { padding: 48px 0 32px; }
   h1 { font-size: 2.7rem; }
 }
@@ -891,7 +895,7 @@ const fmtDate = ds => new Date(ds+'T12:00:00').toLocaleDateString('en-US',{month
 const dashYear = firstDate.slice(0,4);
 const now = new Date(); const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
 const endDate = todayStr > `${dashYear}-12-31` ? `${dashYear}-12-31` : todayStr;
-document.getElementById('date-range').innerHTML = `${fmtDate(dashYear+'-01-01')} — ${fmtDate(endDate)} · New York City`;
+document.getElementById('date-range').innerHTML = `${fmtDate(dashYear+'-01-01')}—${fmtDate(endDate)}&nbsp;&nbsp;·&nbsp;&nbsp;New York City`;
 
 // ====== STATS ======
 const totalFilms = FILMS.length;
@@ -1182,7 +1186,7 @@ const legendItems = [
   ['3d', '3D', threeDTotal],
 ].filter(([,,n]) => n > 0)
   .sort((a, b) => b[2] - a[2]);
-const swatchBg = { imax: '#1e3a5f', dolby: '#3e7a4c', prime: '#e8a894', vista: '#8aabc4' };
+const swatchBg = { imax: '#6290bf', dolby: '#efa489', prime: '#293f84', vista: '#7e7f71' };
 const legendHtml = `<div class="format-legend">
   ${legendItems.map(([cls, lbl, n]) => {
     const swatch = cls === '3d'
