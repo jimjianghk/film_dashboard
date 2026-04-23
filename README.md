@@ -36,7 +36,7 @@ Two-column horizontal bar chart sorted by count. Hovering a venue code reveals t
 
 Monthly heatmap grid from January 1 through the current date. Rows cap at 4 months wide regardless of viewport, wrapping to fewer per row on narrower screens. Two modes toggled by buttons:
 
-- **Number of screenings** — tile opacity increases with count (25% / 50% / 75% / 90% / 100% for 1–5+ films).
+- **Number of screenings** — tile color darkens with count across five discrete steps, from pale peach through red to deep crimson for 1–5+ films.
 - **Average rating** — tile color interpolates across the red-to-green rating scale. Days with only unrated screenings are grey.
 
 Hovering a tile shows a tooltip with film titles and color-coded rating badges.
