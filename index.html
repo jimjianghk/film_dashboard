@@ -248,7 +248,7 @@ h1 {
   vertical-align: 0px;
 }
 .bar-label.rating-stars .half-star.after-star { margin-left: 1px; }
-.bar-label.rating-stars > .half-star:only-child { margin-left: 1px; }
+.bar-label.rating-stars > .half-star:only-child { margin-left: 1.5px; }
 .bar-track {
   flex: 1;
   height: 22px;
@@ -974,7 +974,7 @@ function renderRatingChart(filter) {
       <div class="bar-count">${c}</div>
     </div>`
   ).join('') + (allRatingCounts['unrated'] ? `<div class="bar-row">
-      <div class="bar-label" style="width:108px;text-align:left;padding-left:5px;margin-right:-8px">UNRATED</div>
+      <div class="bar-label" style="width:108px;text-align:left;padding-left:5.5px;margin-right:-8px">UNRATED</div>
       <div class="bar-track"><div class="bar-fill" style="width:${(unrated/maxRatingAll)*100}%;background:#7e7f71"></div></div>
       <div class="bar-count">${unrated}</div>
     </div>` : '');
