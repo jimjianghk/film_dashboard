@@ -745,12 +745,20 @@ tbody tr:last-child td { border-bottom: none; }
 footer {
   padding: 36px 0 32px;
   margin-top: 32px;
-  border-top: 1px solid var(--text);
   text-align: left;
   color: var(--text-dim);
   font-size: 1rem;
   font-family: 'Economist Sans', sans-serif;
   letter-spacing: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+footer img.footer-favicon {
+  width: 20px;
+  height: 20px;
+  display: block;
+  flex-shrink: 0;
 }
 
 /* ANIMATIONS */
@@ -883,7 +891,7 @@ footer {
     </div>
   </div>
 
-  <footer id="footer-text"></footer>
+  <footer><img class="footer-favicon" src="favicon-192.png" alt=""><span id="footer-text"></span></footer>
 </div>
 
 <script>
