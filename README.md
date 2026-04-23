@@ -43,7 +43,7 @@ Hovering a tile shows a tooltip with film titles and color-coded rating badges.
 
 ### Series list
 
-All named screening series ranked by count. Each row shows the series name, venues (ordered by frequency), and film count. Collapsed to 5 rows by default with an expand toggle.
+All named screening series ranked by count. Each row shows the series name followed by inline venue badges (ordered by frequency) and the film count. Collapsed to 5 rows by default with an expand toggle.
 
 ### Complete log table
 
@@ -52,7 +52,7 @@ Sortable, filterable table of every screening. Nine columns: date, title, year, 
 - Click any header to sort (ascending/descending). Null ratings always sort to the bottom.
 - Dropdown filters on date (by month), year (by decade), rating (1–10 plus N/A), format, venue, and series.
 - Free-text search on title with IME composition support for CJK input.
-- Rating badges are color-coded to match the bar chart. Unrated films show a grey dash.
+- Rating badges are color-coded circles matching the bar chart palette. Unrated films show a grey dash.
 
 ## Design
 
