@@ -3,40 +3,50 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Jim’s 2026 Cinema Log</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400&family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet">
+<title>Jim's 2026 Cinema Log</title>
 <style>
+@font-face {
+  font-family: 'Economist Sans';
+  src: url('fonts/economist-sans-roman.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
 :root {
-  --bg: #0a0a0c;
-  --surface: #111115;
-  --surface2: #18181e;
-  --border: #2a2a35;
-  --text: #e8e6e1;
-  --text-dim: #8a8892;
-  --accent: #d4a44c;
-  --accent-dim: rgba(212,164,76,0.15);
-  --red: #c44d4d;
-  --green: #5aad6a;
-  --blue: #5a7fc4;
+  --bg: #e9e4d7;
+  --surface: #e9e4d7;
+  --surface2: #ded8c8;
+  --surface3: #d3ccb9;
+  --border: #c9c3b2;
+  --border-strong: #b7b09c;
+  --text: #121212;
+  --text-dim: #5a564d;
+  --text-dimmer: #8a867a;
+  --accent: #d8232a;
+  --accent-bright: #b21d23;
+  --accent-dim: rgba(216,35,42,0.12);
+  --accent-glow: rgba(216,35,42,0.18);
+  --peach: #efa489;
+  --peach-light: #f0c4b4;
+  --blue-dark: #293f84;
+  --blue-mid: #4a6d94;
+  --blue-light: #6290bf;
+  --red: #d8232a;
+  --green: #3e7a4c;
 }
 
 * { margin:0; padding:0; box-sizing:border-box; }
 
+html { scroll-behavior: smooth; }
+
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'DM Sans', sans-serif;
-  line-height: 1.6;
+  font-family: 'Economist Sans', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+  line-height: 1.5;
   min-height: 100vh;
-}
-
-/* Grain overlay */
-body::before {
-  content:'';
-  position:fixed; inset:0; z-index:9999;
-  pointer-events:none;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-  opacity: 0.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .container {
@@ -47,119 +57,106 @@ body::before {
 
 /* HEADER */
 header {
-  padding: 40px 0 56px;
-  border-bottom: 1px solid var(--border);
+  padding: 56px 0 32px;
   position: relative;
-  overflow: hidden;
-  text-align: center;
+  text-align: left;
 }
-header::after {
-  content:'';
-  position:absolute; bottom:0; left:0; right:0; height:1px;
-  background: linear-gradient(90deg, transparent, var(--accent), transparent);
-}
-.header-label, .header-date {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.72rem;
-  color: var(--text-dim);
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-.header-label {
-  margin-bottom: 0;
-}
-h1 {
-  font-family: 'Playfair Display', serif;
-  font-weight: 900;
-  font-size: 5.5rem;
-  letter-spacing: -0.02em;
-  line-height: 1;
-  background: linear-gradient(135deg, var(--text) 0%, var(--accent) 60%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+header::before {
+  content: '';
+  display: block;
+  width: 48px;
+  height: 8px;
+  background: var(--accent);
   margin-bottom: 20px;
 }
-.header-divider {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-.header-divider::before, .header-divider::after {
+.header-label {
   display: none;
 }
-.header-diamond {
-  width: 6px;
-  height: 6px;
-  background: var(--accent);
-  transform: rotate(45deg);
-  flex-shrink: 0;
+h1 {
+  font-family: 'Economist Sans', sans-serif;
+  font-weight: 800;
+  font-size: 3.5rem;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+.header-divider { display: none; }
+.header-date {
+  font-family: 'Economist Sans', sans-serif;
+  font-size: 1.15rem;
+  color: var(--text);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 /* STAT CARDS */
 .stats-row {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 1px;
-  background: var(--border);
-  margin: 48px 0;
-  border: 1px solid var(--border);
+  gap: 0;
+  margin: 32px 0 48px;
+  border-top: 1px solid var(--border-strong);
+  border-bottom: 1px solid var(--border-strong);
 }
 .stat-card {
-  background: var(--surface);
-  padding: 28px 24px;
-  text-align: center;
-  transition: background 0.3s;
+  padding: 18px 20px;
+  text-align: left;
+  border-right: 1px solid var(--border);
+  transition: background 0.2s;
+  position: relative;
+  background: transparent;
 }
-.stat-card:hover { background: var(--surface2); }
+.stat-card:last-child { border-right: none; }
+.stat-card:hover { background: rgba(0,0,0,0.02); }
 .stat-val {
-  font-family: 'Playfair Display', serif;
-  font-size: 2.6rem;
+  font-family: 'Economist Sans', sans-serif;
+  font-size: 2.1rem;
   font-weight: 700;
   color: var(--accent);
+  letter-spacing: -0.02em;
   line-height: 1.1;
+  font-variant-numeric: tabular-nums;
 }
 .stat-label {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
+  font-size: 1.05rem;
   color: var(--text-dim);
-  margin-top: 8px;
+  margin-top: 4px;
+  letter-spacing: 0;
+  font-weight: 400;
+  text-transform: none;
 }
 
 /* SECTIONS */
-.section {
-  margin: 56px 0;
-}
+.section { margin: 48px 0; }
 .section-title {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Economist Sans', sans-serif;
   font-size: 1.5rem;
   font-weight: 700;
-  margin-bottom: 24px;
+  letter-spacing: -0.01em;
+  margin-bottom: 18px;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 0;
+  color: var(--text);
+  padding-top: 8px;
+  border-top: 1px solid var(--text);
 }
-.section-title::before {
-  content:'';
-  width: 3px; height: 24px;
-  background: var(--accent);
-  flex-shrink: 0;
-}
+.section-title::before { display: none; }
 
 /* CHARTS GRID */
 .charts-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 24px;
+  gap: 28px;
 }
 .chart-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  padding: 28px;
-  border-radius: 2px;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--text);
+  padding: 10px 0 8px;
+  border-radius: 0;
   flex: 1 1 500px;
   min-width: 0;
 }
@@ -167,11 +164,12 @@ h1 {
 .chart-label { white-space: nowrap; }
 .switch-label-text { white-space: nowrap; }
 .chart-label {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
-  color: var(--text-dim);
-  margin-bottom: 20px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 18px;
+  letter-spacing: -0.005em;
+  text-transform: none;
 }
 
 /* BAR CHARTS */
@@ -179,87 +177,111 @@ h1 {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   cursor: default;
+  position: relative;
 }
-.bar-row:hover .bar-fill { filter: brightness(1.2); }
-.hist-bar { transition: filter 0.15s; cursor: default; opacity: 0.85; }
+#rating-chart .bar-row::before,
+#decade-chart .bar-row::before,
+#venue-chart .bar-row::before,
+.format-row::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 1.5px;
+  background: var(--text);
+  z-index: 1;
+}
+.format-row::before { top: -4px; bottom: -4px; }
+#rating-chart .bar-row::before { left: 112px; }
+#decade-chart .bar-row::before,
+#venue-chart .bar-row::before,
+.format-row::before { left: 60px; }
+.bar-row:hover .bar-fill { filter: brightness(1.15); }
+.hist-bar { transition: filter 0.15s; cursor: default; }
 .hist-bar:hover { filter: brightness(1.2); }
 .bar-label {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
-  color: var(--text-dim);
-  width: 40px;
+  font-family: 'Economist Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text);
+  width: 48px;
   text-align: right;
   flex-shrink: 0;
   position: relative;
+  font-variant-numeric: tabular-nums;
 }
 .venue-tip {
   display: none;
   position: absolute;
-  left: -5px;
+  left: -10px;
   top: 50%;
   transform: translateY(-50%);
-  background: var(--bg);
-  border: 1px solid var(--accent);
+  background: #fffdf5;
+  border: 1px solid var(--text);
   color: var(--text);
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 0.75rem;
+  padding: 3px 8px;
+  border-radius: 0;
+  font-size: 1rem;
   white-space: nowrap;
   z-index: 20;
   pointer-events: none;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.15);
 }
 .bar-label:hover .venue-tip { display: block; }
 .bar-label.rating-stars {
-  width: 72px;
-  font-size: 1.1rem;
+  width: 108px;
+  font-size: 1rem;
+  font-weight: 500;
   line-height: 22px;
   height: 22px;
-  letter-spacing: -0.5px;
+  letter-spacing: 0;
   text-align: left;
   padding-left: 4px;
   margin-right: -8px;
   overflow: hidden;
+  color: var(--text);
 }
 .bar-label.rating-stars .half-star {
-  font-size: 0.8rem;
+  font-size: 1rem;
   vertical-align: 0px;
 }
-.bar-label.rating-stars .half-star.after-star {
-  margin-left: 2px;
-}
+.bar-label.rating-stars .half-star.after-star { margin-left: 1px; }
+.bar-label.rating-stars > .half-star:only-child { margin-left: 1px; }
 .bar-track {
   flex: 1;
   height: 22px;
-  background: var(--surface2);
-  border-radius: 1px;
+  background: transparent;
+  border-radius: 0;
   overflow: hidden;
   position: relative;
 }
 .bar-fill {
   height: 100%;
-  border-radius: 1px;
+  border-radius: 0;
   transition: width 0.8s cubic-bezier(0.22,1,0.36,1);
   position: relative;
 }
 .bar-count {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.7rem;
+  font-family: 'Economist Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
   color: var(--text);
   width: 30px;
   flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
 }
 
-/* RATING BAR COLORS — red → orange → yellow → green */
-.rating-1 { background: #d04040; } .rating-2 { background: #d05038; }
-.rating-3 { background: #cc6830; } .rating-4 { background: #c48028; }
-.rating-5 { background: #b89820; } .rating-6 { background: #b0b014; }
-.rating-7 { background: #94b428; } .rating-8 { background: #60b830; }
-.rating-9 { background: #38b840; } .rating-10 { background: #20a848; }
+/* RATING BAR COLORS — red → yellow → green (tuned for cream bg) */
+.rating-1 { background: #d64848; } .rating-2 { background: #de5a30; }
+.rating-3 { background: #e8782a; } .rating-4 { background: #ee9820; }
+.rating-5 { background: #eeb820; } .rating-6 { background: #e8cc1e; }
+.rating-7 { background: #c6d024; } .rating-8 { background: #8ec434; }
+.rating-9 { background: #58ac40; } .rating-10 { background: #2e9848; }
 
-/* VENUE COLORS */
-.venue-bar { background: var(--accent); opacity: 0.85; }
+/* VENUE / DECADE BARS — signature red */
+.venue-bar { background: var(--accent); }
 .venue-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -267,62 +289,23 @@ h1 {
 }
 .venue-col { display: flex; flex-direction: column; }
 
-/* DECADE SCATTER */
-.decade-grid {
-  display: flex;
-  gap: 2px;
-  align-items: flex-end;
-  height: 120px;
-  padding-top: 12px;
-}
-.decade-col {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  height: 100%;
-  position: relative;
-}
-.decade-bar {
-  width: 100%;
-  background: var(--accent);
-  border-radius: 1px 1px 0 0;
-  transition: height 0.8s cubic-bezier(0.22,1,0.36,1);
-  min-width: 8px;
-}
-.decade-label {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.6rem;
-  color: var(--text-dim);
-  margin-top: 6px;
-  transform: rotate(-45deg);
-  transform-origin: top center;
-  white-space: nowrap;
-}
-.decade-count {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.6rem;
-  color: var(--accent);
-  margin-bottom: 4px;
-}
-
 /* FORMAT STACKED BARS */
 .format-stacked { display: flex; flex-direction: column; gap: 8px; }
-.format-row { display: flex; align-items: center; gap: 12px; }
+.format-row { display: flex; align-items: center; gap: 12px; position: relative; }
 .format-row-label {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
-  color: var(--text-dim);
-  width: 40px;
+  font-family: 'Economist Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text);
+  width: 48px;
   text-align: right;
   flex-shrink: 0;
 }
 .format-bar-outer { flex: 1; height: 22px; display: flex; align-items: center; }
 .format-bar-track {
   height: 100%;
-  background: var(--surface2);
-  border-radius: 1px;
+  background: transparent;
+  border-radius: 0;
   display: flex;
   overflow: hidden;
   transition: width 0.8s cubic-bezier(0.22,1,0.36,1);
@@ -333,14 +316,13 @@ h1 {
   transition: filter 0.15s;
   min-width: 3px;
   position: relative;
-  opacity: 0.85;
 }
-.format-seg:hover { filter: brightness(1.2); opacity: 1; }
+.format-seg:hover { filter: brightness(1.08); }
 .format-seg.seg-standard { background: var(--accent); }
-.format-seg.seg-imax { background: #5a7fc4; }
-.format-seg.seg-dolby { background: #6bc4a0; }
-.format-seg.seg-prime { background: #c46b5a; }
-.format-seg.seg-vista { background: #a06bc4; }
+.format-seg.seg-imax { background: var(--blue-light); }
+.format-seg.seg-dolby { background: var(--peach); }
+.format-seg.seg-prime { background: var(--blue-dark); }
+.format-seg.seg-vista { background: #7e7f71; }
 .format-seg.seg-3d::after {
   content: '';
   position: absolute;
@@ -351,28 +333,31 @@ h1 {
   pointer-events: none;
 }
 .format-row-total {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.7rem;
+  font-family: 'Economist Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
   color: var(--text);
-  width: 30px;
+  width: 36px;
   flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
 }
 .format-legend {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 16px;
-  margin: 20px 12px 0 12px;
-  padding-top: 14px;
+  gap: 6px 18px;
+  margin: 16px 12px 0 0;
+  padding-top: 10px;
+  padding-left: 7px;
   border-top: 1px solid var(--border);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.68rem;
-  color: var(--text-dim);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: 1rem;
+  color: var(--text);
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 400;
 }
 .legend-chip { display: inline-flex; align-items: center; gap: 6px; }
-.legend-swatch { width: 14px; height: 10px; border-radius: 1px; display: inline-block; flex-shrink: 0; position: relative; overflow: hidden; opacity: 0.85; }
+.legend-swatch { width: 12px; height: 12px; display: inline-block; flex-shrink: 0; position: relative; overflow: hidden; }
 .legend-swatch.swatch-3d { background: #5a5a65; }
 .legend-swatch.swatch-3d::after {
   content: '';
@@ -380,31 +365,30 @@ h1 {
   inset: 0;
   background: repeating-linear-gradient(-45deg, transparent 0 2px, rgba(255,255,255,0.55) 2px 4px);
 }
-.legend-count { color: var(--text); margin-left: 2px; }
+.legend-count { color: var(--text); margin-left: 2px; font-weight: 600; }
 
 .seg-tooltip {
   position: fixed;
   display: none;
-  background: var(--bg);
-  border: 1px solid var(--accent);
+  background: #fffdf5;
+  border: 1px solid var(--text);
   color: var(--text);
-  padding: 3px 10px;
-  border-radius: 4px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
+  padding: 4px 10px;
+  border-radius: 0;
+  font-family: 'Economist Sans', sans-serif;
+  font-weight: 500;
+  font-size: 1rem;
   white-space: nowrap;
   z-index: 10000;
   pointer-events: none;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.15);
 }
 
 /* CALENDAR HEATMAP */
-.heatmap-wrap {
-  overflow-x: auto;
-}
+.heatmap-wrap { overflow-x: auto; }
 .calendars-row {
   display: grid;
-  gap: 32px;
+  gap: 28px;
   justify-content: center;
   grid-template-columns: repeat(4, minmax(0, 280px));
 }
@@ -417,16 +401,15 @@ h1 {
 @media (max-width: 599px) {
   .calendars-row { grid-template-columns: minmax(0, 280px); }
 }
-.heatmap-month {
-  min-width: 0;
-}
+.heatmap-month { min-width: 0; }
 .heatmap-month-label {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.7rem;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  font-family: 'Economist Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
   margin-bottom: 8px;
+  letter-spacing: 0;
+  text-transform: none;
 }
 .cal-grid {
   display: grid;
@@ -435,352 +418,386 @@ h1 {
   overflow: hidden;
 }
 .cal-dayname {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.62rem;
+  font-family: 'Economist Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
   color: var(--text-dim);
   text-align: center;
   padding-bottom: 4px;
   text-transform: uppercase;
-  letter-spacing: 0;
+  letter-spacing: 0.04em;
   overflow: hidden;
 }
 .heatmap-cell {
   aspect-ratio: 1;
-  background: var(--surface2);
-  border-radius: 2px;
+  background: #ded8c8;
+  border-radius: 0;
   cursor: pointer;
-  transition: border-color 0.2s, background 0.2s;
+  transition: outline-color 0.15s, background 0.2s;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.65rem;
+  font-family: 'Economist Sans', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 500;
   color: var(--text-dim);
   overflow: hidden;
-  border: 1px solid transparent;
+  outline: 1px solid transparent;
+  outline-offset: -1px;
 }
-.heatmap-cell:hover { border-color: var(--accent); z-index: 2; }
-.heatmap-cell:not(.watched-1):not(.watched-2):not(.watched-3):not(.watched-4):not(.watched-5):not(.rating-colored):hover { border-color: var(--text-dim); }
+.heatmap-cell:hover { outline-color: var(--text); z-index: 2; }
 .heatmap-cell.empty { background: transparent; pointer-events: none; }
-.heatmap-cell.future { background: transparent; border: 1px solid var(--border); opacity: 0.3; pointer-events: none; }
-.heatmap-cell.watched-1 { background: rgba(212,164,76,0.25); color: var(--text); }
-.heatmap-cell.watched-2 { background: rgba(212,164,76,0.5); color: var(--text); }
-.heatmap-cell.watched-3 { background: rgba(212,164,76,0.75); color: var(--text); }
-.heatmap-cell.watched-4 { background: rgba(212,164,76,0.9); color: var(--text); }
-.heatmap-cell.watched-5 { background: rgba(212,164,76,1); color: var(--text); }
-.heatmap-cell.rating-colored { color: #1a1a24; }
+.heatmap-cell.future { background: transparent; outline: 1px solid var(--border); opacity: 0.4; pointer-events: none; }
+.heatmap-cell.watched-1 { background: #f0c4b4; color: var(--text); }
+.heatmap-cell.watched-2 { background: #e8a894; color: var(--text); }
+.heatmap-cell.watched-3 { background: #dc5a3e; color: #fff; }
+.heatmap-cell.watched-4 { background: #d8232a; color: #fff; }
+.heatmap-cell.watched-5 { background: #9c1d23; color: #fff; }
+.heatmap-cell.rating-colored { color: var(--text); }
 
-/* CALENDAR TOGGLE */
-.cal-toggle-wrap { display: flex; gap: 0; }
+/* PILL TOGGLE */
+.cal-toggle-wrap {
+  display: inline-flex;
+  gap: 0;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  border: 1px solid var(--text);
+}
 .cal-toggle {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.65rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text-dim);
+  font-family: 'Economist Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  border: none;
+  background: transparent;
+  color: var(--text);
   padding: 4px 12px;
   cursor: pointer;
-  transition: border-color 0.2s, background 0.2s, color 0.2s;
+  border-radius: 0;
+  transition: background 0.2s, color 0.2s;
+  border-right: 1px solid var(--text);
 }
-.cal-toggle:first-child { border-radius: 3px 0 0 3px; }
-.cal-toggle:not(:first-child) { margin-left: -1px; }
-.cal-toggle:last-child { border-radius: 0 3px 3px 0; }
-.cal-toggle.active { background: var(--accent-dim); border-color: var(--accent); color: var(--text); z-index: 1; position: relative; }
-.cal-toggle:hover:not(.active) { border-color: var(--accent); z-index: 1; position: relative; }
+.cal-toggle:last-child { border-right: none; }
+.cal-toggle.active {
+  background: var(--text);
+  color: var(--bg);
+}
+.cal-toggle:hover:not(.active) { background: var(--surface3); }
 
-/* RATING HEADER — responsive wrap */
+/* RESPONSIVE HEADERS */
 .rating-header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .rating-dedup-toggle { margin-left: auto; }
 @media (max-width: 499px) {
   .rating-filter-toggle { order: 3; }
 }
-
-/* RUNTIME HISTOGRAM — skip every other label on narrow screens */
 @media (max-width: 499px) {
   .rt-label-odd { display: none; }
 }
-
-/* CALENDAR HEADER — responsive wrap */
 .calendar-header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 @media (min-width: 500px) {
   .calendar-header { flex-wrap: nowrap; }
 }
 
-/* TOOLTIP RATING BADGE (smaller for tooltip) */
+/* TOOLTIP */
 .tt-rating-badge {
   display: inline-block;
-  width: 20px; height: 20px;
-  line-height: 20px;
+  width: 26px; height: 22px;
+  line-height: 22px;
   text-align: center;
-  border-radius: 50%;
-  font-family: 'JetBrains Mono', monospace;
-  font-weight: 600;
-  font-size: 0.6rem;
+  border-radius: 0;
+  font-family: 'Economist Sans', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
   margin-left: 6px;
   vertical-align: middle;
+  color: var(--text);
 }
-
-/* TOOLTIP */
 .tooltip {
   position: fixed;
-  background: #1e1e28;
-  border: 1px solid var(--accent);
-  padding: 12px 16px;
-  border-radius: 3px;
-  font-size: 0.78rem;
+  background: #fffdf5;
+  border: 1px solid var(--text);
+  padding: 10px 14px;
+  border-radius: 0;
+  font-size: 1rem;
   max-width: none;
   white-space: nowrap;
   pointer-events: none;
   z-index: 10000;
   display: none;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.15);
+  color: var(--text);
 }
 .tooltip-title {
-  font-family: 'Playfair Display', 'Noto Serif SC', 'Songti SC', 'STSong', serif;
-  font-weight: 700;
-  font-size: 0.95rem;
+  font-family: 'Economist Sans', sans-serif;
+  font-weight: 600;
+  font-size: 1.05rem;
   margin-bottom: 4px;
+  letter-spacing: 0;
+  color: var(--text);
 }
 .tooltip-meta {
   color: var(--text-dim);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.68rem;
+  font-family: 'Economist Sans', sans-serif;
+  font-size: 1rem;
 }
 
-/* SERIES TABLE */
-.series-list {
-  display: grid;
-  gap: 6px;
-}
+/* SERIES */
+.series-list { display: grid; gap: 4px; }
 .series-list.collapsed .series-row:nth-child(n+6) { display: none; }
-.series-list.expanded { max-height: 384px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border) var(--surface); }
+.series-list.expanded { max-height: 384px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
 .series-row {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 10px 16px;
-  background: var(--surface);
-  border-left: 2px solid transparent;
-  transition: border-color 0.3s, background 0.3s;
+  padding: 10px 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  transition: background 0.2s;
   cursor: default;
 }
-.series-row:hover { border-left-color: var(--accent); background: var(--surface2); }
-.series-name {
-  flex: 1;
-  font-size: 0.85rem;
-}
+.series-row:hover { background: rgba(0,0,0,0.02); }
+.series-name { flex: 1; font-size: 1.05rem; font-weight: 500; color: var(--text); }
 .series-count {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
-  color: var(--accent);
-  background: var(--accent-dim);
-  padding: 3px 10px;
-  border-radius: 2px;
+  font-family: 'Economist Sans', sans-serif;
+  font-size: 1rem;
+  color: #fff;
+  background: var(--accent);
+  padding: 2px 8px;
+  border-radius: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 .series-venue {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.68rem;
+  font-family: 'Economist Sans', sans-serif;
+  font-size: 1rem;
   color: var(--text-dim);
   white-space: nowrap;
   text-align: right;
 }
 .series-toggle {
-  margin-top: 12px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--accent);
-  background: none;
-  border: 1px solid var(--border);
-  padding: 8px 20px;
+  margin-top: 14px;
+  font-family: 'Economist Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--text);
+  padding: 6px 16px;
+  border-radius: 0;
   cursor: pointer;
-  transition: border-color 0.2s, background 0.2s;
+  transition: background 0.2s, color 0.2s;
 }
-.series-toggle:hover { border-color: var(--accent); background: var(--accent-dim); }
+.series-toggle:hover { background: var(--text); color: var(--bg); }
 
 /* FILM TABLE */
 .film-table-wrap {
   overflow-x: auto;
-  max-height: 560px;
+  max-height: 640px;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: var(--border) var(--surface);
+  scrollbar-color: var(--border-strong) transparent;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--text);
+  border-radius: 0;
 }
 table {
   width: 100%;
   min-width: 950px;
   border-collapse: collapse;
   table-layout: fixed;
-  font-size: 0.82rem;
+  font-size: 1rem;
 }
 thead { position: sticky; top: 0; z-index: 5; }
 th {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--text-dim);
+  font-family: 'Economist Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text);
   text-align: left;
-  padding: 10px 14px 4px;
-  background: var(--surface);
+  padding: 10px 14px 6px;
+  background: var(--bg);
   border-bottom: none;
   cursor: pointer;
   white-space: nowrap;
   user-select: none;
+  transition: color 0.2s;
 }
 th:hover { color: var(--accent); }
-th .sort-arrow { margin-left: 4px; font-size: 0.55rem; }
+th .sort-arrow { margin-left: 4px; font-size: 1rem; color: var(--accent); }
 td {
-  padding: 10px 14px;
+  padding: 9px 14px;
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
 }
-tr { transition: background 0.2s; }
-tbody tr:hover { background: var(--surface2); }
+tbody tr { transition: background 0.15s; }
+tbody tr:hover { background: rgba(0,0,0,0.03); }
+tbody tr:last-child td { border-bottom: none; }
 .title-cell {
-  font-family: 'Playfair Display', 'Noto Serif SC', 'Songti SC', 'STSong', serif;
+  font-family: 'Economist Sans', sans-serif;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 1.05rem;
+  color: var(--text);
+  letter-spacing: 0;
 }
 .rating-badge {
   display: inline-block;
-  width: 28px; height: 28px;
-  line-height: 28px;
+  width: 32px; height: 24px;
+  line-height: 24px;
   text-align: center;
-  border-radius: 50%;
-  font-family: 'JetBrains Mono', monospace;
-  font-weight: 600;
-  font-size: 0.75rem;
+  border-radius: 0;
+  font-family: 'Economist Sans', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
 }
-.rating-badge.rating-1 { background: rgba(208,64,64,0.25); color: #e86060; }
-.rating-badge.rating-2 { background: rgba(208,80,56,0.25); color: #e87058; }
-.rating-badge.rating-3 { background: rgba(204,104,48,0.25); color: #e48840; }
-.rating-badge.rating-4 { background: rgba(196,128,40,0.25); color: #dca438; }
-.rating-badge.rating-5 { background: rgba(184,152,32,0.25); color: #d0c038; }
-.rating-badge.rating-6 { background: rgba(176,176,20,0.25); color: #d0d030; }
-.rating-badge.rating-7 { background: rgba(148,180,40,0.25); color: #b8d848; }
-.rating-badge.rating-8 { background: rgba(96,184,48,0.25); color: #80d850; }
-.rating-badge.rating-9 { background: rgba(56,184,64,0.25); color: #58e060; }
-.rating-badge.rating-10 { background: rgba(32,168,72,0.25); color: #38d868; }
-.rating-badge.rating-unrated { background: rgba(128,128,128,0.25); color: #aaa; }
+.rating-badge.rating-1 { background: rgba(214,72,72,0.75); }
+.rating-badge.rating-2 { background: rgba(222,90,48,0.75); }
+.rating-badge.rating-3 { background: rgba(232,120,42,0.75); }
+.rating-badge.rating-4 { background: rgba(238,152,32,0.75); }
+.rating-badge.rating-5 { background: rgba(238,184,32,0.75); }
+.rating-badge.rating-6 { background: rgba(232,204,30,0.75); }
+.rating-badge.rating-7 { background: rgba(198,208,36,0.75); }
+.rating-badge.rating-8 { background: rgba(142,196,52,0.75); }
+.rating-badge.rating-9 { background: rgba(88,172,64,0.75); }
+.rating-badge.rating-10 { background: rgba(46,152,72,0.75); }
+.rating-badge.rating-unrated { background: #c9c3b2; color: var(--text-dim); }
 .rewatch-badge {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.6rem;
-  background: var(--accent-dim);
-  color: var(--accent);
-  padding: 2px 6px;
-  border-radius: 2px;
+  font-family: 'Economist Sans', sans-serif;
+  font-size: 0.8rem;
+  background: var(--accent);
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: 0;
   margin-left: 6px;
+  font-weight: 600;
 }
 .format-tag {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.78rem;
+  font-family: 'Economist Sans', sans-serif;
+  font-size: 1rem;
   color: var(--text-dim);
 }
-.format-tag.special { color: var(--accent); }
+.format-tag.special { color: var(--accent); font-weight: 600; }
 .price-free {
-  color: var(--green);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
+  color: #3e7a4c;
+  font-family: 'Economist Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
 }
 .price-paid {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
+  font-family: 'Economist Sans', sans-serif;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
 }
 
-/* HEADER FILTERS */
+/* FILTER ROW */
 .filter-row-tr td {
-  padding: 2px 14px 6px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--accent);
+  padding: 2px 14px 8px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--text);
 }
 .filter-row-tr select.col-filter {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.62rem;
-  background: var(--surface2);
+  font-family: 'Economist Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  background: transparent;
   color: var(--text-dim);
-  border: 1px solid var(--border);
-  padding: 3px 16px 3px 6px;
-  border-radius: 2px;
+  border: 1px solid var(--border-strong);
+  padding: 3px 18px 3px 6px;
+  border-radius: 0;
   cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  text-transform: none;
+  letter-spacing: 0;
   -webkit-appearance: none;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%238a8892'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%235a564d'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 5px center;
-  transition: border-color 0.2s;
+  background-position: right 6px center;
+  transition: border-color 0.2s, color 0.2s;
 }
 .filter-row-tr td { overflow: hidden; }
 .filter-row-tr select.col-filter { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .filter-row-tr select.col-filter:focus { border-color: var(--accent); outline: none; }
 .filter-row-tr select.col-filter.active { border-color: var(--accent); color: var(--accent); }
 .filter-row-tr select.col-filter.no-uppercase { text-transform: none; }
-.switch-toggle { position: relative; display: inline-block; width: 24px; height: 14px; flex-shrink: 0; }
+
+.switch-toggle { position: relative; display: inline-block; width: 28px; height: 16px; flex-shrink: 0; }
 .switch-toggle input { opacity: 0; width: 0; height: 0; }
-.switch-slider { position: absolute; cursor: pointer; inset: 0; background: var(--surface2); border: 1px solid #4a4a55; border-radius: 3px; transition: background 0.2s, border-color 0.2s; }
-.switch-slider::before { content: ''; position: absolute; height: 8px; width: 9px; left: 2px; bottom: 2px; background: #6a6a75; border-radius: 2px; transition: transform 0.2s, background 0.2s; }
-.switch-toggle input:checked + .switch-slider { background: var(--accent-dim); border-color: var(--accent); }
-.switch-toggle input:checked + .switch-slider::before { transform: translateX(9px); background: var(--accent); }
-.switch-label-text { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text-dim); letter-spacing: 0.06em; text-transform: uppercase; }
+.switch-slider { position: absolute; cursor: pointer; inset: 0; background: var(--border-strong); border-radius: 0; transition: background 0.2s; }
+.switch-slider::before { content: ''; position: absolute; height: 12px; width: 12px; left: 2px; top: 2px; background: var(--bg); transition: transform 0.2s, background 0.2s; }
+.switch-toggle input:checked + .switch-slider { background: var(--accent); }
+.switch-toggle input:checked + .switch-slider::before { transform: translateX(12px); background: var(--bg); }
+.switch-label-text { font-family: 'Economist Sans', sans-serif; font-size: 1rem; color: var(--text); letter-spacing: 0; text-transform: none; font-weight: 400; }
 
 .filter-row-tr input.col-search {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.62rem;
-  background: var(--surface2);
+  font-family: 'Economist Sans', sans-serif;
+  font-size: 1rem;
+  background: transparent;
   color: var(--text);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   padding: 3px 6px;
-  border-radius: 2px;
+  border-radius: 0;
   width: 100%;
   box-sizing: border-box;
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
   transition: border-color 0.2s;
 }
-.filter-row-tr input.col-search::placeholder { color: var(--text-dim); opacity: 0.6; }
+.filter-row-tr input.col-search::placeholder { color: var(--text-dimmer); }
 .filter-row-tr input.col-search:focus { border-color: var(--accent); outline: none; }
 .filter-row-tr input.col-search.active { border-color: var(--accent); }
 
 footer {
-  padding: 48px 0;
-  border-top: 1px solid var(--border);
-  text-align: center;
+  padding: 36px 0 32px;
+  margin-top: 32px;
+  border-top: 1px solid var(--text);
+  text-align: left;
   color: var(--text-dim);
-  font-size: 0.72rem;
-  font-family: 'JetBrains Mono', monospace;
-  letter-spacing: 0.08em;
+  font-size: 1rem;
+  font-family: 'Economist Sans', sans-serif;
+  letter-spacing: 0;
+  font-style: italic;
 }
 
 /* ANIMATIONS */
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(16px); }
+  from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.animate { animation: fadeUp 0.6s ease forwards; opacity: 0; }
-.delay-1 { animation-delay: 0.1s; }
-.delay-2 { animation-delay: 0.2s; }
-.delay-3 { animation-delay: 0.3s; }
-.delay-4 { animation-delay: 0.4s; }
-.delay-5 { animation-delay: 0.5s; }
+.animate { animation: fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) forwards; opacity: 0; }
+.delay-1 { animation-delay: 0.05s; }
+.delay-2 { animation-delay: 0.15s; }
+.delay-3 { animation-delay: 0.25s; }
+.delay-4 { animation-delay: 0.35s; }
+.delay-5 { animation-delay: 0.45s; }
 
 @media (max-width: 1000px) {
   .stats-row { grid-template-columns: repeat(3, 1fr); }
+  .stat-card { border-right: 1px solid var(--border); }
+  .stat-card:nth-child(3n) { border-right: none; }
 }
 @media (max-width: 800px) {
-  h1 { font-size: 2.8rem; }
+  h1 { font-size: 3.2rem; }
   .chart-card { flex-basis: 100%; }
   .container { padding: 0 16px; }
-  .stat-val { font-size: 2rem; }
-  .format-grid { grid-template-columns: repeat(3, 1fr); }
+  .stat-val { font-size: 1.7rem; }
   .venue-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 500px) {
   .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .stat-card:nth-child(2n+1) { border-right: 1px solid var(--border); }
+  .stat-card:nth-child(2n) { border-right: none; }
+  header { padding: 48px 0 32px; }
+  h1 { font-size: 2.7rem; }
 }
 </style>
 </head>
@@ -811,24 +828,24 @@ footer {
           <button class="cal-toggle" id="rat-toggle-new">New Releases</button>
           <button class="cal-toggle" id="rat-toggle-rep">Repertory</button>
         </span>
-        <span class="rating-dedup-toggle" style="display:flex;align-items:center;gap:10px;">
+        <span class="rating-dedup-toggle" style="display:flex;align-items:center;gap:6px;">
           <label class="switch-toggle" title="De-duplicate rewatches">
             <input type="checkbox" id="rating-dedup">
             <span class="switch-slider"></span>
           </label>
-          <span class="switch-label-text">Unique titles</span>
+          <span class="switch-label-text">Unique Titles</span>
         </span>
       </div>
       <div id="rating-chart"></div>
     </div>
     <div class="chart-card animate delay-2">
-      <div class="chart-label" style="display:flex;align-items:center;justify-content:space-between;min-height:23.5px;">Production Decade
-        <span style="display:flex;align-items:center;gap:10px;">
+      <div class="chart-label" style="display:flex;align-items:center;justify-content:space-between;min-height:29px;">Production Decade
+        <span style="display:flex;align-items:center;gap:6px;">
           <label class="switch-toggle" title="De-duplicate rewatches">
             <input type="checkbox" id="decade-dedup">
             <span class="switch-slider"></span>
           </label>
-          <span class="switch-label-text">Unique titles</span>
+          <span class="switch-label-text">Unique Titles</span>
         </span>
       </div>
       <div id="decade-chart"></div>
@@ -839,15 +856,15 @@ footer {
     </div>
     <div class="chart-card full animate delay-3">
       <div class="chart-label" style="display:flex;align-items:center;justify-content:space-between;">Runtime Distribution
-        <span style="display:flex;align-items:center;gap:10px;">
+        <span style="display:flex;align-items:center;gap:6px;">
           <label class="switch-toggle" title="De-duplicate rewatches">
             <input type="checkbox" id="runtime-dedup">
             <span class="switch-slider"></span>
           </label>
-          <span class="switch-label-text" id="runtime-dedup-label">Unique titles</span>
+          <span class="switch-label-text" id="runtime-dedup-label">Unique Titles</span>
         </span>
       </div>
-      <div id="runtime-chart" style="display:flex;align-items:flex-end;gap:2px;height:160px;padding-top:12px;max-width:750px;width:100%;margin:0 auto;"></div>
+      <div id="runtime-chart" style="display:flex;align-items:flex-end;gap:2px;height:160px;padding-top:12px;max-width:825px;width:100%;margin:0 auto;"></div>
     </div>
     <div class="chart-card full animate delay-3">
       <div class="chart-label">Screening Venue</div>
@@ -868,7 +885,7 @@ footer {
   <div class="section animate delay-4">
     <div class="section-title">Festivals &amp; Series</div>
     <div id="series-list" class="series-list collapsed"></div>
-    <button class="series-toggle" id="series-toggle">Show all series</button>
+    <button class="series-toggle" id="series-toggle">Show All Series</button>
   </div>
 
   <div class="section animate delay-5">
@@ -896,15 +913,13 @@ const fmtDate = ds => new Date(ds+'T12:00:00').toLocaleDateString('en-US',{month
 const dashYear = firstDate.slice(0,4);
 const now = new Date(); const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
 const endDate = todayStr > `${dashYear}-12-31` ? `${dashYear}-12-31` : todayStr;
-document.getElementById('date-range').innerHTML = `${fmtDate(dashYear+'-01-01')} — ${fmtDate(endDate)} &bull; New York City`;
+document.getElementById('date-range').innerHTML = `${fmtDate(dashYear+'-01-01')}—${fmtDate(endDate)}&nbsp;&nbsp;·&nbsp;&nbsp;New York City`;
 
 // ====== STATS ======
 const totalFilms = FILMS.length;
 const ratedFilms = FILMS.filter(f => f.rating != null);
 const avgRating = ratedFilms.length ? (ratedFilms.reduce((s,f) => s+f.rating, 0) / ratedFilms.length).toFixed(2) : '—';
 const totalRuntime = FILMS.reduce((s,f) => s+f.runtime, 0);
-const totalHrs = Math.floor(totalRuntime/60);
-const totalMins = totalRuntime % 60;
 const totalSpent = FILMS.reduce((s,f) => s+f.price, 0);
 const rewatches = FILMS.filter(f => f.rewatch).length;
 const uniqueVenues = new Set(FILMS.map(f => f.venue)).size;
@@ -959,8 +974,8 @@ function renderRatingChart(filter) {
       <div class="bar-count">${c}</div>
     </div>`
   ).join('') + (allRatingCounts['unrated'] ? `<div class="bar-row">
-      <div class="bar-label rating-stars" style="font-size:0.75rem;color:var(--text-dim);letter-spacing:0;padding-left:4.5px">UNRATED</div>
-      <div class="bar-track"><div class="bar-fill" style="width:${(unrated/maxRatingAll)*100}%;background:#555"></div></div>
+      <div class="bar-label" style="width:108px;text-align:left;padding-left:4px;margin-right:-8px">UNRATED</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(unrated/maxRatingAll)*100}%;background:#b7b09c"></div></div>
       <div class="bar-count">${unrated}</div>
     </div>` : '');
 }
@@ -981,7 +996,6 @@ function renderRuntimeChart() {
   const dedup = document.getElementById('runtime-dedup').checked;
   const binSize = 5;
   const films = dedup ? dedupFilms(FILMS) : FILMS;
-  // Always compute bins for all films to determine scale
   const allRuntimes = FILMS.map(f => f.runtime).filter(r => r > 0);
   const allMinBin = Math.floor(Math.min(...allRuntimes) / binSize) * binSize;
   const allMaxBin = Math.floor(Math.max(...allRuntimes) / binSize) * binSize;
@@ -999,7 +1013,6 @@ function renderRuntimeChart() {
   const barMaxH = 140;
   const binArr = Object.entries(bins).map(([b, c]) => ({ bin: Number(b), count: c }));
 
-  // Collapse runs of 5+ empty bins between non-empty bins into a single gap marker
   const items = [];
   {
     let i = 0;
@@ -1034,8 +1047,8 @@ function renderRuntimeChart() {
     } else {
       const h = Math.round((it.count / maxBinCount) * barMaxH);
       barsHtml += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:0;">
-        <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:${it.count ? 'var(--text)' : 'var(--text-dim)'};margin-bottom:4px;">${it.count || ''}</div>
-        <div class="hist-bar" style="width:100%;height:${h}px;background:var(--accent);border-radius:2px 2px 0 0;${it.count ? '' : 'visibility:hidden;'}"></div>
+        <div style="font-family:'Economist Sans',sans-serif;font-size:0.9rem;color:${it.count ? 'var(--text)' : 'var(--text-dim)'};margin-bottom:4px;">${it.count || ''}</div>
+        <div class="hist-bar" style="width:100%;height:${h}px;background:var(--accent);border-radius:0;${it.count ? '' : 'visibility:hidden;'}"></div>
       </div>`;
     }
   });
@@ -1044,19 +1057,19 @@ function renderRuntimeChart() {
   items.forEach(it => {
     if (it.type === 'gap') {
       barsHtml += `<div style="flex:0 0 28px;position:relative;">
-        <span class="rt-label" style="position:absolute;left:0;top:0;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:0.55rem;color:var(--text-dim);white-space:nowrap;">${it.gapStartBin}</span>
+        <span class="rt-label" style="position:absolute;left:0;top:0;transform:translateX(-50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim);white-space:nowrap;">${it.gapStartBin}</span>
       </div>`;
     } else {
       const oddClass = barIdx % 2 !== 0 ? ' rt-label-odd' : '';
       barsHtml += `<div style="flex:1;position:relative;min-width:0;">
-        <span class="rt-label${oddClass}" style="position:absolute;left:0;top:0;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:0.55rem;color:var(--text-dim);white-space:nowrap;">${it.bin}</span>
+        <span class="rt-label${oddClass}" style="position:absolute;left:0;top:0;transform:translateX(-50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim);white-space:nowrap;">${it.bin}</span>
       </div>`;
       barIdx++;
     }
   });
   const lastBar = [...items].reverse().find(x => x.type === 'bar');
   const lastVal = lastBar ? lastBar.bin + binSize : maxBin + binSize;
-  barsHtml += `<div style="flex:0 0 0;position:relative;"><span style="position:absolute;right:0;top:0;transform:translateX(50%);font-family:'JetBrains Mono',monospace;font-size:0.55rem;color:var(--text-dim);white-space:nowrap;">${lastVal}</span></div>`;
+  barsHtml += `<div style="flex:0 0 0;position:relative;"><span style="position:absolute;right:0;top:0;transform:translateX(50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim);white-space:nowrap;">${lastVal}</span></div>`;
   barsHtml += `</div>`;
   chartEl.innerHTML = barsHtml;
 }
@@ -1099,7 +1112,6 @@ function renderDecadeChart() {
     const d = Math.floor(f.year/10)*10;
     decadeCounts[d] = (decadeCounts[d]||0)+1;
   });
-  // Scale to all-films max
   const allDecadeCounts = {};
   FILMS.forEach(f => { const d = Math.floor(f.year/10)*10; allDecadeCounts[d] = (allDecadeCounts[d]||0)+1; });
   const maxDecade = Math.max(...Object.values(allDecadeCounts));
@@ -1192,7 +1204,7 @@ const legendItems = [
   ['3d', '3D', threeDTotal],
 ].filter(([,,n]) => n > 0)
   .sort((a, b) => b[2] - a[2]);
-const swatchBg = { imax: '#5a7fc4', dolby: '#6bc4a0', prime: '#c46b5a', vista: '#a06bc4' };
+const swatchBg = { imax: '#6290bf', dolby: '#efa489', prime: '#293f84', vista: '#7e7f71' };
 const legendHtml = `<div class="format-legend">
   ${legendItems.map(([cls, lbl, n]) => {
     const swatch = cls === '3d'
@@ -1204,7 +1216,6 @@ const legendHtml = `<div class="format-legend">
 
 document.getElementById('format-chart').innerHTML = `<div class="format-stacked">${rowsHtml}</div>${legendHtml}`;
 
-// Segment hover / tap tooltip
 const segTooltip = document.getElementById('seg-tooltip');
 function showSegTooltip(seg) {
   const label = seg.dataset.label;
@@ -1237,7 +1248,6 @@ FILMS.forEach(f => {
   if (!filmsByDate[f.date]) filmsByDate[f.date] = [];
   filmsByDate[f.date].push(f);
 });
-// Build months dynamically from Jan 1 to current date (or Dec 31 if future year)
 const ed = new Date(endDate+'T12:00:00');
 const months = [];
 let cursor = new Date(parseInt(dashYear), 0, 1);
@@ -1256,12 +1266,9 @@ months.forEach(m => {
   const div = document.createElement('div');
   div.className = 'heatmap-month';
   let html = `<div class="heatmap-month-label">${m.name}</div><div class="cal-grid">`;
-  // Day-of-week headers
   dayNames.forEach(dn => { html += `<div class="cal-dayname">${dn}</div>`; });
-  // Pad empty cells before first day
   const startDay = new Date(m.year, m.month, 1).getDay();
   for (let i = 0; i < startDay; i++) html += `<div class="heatmap-cell empty"></div>`;
-  // Days
   for (let d = 1; d <= m.days; d++) {
     const ds = `${m.year}-${String(m.month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const films = filmsByDate[ds] || [];
@@ -1281,17 +1288,17 @@ heatmapEl.appendChild(calRow);
 
 // ====== CALENDAR TOGGLE ======
 const ratingColors = [
-  null, // index 0 unused
-  [208,64,64],   // 1: red (0°)
-  [208,80,56],   // 2: red (8°)
-  [204,104,48],  // 3: red-orange (18°)
-  [196,128,40],  // 4: orange (30°)
-  [184,152,32],  // 5: amber (42°)
-  [176,176,20],  // 6: yellow (60°)
-  [148,180,40],  // 7: yellow-green (70°) lum=144
-  [96,184,48],   // 8: yellow-green (85°)
-  [56,184,64],   // 9: green (105°)
-  [32,168,72]    // 10: deep green (120°)
+  null,
+  [214,72,72],
+  [222,90,48],
+  [232,120,42],
+  [238,152,32],
+  [238,184,32],
+  [232,204,30],
+  [198,208,36],
+  [142,196,52],
+  [88,172,64],
+  [46,152,72]
 ];
 function avgRatingColor(avg) {
   if (avg <= 1) return ratingColors[1];
@@ -1318,10 +1325,10 @@ function applyCalMode() {
       if (rated.length > 0) {
         const avg = rated.reduce((a,b) => a+b, 0) / rated.length;
         const [r,g,b] = avgRatingColor(avg);
-        cell.style.background = `rgba(${r},${g},${b},0.7)`;
+        cell.style.background = `rgba(${r},${g},${b},0.75)`;
         cell.classList.add('rating-colored');
       } else if (ratings.length > 0) {
-        cell.style.background = 'rgba(128,128,128,0.7)';
+        cell.style.background = 'rgba(138,147,163,0.5)';
         cell.classList.add('rating-colored');
       } else {
         cell.style.background = '';
@@ -1343,17 +1350,15 @@ document.getElementById('cal-toggle-rating').addEventListener('click', () => {
   applyCalMode();
 });
 
-// Tooltip for heatmap
 const tooltip = document.getElementById('tooltip');
 function ttRatingBadge(rating) {
-  if (rating == null) return `<span class="tt-rating-badge" style="background:rgba(128,128,128,0.3);color:#aaa">–</span>`;
-  const [r,g,b] = ratingColors[rating] || [128,128,128];
-  return `<span class="tt-rating-badge" style="background:rgba(${r},${g},${b},0.3);color:rgb(${Math.min(255,r+60)},${Math.min(255,g+60)},${Math.min(255,b+60)})">${rating}</span>`;
+  if (rating == null) return `<span class="tt-rating-badge" style="background:#c9c3b2;color:var(--text-dim)">–</span>`;
+  const [r,g,b] = ratingColors[rating] || [138,147,163];
+  return `<span class="tt-rating-badge" style="background:rgba(${r},${g},${b},0.75)">${rating}</span>`;
 }
 document.querySelectorAll('.heatmap-cell').forEach(cell => {
   cell.addEventListener('touchstart', e => {
     e.preventDefault();
-    // dismiss any previous tooltip-owning cell
     document.querySelectorAll('.heatmap-cell.tt-active').forEach(c => c.classList.remove('tt-active'));
     cell.classList.add('tt-active');
     cell.dispatchEvent(new MouseEvent('mouseenter'));
@@ -1372,7 +1377,7 @@ document.querySelectorAll('.heatmap-cell').forEach(cell => {
       }).join('<br>');
       document.getElementById('tt-meta').textContent = new Date(date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
     }
-    tooltip.style.borderColor = films.length === 0 ? 'var(--text-dim)' : 'var(--accent)';
+    tooltip.style.borderColor = films.length === 0 ? 'var(--border-strong)' : 'var(--accent)';
     tooltip.style.display = 'block';
     const r = cell.getBoundingClientRect();
     let left = r.left;
@@ -1410,14 +1415,13 @@ document.getElementById('series-list').innerHTML = seriesArr.map(([s,c]) =>
   </div>`
 ).join('');
 
-// Series toggle
 const seriesListEl = document.getElementById('series-list');
 const seriesToggleBtn = document.getElementById('series-toggle');
 seriesToggleBtn.addEventListener('click', () => {
   const isCollapsed = seriesListEl.classList.contains('collapsed');
   seriesListEl.classList.toggle('collapsed');
   seriesListEl.classList.toggle('expanded');
-  seriesToggleBtn.textContent = isCollapsed ? 'Show fewer' : 'Show all series';
+  seriesToggleBtn.textContent = isCollapsed ? 'Show Fewer' : 'Show All Series';
 });
 
 // ====== FILM TABLE ======
@@ -1427,14 +1431,14 @@ const activeFilters = {};
 const filterableKeys = ['date', 'year', 'rating', 'format', 'venue', 'series'];
 const columns = [
   { key:'date', label:'Date', w:'8%' },
-  { key:'title', label:'Title', w:'21%' },
+  { key:'title', label:'Title', w:'28%' },
   { key:'year', label:'Year', w:'8%' },
   { key:'runtime', label:'Length', w:'6%' },
   { key:'rating', label:'Rating', w:'8%' },
   { key:'format', label:'Format', w:'8%' },
   { key:'price', label:'Price', w:'6%' },
   { key:'venue', label:'Venue', w:'8%' },
-  { key:'series', label:'Series', w:'27%' }
+  { key:'series', label:'Series', w:'20%' }
 ];
 
 function getFilterOptions(key) {
@@ -1476,7 +1480,6 @@ function renderTable() {
     return `<th data-col="${c.key}" style="width:${c.w}">${c.label}${currentSort.col===c.key ? `<span class="sort-arrow">${arrow(currentSort.dir)}</span>` : ''}</th>`;
   }).join('') + '</tr>';
 
-  // Filter row
   const filterRow = '<tr class="filter-row-tr">' + columns.map(c => {
     if (c.key === 'title') {
       const curVal = activeFilters._titleSearch || '';
@@ -1487,7 +1490,7 @@ function renderTable() {
     const options = getFilterOptions(c.key);
     const curVal = activeFilters[c.key] || '';
     return `<td><select class="col-filter${curVal ? ' active' : ''}${c.key === 'year' ? ' no-uppercase' : ''}" data-filter-col="${c.key}">
-      <option value="">${c.key === 'year' ? 'ALL' : 'All'}</option>
+      <option value="">${c.key === 'year' ? 'All' : 'All'}</option>
       ${options.map(v => `<option value="${v}"${v === curVal ? ' selected' : ''}>${v}</option>`).join('')}
     </select></td>`;
   }).join('') + '</tr>';
@@ -1525,21 +1528,20 @@ function renderTable() {
     const rClass = f.rating != null ? 'rating-' + f.rating : 'rating-unrated';
     const fmtClass = f.format !== 'DCP' ? 'special' : '';
     const dateStr = new Date(f.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    const priceStr = f.price === 0 ? '<span class="price-free">free</span>' : `<span class="price-paid">$${f.price % 1 === 0 ? f.price : f.price.toFixed(2)}</span>`;
+    const priceStr = f.price === 0 ? '<span class="price-free">Free</span>' : `<span class="price-paid">$${f.price % 1 === 0 ? f.price : f.price.toFixed(2)}</span>`;
     return `<tr>
-      <td><span style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:var(--text-dim)">${dateStr}</span></td>
+      <td><span style="font-family:'Economist Sans',sans-serif;font-size:1rem;color:var(--text-dim)">${dateStr}</span></td>
       <td><span class="title-cell">${f.title}</span>${f.rewatch ? '<span class="rewatch-badge">rewatch</span>' : ''}</td>
-      <td style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:var(--text-dim)">${f.year}</td>
-      <td style="font-family:'JetBrains Mono',monospace;font-size:0.78rem">${f.runtime}</td>
+      <td style="font-family:'Economist Sans',sans-serif;font-size:1rem;color:var(--text-dim)">${f.year}</td>
+      <td style="font-family:'Economist Sans',sans-serif;font-size:1rem">${f.runtime}</td>
       <td><span class="rating-badge ${rClass}">${f.rating != null ? f.rating : '–'}</span></td>
       <td><span class="format-tag ${fmtClass}">${f.format}</span></td>
       <td>${priceStr}</td>
-      <td style="font-family:'JetBrains Mono',monospace;font-size:0.78rem">${f.venue}</td>
-      <td style="font-size:0.78rem;color:var(--text-dim);line-height:1.3">${f.series||'\u2014'}</td>
+      <td style="font-family:'Economist Sans',sans-serif;font-size:1rem">${f.venue}</td>
+      <td style="font-size:1rem;color:var(--text-dim);line-height:1.3">${f.series||'\u2014'}</td>
     </tr>`;
   }).join('');
 
-  // Sort handlers on header labels
   document.querySelectorAll('th').forEach(th => {
     th.addEventListener('click', e => {
       if (e.target.tagName === 'SELECT' || e.target.tagName === 'OPTION') return;
@@ -1550,7 +1552,6 @@ function renderTable() {
     });
   });
 
-  // Filter handlers on dropdowns
   document.querySelectorAll('.col-filter').forEach(sel => {
     sel.addEventListener('change', e => {
       const col = sel.dataset.filterCol;
@@ -1559,7 +1560,6 @@ function renderTable() {
     });
   });
 
-  // Title search handler (IME-aware)
   const searchInput = document.querySelector('input.col-search');
   if (searchInput) {
     let composing = false;
@@ -1582,9 +1582,9 @@ function renderTable() {
 }
 
 renderTable();
-document.getElementById('footer-text').textContent = totalFilms + (totalFilms === 1 ? ' film' : ' films') + ' \u2022 built from the cinema log spreadsheet \u2022 updated daily';
+document.getElementById('footer-text').textContent = totalFilms + (totalFilms === 1 ? ' film' : ' films') + ' \u2022 Built from the cinema log spreadsheet \u2022 Updated daily';
 
-}); // end fetch .then()
+});
 </script>
 </body>
 </html>
