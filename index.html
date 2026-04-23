@@ -1053,12 +1053,12 @@ function renderRuntimeChart() {
   items.forEach(it => {
     if (it.type === 'gap') {
       barsHtml += `<div style="flex:2 2 0;min-width:44px;position:relative;">
-        <span class="rt-label" style="position:absolute;left:0;top:0;transform:translateX(-50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim);white-space:nowrap;font-variant-numeric:tabular-nums;">${it.gapStartBin}</span>
+        <span style="position:absolute;left:0;top:0;transform:translateX(-50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim);white-space:nowrap;font-variant-numeric:tabular-nums;">${it.gapStartBin}</span>
         <span style="position:absolute;left:calc(50% + 2px);top:0;transform:translateX(-50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim);white-space:nowrap;font-variant-numeric:tabular-nums;letter-spacing:2px;pointer-events:none;">···</span>
       </div>`;
     } else {
       barsHtml += `<div style="flex:1;position:relative;min-width:22px;">
-        <span class="rt-label" style="position:absolute;left:0;top:0;transform:translateX(-50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim);white-space:nowrap;font-variant-numeric:tabular-nums;">${it.bin}</span>
+        <span style="position:absolute;left:0;top:0;transform:translateX(-50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim);white-space:nowrap;font-variant-numeric:tabular-nums;">${it.bin}</span>
       </div>`;
     }
   });
