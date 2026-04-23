@@ -75,7 +75,7 @@ header::before {
 h1 {
   font-family: 'Economist Sans', sans-serif;
   font-weight: 800;
-  font-size: 3rem;
+  font-size: 3.5rem;
   letter-spacing: -0.02em;
   line-height: 1;
   color: var(--text);
@@ -84,7 +84,7 @@ h1 {
 .header-divider { display: none; }
 .header-date {
   font-family: 'Economist Sans', sans-serif;
-  font-size: 1.05rem;
+  font-size: 1.15rem;
   color: var(--text);
   font-weight: 400;
   letter-spacing: 0;
@@ -112,7 +112,7 @@ h1 {
 .stat-card:hover { background: rgba(0,0,0,0.02); }
 .stat-val {
   font-family: 'Economist Sans', sans-serif;
-  font-size: 1.85rem;
+  font-size: 2.1rem;
   font-weight: 700;
   color: var(--accent);
   letter-spacing: -0.02em;
@@ -120,7 +120,7 @@ h1 {
   font-variant-numeric: tabular-nums;
 }
 .stat-label {
-  font-size: 0.9rem;
+  font-size: 1.05rem;
   color: var(--text-dim);
   margin-top: 4px;
   letter-spacing: 0;
@@ -132,7 +132,7 @@ h1 {
 .section { margin: 48px 0; }
 .section-title {
   font-family: 'Economist Sans', sans-serif;
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: 700;
   letter-spacing: -0.01em;
   margin-bottom: 18px;
@@ -164,7 +164,7 @@ h1 {
 .chart-label { white-space: nowrap; }
 .switch-label-text { white-space: nowrap; }
 .chart-label {
-  font-size: 1rem;
+  font-size: 1.2rem;
   font-weight: 700;
   color: var(--text);
   margin-bottom: 18px;
@@ -185,7 +185,7 @@ h1 {
 .hist-bar:hover { filter: brightness(1.2); }
 .bar-label {
   font-family: 'Economist Sans', sans-serif;
-  font-size: 0.82rem;
+  font-size: 1rem;
   font-weight: 500;
   color: var(--text);
   width: 48px;
@@ -197,7 +197,7 @@ h1 {
 .venue-tip {
   display: none;
   position: absolute;
-  left: -5px;
+  left: -10px;
   top: 50%;
   transform: translateY(-50%);
   background: #fffdf5;
@@ -205,7 +205,7 @@ h1 {
   color: var(--text);
   padding: 3px 8px;
   border-radius: 0;
-  font-size: 0.85rem;
+  font-size: 1rem;
   white-space: nowrap;
   z-index: 20;
   pointer-events: none;
@@ -213,11 +213,11 @@ h1 {
 }
 .bar-label:hover .venue-tip { display: block; }
 .bar-label.rating-stars {
-  width: 72px;
-  font-size: 0.7rem;
+  width: 108px;
+  font-size: 1rem;
   font-weight: 500;
-  line-height: 18px;
-  height: 18px;
+  line-height: 22px;
+  height: 22px;
   letter-spacing: 0;
   text-align: left;
   padding-left: 4px;
@@ -226,13 +226,14 @@ h1 {
   color: var(--text);
 }
 .bar-label.rating-stars .half-star {
-  font-size: 0.7rem;
+  font-size: 1rem;
   vertical-align: 0px;
 }
 .bar-label.rating-stars .half-star.after-star { margin-left: 1px; }
+.bar-label.rating-stars > .half-star:only-child { margin-left: 1px; }
 .bar-track {
   flex: 1;
-  height: 18px;
+  height: 22px;
   background: transparent;
   border-radius: 0;
   overflow: hidden;
@@ -246,7 +247,7 @@ h1 {
 }
 .bar-count {
   font-family: 'Economist Sans', sans-serif;
-  font-size: 0.82rem;
+  font-size: 1rem;
   font-weight: 500;
   color: var(--text);
   width: 30px;
@@ -275,14 +276,14 @@ h1 {
 .format-row { display: flex; align-items: center; gap: 12px; }
 .format-row-label {
   font-family: 'Economist Sans', sans-serif;
-  font-size: 0.82rem;
+  font-size: 1rem;
   font-weight: 500;
   color: var(--text);
   width: 48px;
   text-align: right;
   flex-shrink: 0;
 }
-.format-bar-outer { flex: 1; height: 20px; display: flex; align-items: center; }
+.format-bar-outer { flex: 1; height: 22px; display: flex; align-items: center; }
 .format-bar-track {
   height: 100%;
   background: transparent;
@@ -315,10 +316,10 @@ h1 {
 }
 .format-row-total {
   font-family: 'Economist Sans', sans-serif;
-  font-size: 0.82rem;
+  font-size: 1rem;
   font-weight: 500;
   color: var(--text);
-  width: 30px;
+  width: 36px;
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
 }
@@ -329,15 +330,16 @@ h1 {
   gap: 6px 18px;
   margin: 16px 12px 0 0;
   padding-top: 10px;
+  padding-left: 7px;
   border-top: 1px solid var(--border);
-  font-size: 0.88rem;
+  font-size: 1rem;
   color: var(--text);
   letter-spacing: 0;
   text-transform: none;
   font-weight: 400;
 }
 .legend-chip { display: inline-flex; align-items: center; gap: 6px; }
-.legend-swatch { width: 12px; height: 12px; border-radius: 50%; display: inline-block; flex-shrink: 0; position: relative; overflow: hidden; }
+.legend-swatch { width: 12px; height: 12px; display: inline-block; flex-shrink: 0; position: relative; overflow: hidden; }
 .legend-swatch.swatch-3d { background: #5a5a65; }
 .legend-swatch.swatch-3d::after {
   content: '';
@@ -357,7 +359,7 @@ h1 {
   border-radius: 0;
   font-family: 'Economist Sans', sans-serif;
   font-weight: 500;
-  font-size: 0.88rem;
+  font-size: 1rem;
   white-space: nowrap;
   z-index: 10000;
   pointer-events: none;
@@ -384,7 +386,7 @@ h1 {
 .heatmap-month { min-width: 0; }
 .heatmap-month-label {
   font-family: 'Economist Sans', sans-serif;
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--text);
   margin-bottom: 8px;
@@ -399,7 +401,7 @@ h1 {
 }
 .cal-dayname {
   font-family: 'Economist Sans', sans-serif;
-  font-size: 0.78rem;
+  font-size: 1rem;
   font-weight: 500;
   color: var(--text-dim);
   text-align: center;
@@ -419,7 +421,7 @@ h1 {
   align-items: center;
   justify-content: center;
   font-family: 'Economist Sans', sans-serif;
-  font-size: 0.7rem;
+  font-size: 0.82rem;
   font-weight: 500;
   color: var(--text-dim);
   overflow: hidden;
@@ -447,7 +449,7 @@ h1 {
 }
 .cal-toggle {
   font-family: 'Economist Sans', sans-serif;
-  font-size: 0.78rem;
+  font-size: 1rem;
   font-weight: 500;
   letter-spacing: 0;
   text-transform: none;
@@ -484,13 +486,13 @@ h1 {
 /* TOOLTIP */
 .tt-rating-badge {
   display: inline-block;
-  width: 20px; height: 18px;
-  line-height: 18px;
+  width: 26px; height: 22px;
+  line-height: 22px;
   text-align: center;
   border-radius: 0;
   font-family: 'Economist Sans', sans-serif;
   font-weight: 700;
-  font-size: 0.7rem;
+  font-size: 1rem;
   margin-left: 6px;
   vertical-align: middle;
   color: var(--text);
@@ -501,7 +503,7 @@ h1 {
   border: 1px solid var(--text);
   padding: 10px 14px;
   border-radius: 0;
-  font-size: 0.85rem;
+  font-size: 1rem;
   max-width: none;
   white-space: nowrap;
   pointer-events: none;
@@ -513,7 +515,7 @@ h1 {
 .tooltip-title {
   font-family: 'Economist Sans', sans-serif;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 1.05rem;
   margin-bottom: 4px;
   letter-spacing: 0;
   color: var(--text);
@@ -521,7 +523,7 @@ h1 {
 .tooltip-meta {
   color: var(--text-dim);
   font-family: 'Economist Sans', sans-serif;
-  font-size: 0.8rem;
+  font-size: 1rem;
 }
 
 /* SERIES */
@@ -541,10 +543,10 @@ h1 {
   cursor: default;
 }
 .series-row:hover { background: rgba(0,0,0,0.02); }
-.series-name { flex: 1; font-size: 0.95rem; font-weight: 500; color: var(--text); }
+.series-name { flex: 1; font-size: 1.05rem; font-weight: 500; color: var(--text); }
 .series-count {
   font-family: 'Economist Sans', sans-serif;
-  font-size: 0.78rem;
+  font-size: 1rem;
   color: #fff;
   background: var(--accent);
   padding: 2px 8px;
@@ -554,7 +556,7 @@ h1 {
 }
 .series-venue {
   font-family: 'Economist Sans', sans-serif;
-  font-size: 0.82rem;
+  font-size: 1rem;
   color: var(--text-dim);
   white-space: nowrap;
   text-align: right;
@@ -562,7 +564,7 @@ h1 {
 .series-toggle {
   margin-top: 14px;
   font-family: 'Economist Sans', sans-serif;
-  font-size: 0.85rem;
+  font-size: 1rem;
   font-weight: 500;
   letter-spacing: 0;
   text-transform: none;
@@ -593,12 +595,12 @@ table {
   min-width: 950px;
   border-collapse: collapse;
   table-layout: fixed;
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
 thead { position: sticky; top: 0; z-index: 5; }
 th {
   font-family: 'Economist Sans', sans-serif;
-  font-size: 0.85rem;
+  font-size: 1rem;
   font-weight: 700;
   text-transform: none;
   letter-spacing: 0;
@@ -613,7 +615,7 @@ th {
   transition: color 0.2s;
 }
 th:hover { color: var(--accent); }
-th .sort-arrow { margin-left: 4px; font-size: 0.6rem; color: var(--accent); }
+th .sort-arrow { margin-left: 4px; font-size: 1rem; color: var(--accent); }
 td {
   padding: 9px 14px;
   border-bottom: 1px solid var(--border);
@@ -625,19 +627,19 @@ tbody tr:last-child td { border-bottom: none; }
 .title-cell {
   font-family: 'Economist Sans', sans-serif;
   font-weight: 600;
-  font-size: 0.92rem;
+  font-size: 1.05rem;
   color: var(--text);
   letter-spacing: 0;
 }
 .rating-badge {
   display: inline-block;
-  width: 28px; height: 22px;
-  line-height: 22px;
+  width: 32px; height: 24px;
+  line-height: 24px;
   text-align: center;
   border-radius: 0;
   font-family: 'Economist Sans', sans-serif;
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 1rem;
   color: var(--text);
   font-variant-numeric: tabular-nums;
 }
@@ -654,7 +656,7 @@ tbody tr:last-child td { border-bottom: none; }
 .rating-badge.rating-unrated { background: #c9c3b2; color: var(--text-dim); }
 .rewatch-badge {
   font-family: 'Economist Sans', sans-serif;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   background: var(--accent);
   color: #fff;
   padding: 1px 6px;
@@ -664,19 +666,19 @@ tbody tr:last-child td { border-bottom: none; }
 }
 .format-tag {
   font-family: 'Economist Sans', sans-serif;
-  font-size: 0.85rem;
+  font-size: 1rem;
   color: var(--text-dim);
 }
 .format-tag.special { color: var(--accent); font-weight: 600; }
 .price-free {
   color: #3e7a4c;
   font-family: 'Economist Sans', sans-serif;
-  font-size: 0.85rem;
+  font-size: 1rem;
   font-weight: 600;
 }
 .price-paid {
   font-family: 'Economist Sans', sans-serif;
-  font-size: 0.85rem;
+  font-size: 1rem;
   font-variant-numeric: tabular-nums;
 }
 
@@ -688,7 +690,7 @@ tbody tr:last-child td { border-bottom: none; }
 }
 .filter-row-tr select.col-filter {
   font-family: 'Economist Sans', sans-serif;
-  font-size: 0.85rem;
+  font-size: 1rem;
   font-weight: 500;
   background: transparent;
   color: var(--text-dim);
@@ -717,11 +719,11 @@ tbody tr:last-child td { border-bottom: none; }
 .switch-slider::before { content: ''; position: absolute; height: 12px; width: 12px; left: 2px; top: 2px; background: var(--bg); transition: transform 0.2s, background 0.2s; }
 .switch-toggle input:checked + .switch-slider { background: var(--accent); }
 .switch-toggle input:checked + .switch-slider::before { transform: translateX(12px); background: var(--bg); }
-.switch-label-text { font-family: 'Economist Sans', sans-serif; font-size: 0.88rem; color: var(--text); letter-spacing: 0; text-transform: none; font-weight: 400; }
+.switch-label-text { font-family: 'Economist Sans', sans-serif; font-size: 1rem; color: var(--text); letter-spacing: 0; text-transform: none; font-weight: 400; }
 
 .filter-row-tr input.col-search {
   font-family: 'Economist Sans', sans-serif;
-  font-size: 0.88rem;
+  font-size: 1rem;
   background: transparent;
   color: var(--text);
   border: 1px solid var(--border-strong);
@@ -742,7 +744,7 @@ footer {
   border-top: 1px solid var(--text);
   text-align: left;
   color: var(--text-dim);
-  font-size: 0.78rem;
+  font-size: 1rem;
   font-family: 'Economist Sans', sans-serif;
   letter-spacing: 0;
   font-style: italic;
@@ -764,16 +766,16 @@ footer {
   .stats-row { grid-template-columns: repeat(3, 1fr); }
 }
 @media (max-width: 800px) {
-  h1 { font-size: 2.8rem; }
+  h1 { font-size: 3.2rem; }
   .chart-card { flex-basis: 100%; }
   .container { padding: 0 16px; }
-  .stat-val { font-size: 1.5rem; }
+  .stat-val { font-size: 1.7rem; }
   .venue-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 500px) {
   .stats-row { grid-template-columns: repeat(2, 1fr); }
   header { padding: 48px 0 32px; }
-  h1 { font-size: 2.4rem; }
+  h1 { font-size: 2.7rem; }
 }
 </style>
 </head>
@@ -815,7 +817,7 @@ footer {
       <div id="rating-chart"></div>
     </div>
     <div class="chart-card animate delay-2">
-      <div class="chart-label" style="display:flex;align-items:center;justify-content:space-between;">Production Decade
+      <div class="chart-label" style="display:flex;align-items:center;justify-content:space-between;min-height:29px;">Production Decade
         <span style="display:flex;align-items:center;gap:6px;">
           <label class="switch-toggle" title="De-duplicate rewatches">
             <input type="checkbox" id="decade-dedup">
@@ -840,7 +842,7 @@ footer {
           <span class="switch-label-text" id="runtime-dedup-label">Unique Titles</span>
         </span>
       </div>
-      <div id="runtime-chart" style="display:flex;align-items:flex-end;gap:2px;height:160px;padding-top:12px;max-width:750px;width:100%;margin:0 auto;"></div>
+      <div id="runtime-chart" style="display:flex;align-items:flex-end;gap:2px;height:160px;padding-top:12px;max-width:825px;width:100%;margin:0 auto;"></div>
     </div>
     <div class="chart-card full animate delay-3">
       <div class="chart-label">Screening Venue</div>
@@ -861,7 +863,7 @@ footer {
   <div class="section animate delay-4">
     <div class="section-title">Festivals &amp; Series</div>
     <div id="series-list" class="series-list collapsed"></div>
-    <button class="series-toggle" id="series-toggle">Show all series</button>
+    <button class="series-toggle" id="series-toggle">Show All Series</button>
   </div>
 
   <div class="section animate delay-5">
@@ -950,7 +952,7 @@ function renderRatingChart(filter) {
       <div class="bar-count">${c}</div>
     </div>`
   ).join('') + (allRatingCounts['unrated'] ? `<div class="bar-row">
-      <div class="bar-label" style="width:72px;text-align:left;padding-left:4px;margin-right:-8px">UNRATED</div>
+      <div class="bar-label" style="width:108px;text-align:left;padding-left:4px;margin-right:-8px">UNRATED</div>
       <div class="bar-track"><div class="bar-fill" style="width:${(unrated/maxRatingAll)*100}%;background:#b7b09c"></div></div>
       <div class="bar-count">${unrated}</div>
     </div>` : '');
@@ -1023,7 +1025,7 @@ function renderRuntimeChart() {
     } else {
       const h = Math.round((it.count / maxBinCount) * barMaxH);
       barsHtml += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:0;">
-        <div style="font-family:'Economist Sans',sans-serif;font-size:0.8rem;color:${it.count ? 'var(--text)' : 'var(--text-dim)'};margin-bottom:4px;">${it.count || ''}</div>
+        <div style="font-family:'Economist Sans',sans-serif;font-size:0.9rem;color:${it.count ? 'var(--text)' : 'var(--text-dim)'};margin-bottom:4px;">${it.count || ''}</div>
         <div class="hist-bar" style="width:100%;height:${h}px;background:var(--accent);border-radius:0;${it.count ? '' : 'visibility:hidden;'}"></div>
       </div>`;
     }
@@ -1033,19 +1035,19 @@ function renderRuntimeChart() {
   items.forEach(it => {
     if (it.type === 'gap') {
       barsHtml += `<div style="flex:0 0 28px;position:relative;">
-        <span class="rt-label" style="position:absolute;left:0;top:0;transform:translateX(-50%);font-family:'Economist Sans',sans-serif;font-size:0.72rem;color:var(--text-dim);white-space:nowrap;">${it.gapStartBin}</span>
+        <span class="rt-label" style="position:absolute;left:0;top:0;transform:translateX(-50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim);white-space:nowrap;">${it.gapStartBin}</span>
       </div>`;
     } else {
       const oddClass = barIdx % 2 !== 0 ? ' rt-label-odd' : '';
       barsHtml += `<div style="flex:1;position:relative;min-width:0;">
-        <span class="rt-label${oddClass}" style="position:absolute;left:0;top:0;transform:translateX(-50%);font-family:'Economist Sans',sans-serif;font-size:0.72rem;color:var(--text-dim);white-space:nowrap;">${it.bin}</span>
+        <span class="rt-label${oddClass}" style="position:absolute;left:0;top:0;transform:translateX(-50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim);white-space:nowrap;">${it.bin}</span>
       </div>`;
       barIdx++;
     }
   });
   const lastBar = [...items].reverse().find(x => x.type === 'bar');
   const lastVal = lastBar ? lastBar.bin + binSize : maxBin + binSize;
-  barsHtml += `<div style="flex:0 0 0;position:relative;"><span style="position:absolute;right:0;top:0;transform:translateX(50%);font-family:'Economist Sans',sans-serif;font-size:0.72rem;color:var(--text-dim);white-space:nowrap;">${lastVal}</span></div>`;
+  barsHtml += `<div style="flex:0 0 0;position:relative;"><span style="position:absolute;right:0;top:0;transform:translateX(50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim);white-space:nowrap;">${lastVal}</span></div>`;
   barsHtml += `</div>`;
   chartEl.innerHTML = barsHtml;
 }
@@ -1397,7 +1399,7 @@ seriesToggleBtn.addEventListener('click', () => {
   const isCollapsed = seriesListEl.classList.contains('collapsed');
   seriesListEl.classList.toggle('collapsed');
   seriesListEl.classList.toggle('expanded');
-  seriesToggleBtn.textContent = isCollapsed ? 'Show fewer' : 'Show all series';
+  seriesToggleBtn.textContent = isCollapsed ? 'Show Fewer' : 'Show All Series';
 });
 
 // ====== FILM TABLE ======
@@ -1506,15 +1508,15 @@ function renderTable() {
     const dateStr = new Date(f.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
     const priceStr = f.price === 0 ? '<span class="price-free">Free</span>' : `<span class="price-paid">$${f.price % 1 === 0 ? f.price : f.price.toFixed(2)}</span>`;
     return `<tr>
-      <td><span style="font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim)">${dateStr}</span></td>
+      <td><span style="font-family:'Economist Sans',sans-serif;font-size:1rem;color:var(--text-dim)">${dateStr}</span></td>
       <td><span class="title-cell">${f.title}</span>${f.rewatch ? '<span class="rewatch-badge">rewatch</span>' : ''}</td>
-      <td style="font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim)">${f.year}</td>
-      <td style="font-family:'Economist Sans',sans-serif;font-size:0.85rem">${f.runtime}</td>
+      <td style="font-family:'Economist Sans',sans-serif;font-size:1rem;color:var(--text-dim)">${f.year}</td>
+      <td style="font-family:'Economist Sans',sans-serif;font-size:1rem">${f.runtime}</td>
       <td><span class="rating-badge ${rClass}">${f.rating != null ? f.rating : '–'}</span></td>
       <td><span class="format-tag ${fmtClass}">${f.format}</span></td>
       <td>${priceStr}</td>
-      <td style="font-family:'Economist Sans',sans-serif;font-size:0.85rem">${f.venue}</td>
-      <td style="font-size:0.85rem;color:var(--text-dim);line-height:1.3">${f.series||'\u2014'}</td>
+      <td style="font-family:'Economist Sans',sans-serif;font-size:1rem">${f.venue}</td>
+      <td style="font-size:1rem;color:var(--text-dim);line-height:1.3">${f.series||'\u2014'}</td>
     </tr>`;
   }).join('');
 
