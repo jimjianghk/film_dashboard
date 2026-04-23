@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Jim's 2026 Cinema Log</title>
+<title>Jim’s 2026 Cinema Log</title>
 <style>
 @font-face {
   font-family: 'Economist Sans';
@@ -797,7 +797,7 @@ footer {
         <span>Rating</span>
         <span class="cal-toggle-wrap rating-filter-toggle">
           <button class="cal-toggle active" id="rat-toggle-all">All</button>
-          <button class="cal-toggle" id="rat-toggle-new">New Releases</button>
+          <button class="cal-toggle" id="rat-toggle-new">New releases</button>
           <button class="cal-toggle" id="rat-toggle-rep">Repertory</button>
         </span>
         <span class="rating-dedup-toggle" style="display:flex;align-items:center;gap:6px;">
@@ -805,49 +805,49 @@ footer {
             <input type="checkbox" id="rating-dedup">
             <span class="switch-slider"></span>
           </label>
-          <span class="switch-label-text">Unique Titles</span>
+          <span class="switch-label-text">Unique titles</span>
         </span>
       </div>
       <div id="rating-chart"></div>
     </div>
     <div class="chart-card animate delay-2">
-      <div class="chart-label" style="display:flex;align-items:center;justify-content:space-between;min-height:29px;">Production Decade
+      <div class="chart-label" style="display:flex;align-items:center;justify-content:space-between;min-height:29px;">Production decade
         <span style="display:flex;align-items:center;gap:6px;">
           <label class="switch-toggle" title="De-duplicate rewatches">
             <input type="checkbox" id="decade-dedup">
             <span class="switch-slider"></span>
           </label>
-          <span class="switch-label-text">Unique Titles</span>
+          <span class="switch-label-text">Unique titles</span>
         </span>
       </div>
       <div id="decade-chart"></div>
     </div>
     <div class="chart-card full animate delay-3">
-      <div class="chart-label">Screening Format</div>
+      <div class="chart-label">Screening format</div>
       <div id="format-chart"></div>
     </div>
     <div class="chart-card full animate delay-3">
-      <div class="chart-label" style="display:flex;align-items:center;justify-content:space-between;">Runtime Distribution
+      <div class="chart-label" style="display:flex;align-items:center;justify-content:space-between;">Runtime distribution
         <span style="display:flex;align-items:center;gap:6px;">
           <label class="switch-toggle" title="De-duplicate rewatches">
             <input type="checkbox" id="runtime-dedup">
             <span class="switch-slider"></span>
           </label>
-          <span class="switch-label-text" id="runtime-dedup-label">Unique Titles</span>
+          <span class="switch-label-text" id="runtime-dedup-label">Unique titles</span>
         </span>
       </div>
       <div id="runtime-chart" style="display:flex;align-items:flex-end;gap:2px;height:160px;padding-top:12px;max-width:825px;width:100%;margin:0 auto;"></div>
     </div>
     <div class="chart-card full animate delay-3">
-      <div class="chart-label">Screening Venue</div>
+      <div class="chart-label">Screening venue</div>
       <div id="venue-chart" class="venue-grid"></div>
     </div>
     <div class="chart-card full animate delay-4">
       <div class="chart-label calendar-header">
-        <span>Screening Calendar</span>
+        <span>Screening calendar</span>
         <span class="cal-toggle-wrap">
-          <button class="cal-toggle active" id="cal-toggle-screenings"># of Screenings</button>
-          <button class="cal-toggle" id="cal-toggle-rating">Avg Rating</button>
+          <button class="cal-toggle active" id="cal-toggle-screenings"># of screenings</button>
+          <button class="cal-toggle" id="cal-toggle-rating">Avg rating</button>
         </span>
       </div>
       <div id="heatmap" class="heatmap-wrap"></div>
@@ -855,13 +855,13 @@ footer {
   </div>
 
   <div class="section animate delay-4">
-    <div class="chart-label">Festivals &amp; Series</div>
+    <div class="chart-label">Festivals &amp; series</div>
     <div id="series-list" class="series-list collapsed"></div>
     <button class="series-toggle" id="series-toggle">Show All Series</button>
   </div>
 
   <div class="section animate delay-5">
-    <div class="chart-label">Complete Log</div>
+    <div class="chart-label">Complete log</div>
     <div class="film-table-wrap">
       <table>
         <thead id="table-head"></thead>
@@ -898,10 +898,10 @@ const uniqueVenues = new Set(FILMS.map(f => f.venue)).size;
 
 document.getElementById('stats-row').innerHTML = [
   { val: totalFilms, label: totalFilms === 1 ? 'Screening' : 'Screenings' },
-  { val: avgRating, label: 'Average Rating' },
-  { val: `${(totalRuntime/60).toFixed(1)}h`, label: 'Total Runtime' },
-  { val: `$${totalSpent.toFixed(0)}`, label: 'Total Spent' },
-  { val: uniqueVenues, label: 'Venues Visited' },
+  { val: avgRating, label: 'Average rating' },
+  { val: `${(totalRuntime/60).toFixed(1)}h`, label: 'Total runtime' },
+  { val: `$${totalSpent.toFixed(0)}`, label: 'Total spent' },
+  { val: uniqueVenues, label: 'Venues visited' },
   { val: rewatches, label: rewatches === 1 ? 'Rewatch' : 'Rewatches' }
 ].map(s => `<div class="stat-card"><div class="stat-val">${s.val}</div><div class="stat-label">${s.label}</div></div>`).join('');
 

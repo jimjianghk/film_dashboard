@@ -14,7 +14,7 @@ Six summary cards: total screenings, average rating (excluding unrated films), t
 
 ### Rating chart
 
-Horizontal bar chart with star labels (half-star to five stars). Bars are color-coded red-to-green. An additional grey "Unrated" bar appears when applicable. Three filter toggles (All / New Releases / Repertory) subset by production year, and a dedup toggle collapses rewatches to unique titles. Bar widths are anchored to the global max so the scale stays stable across filters.
+Horizontal bar chart with star labels (half-star to five stars). Bars are color-coded red-to-green. An additional grey "Unrated" bar appears when applicable. Three filter toggles (All / New releases / Repertory) subset by production year, and a dedup toggle collapses rewatches to unique titles. Bar widths are anchored to the global max so the scale stays stable across filters.
 
 ### Production decade chart
 
