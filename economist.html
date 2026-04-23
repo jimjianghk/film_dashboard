@@ -179,7 +179,25 @@ h1 {
   gap: 12px;
   margin-bottom: 6px;
   cursor: default;
+  position: relative;
 }
+#rating-chart .bar-row::before,
+#decade-chart .bar-row::before,
+#venue-chart .bar-row::before,
+.format-row::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 1.5px;
+  background: var(--text);
+  z-index: 1;
+}
+.format-row::before { top: -4px; bottom: -4px; }
+#rating-chart .bar-row::before { left: 112px; }
+#decade-chart .bar-row::before,
+#venue-chart .bar-row::before,
+.format-row::before { left: 60px; }
 .bar-row:hover .bar-fill { filter: brightness(1.15); }
 .hist-bar { transition: filter 0.15s; cursor: default; }
 .hist-bar:hover { filter: brightness(1.2); }
@@ -273,7 +291,7 @@ h1 {
 
 /* FORMAT STACKED BARS */
 .format-stacked { display: flex; flex-direction: column; gap: 8px; }
-.format-row { display: flex; align-items: center; gap: 12px; }
+.format-row { display: flex; align-items: center; gap: 12px; position: relative; }
 .format-row-label {
   font-family: 'Economist Sans', sans-serif;
   font-size: 1rem;
