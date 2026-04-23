@@ -195,8 +195,8 @@ h1 {
 .format-row::before { top: -4px; bottom: -4px; }
 #rating-chart .bar-row::before { left: 95px; }
 #decade-chart .bar-row::before,
-#venue-chart .bar-row::before,
 .format-row::before { left: 60px; }
+#venue-chart .bar-row::before { left: 68px; }
 .bar-row:hover .bar-fill { filter: brightness(1.15); }
 .hist-bar { transition: filter 0.15s; cursor: default; }
 .hist-bar:hover { filter: brightness(1.2); }
@@ -211,10 +211,18 @@ h1 {
   position: relative;
   font-variant-numeric: tabular-nums;
 }
+#venue-chart .bar-label,
+.format-row .bar-label {
+  text-align: left;
+  padding-left: 4px;
+}
+#venue-chart .bar-track {
+  margin-left: 8px;
+}
 .venue-tip {
   display: none;
   position: absolute;
-  left: -10px;
+  left: -5px;
   top: 50%;
   transform: translateY(-50%);
   background: #fffdf5;
@@ -431,7 +439,7 @@ h1 {
 .heatmap-cell.empty { background: transparent; pointer-events: none; }
 .heatmap-cell.future { background: transparent; outline: 1px solid var(--border); opacity: 0.4; pointer-events: none; }
 .heatmap-cell.watched-1 { background: #f0c4b4; color: var(--text); }
-.heatmap-cell.watched-2 { background: #e8a894; color: var(--text); }
+.heatmap-cell.watched-2 { background: #e68f79; color: var(--text); }
 .heatmap-cell.watched-3 { background: #dc5a3e; color: #fff; }
 .heatmap-cell.watched-4 { background: #d8232a; color: #fff; }
 .heatmap-cell.watched-5 { background: #9c1d23; color: #fff; }
