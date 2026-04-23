@@ -26,7 +26,7 @@ Horizontal stacked bar chart with one row per base projection format (DCP / 35mm
 
 ### Runtime distribution
 
-Vertical histogram with 5-minute bins. Has its own dedup toggle. Alternate x-axis labels are hidden on narrow screens. When an outlier bin is separated from the main mass by 5+ consecutive empty bins, those empty bins collapse into a single narrow gap marker (three dots at the bar baseline) with a label for the start of the elided range.
+Vertical histogram with 5-minute bins. Has its own dedup toggle. Alternate x-axis labels are hidden on narrow screens. When an outlier bin is separated from the main mass by 5+ consecutive empty bins, those empty bins collapse into a gap sized at ~2× bar width — three dots sit inline with the x-axis labels, and the start of the elided range is labeled at the gap's left edge.
 
 ### Screening venue chart
 

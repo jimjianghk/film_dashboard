@@ -86,7 +86,7 @@ h1 {
   font-family: 'Economist Sans', sans-serif;
   font-size: 1.15rem;
   color: var(--text);
-  font-weight: 400;
+  font-weight: 500;
   letter-spacing: 0;
   text-transform: none;
 }
@@ -633,7 +633,7 @@ th {
   transition: color 0.2s;
 }
 th:hover { color: var(--accent); }
-th .sort-arrow { margin-left: 4px; font-size: 1rem; color: var(--accent); }
+th .sort-arrow { margin-left: 4px; color: var(--accent); display: inline-block; vertical-align: middle; line-height: 0; position: relative; top: -1px; }
 td {
   padding: 9px 14px;
   border-bottom: 1px solid var(--border);
@@ -671,7 +671,7 @@ tbody tr:last-child td { border-bottom: none; }
 .rating-badge.rating-8 { background: rgba(142,196,52,0.75); }
 .rating-badge.rating-9 { background: rgba(88,172,64,0.75); }
 .rating-badge.rating-10 { background: rgba(46,152,72,0.75); }
-.rating-badge.rating-unrated { background: #c9c3b2; color: var(--text-dim); }
+.rating-badge.rating-unrated { background: rgba(126,127,113,0.75); color: var(--text); }
 .rewatch-badge {
   font-family: 'Economist Sans', sans-serif;
   font-size: 0.8rem;
@@ -812,7 +812,7 @@ footer {
 <div class="container">
   <header>
     <div class="header-label">Cinema Log</div>
-    <h1>2026</h1>
+    <h1>2026 in Films</h1>
     <div class="header-divider"><span class="header-diamond"></span></div>
     <div class="header-date" id="date-range"></div>
   </header>
@@ -902,7 +902,7 @@ footer {
 </div>
 
 <script>
-fetch('data.json')
+fetch('data.json', { cache: 'no-store' })
   .then(r => r.json())
   .then(FILMS => {
 
@@ -974,8 +974,8 @@ function renderRatingChart(filter) {
       <div class="bar-count">${c}</div>
     </div>`
   ).join('') + (allRatingCounts['unrated'] ? `<div class="bar-row">
-      <div class="bar-label" style="width:108px;text-align:left;padding-left:4px;margin-right:-8px">UNRATED</div>
-      <div class="bar-track"><div class="bar-fill" style="width:${(unrated/maxRatingAll)*100}%;background:#b7b09c"></div></div>
+      <div class="bar-label" style="width:108px;text-align:left;padding-left:5px;margin-right:-8px">UNRATED</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(unrated/maxRatingAll)*100}%;background:#7e7f71"></div></div>
       <div class="bar-count">${unrated}</div>
     </div>` : '');
 }
@@ -1043,7 +1043,7 @@ function renderRuntimeChart() {
   let barsHtml = '';
   items.forEach(it => {
     if (it.type === 'gap') {
-      barsHtml += `<div style="flex:0 0 28px;display:flex;align-items:flex-end;justify-content:center;gap:3px;padding-bottom:1px;">${gapDot}${gapDot}${gapDot}</div>`;
+      barsHtml += `<div style="flex:2 2 0;min-width:0;"></div>`;
     } else {
       const h = Math.round((it.count / maxBinCount) * barMaxH);
       barsHtml += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:0;">
@@ -1056,8 +1056,9 @@ function renderRuntimeChart() {
   let barIdx = 0;
   items.forEach(it => {
     if (it.type === 'gap') {
-      barsHtml += `<div style="flex:0 0 28px;position:relative;">
+      barsHtml += `<div style="flex:2 2 0;min-width:0;position:relative;">
         <span class="rt-label" style="position:absolute;left:0;top:0;transform:translateX(-50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim);white-space:nowrap;">${it.gapStartBin}</span>
+        <span style="position:absolute;left:calc(50% + 2px);top:0;transform:translateX(-50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim);white-space:nowrap;letter-spacing:2px;pointer-events:none;">···</span>
       </div>`;
     } else {
       const oddClass = barIdx % 2 !== 0 ? ' rt-label-odd' : '';
@@ -1328,7 +1329,7 @@ function applyCalMode() {
         cell.style.background = `rgba(${r},${g},${b},0.75)`;
         cell.classList.add('rating-colored');
       } else if (ratings.length > 0) {
-        cell.style.background = 'rgba(138,147,163,0.5)';
+        cell.style.background = 'rgba(126,127,113,0.5)';
         cell.classList.add('rating-colored');
       } else {
         cell.style.background = '';
@@ -1352,7 +1353,7 @@ document.getElementById('cal-toggle-rating').addEventListener('click', () => {
 
 const tooltip = document.getElementById('tooltip');
 function ttRatingBadge(rating) {
-  if (rating == null) return `<span class="tt-rating-badge" style="background:#c9c3b2;color:var(--text-dim)">–</span>`;
+  if (rating == null) return `<span class="tt-rating-badge" style="background:rgba(126,127,113,0.75);color:var(--text)">–</span>`;
   const [r,g,b] = ratingColors[rating] || [138,147,163];
   return `<span class="tt-rating-badge" style="background:rgba(${r},${g},${b},0.75)">${rating}</span>`;
 }
@@ -1475,7 +1476,7 @@ function matchesFilter(f, key, val) {
 }
 
 function renderTable() {
-  const arrow = dir => dir === 'asc' ? '\u25B2' : '\u25BC';
+  const arrow = dir => `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="7" viewBox="0 0 8 5"${dir === 'asc' ? ' style="transform:rotate(180deg)"' : ''}><path d="M0 0l4 5 4-5z" fill="currentColor"/></svg>`;
   document.getElementById('table-head').innerHTML = '<tr>' + columns.map(c => {
     return `<th data-col="${c.key}" style="width:${c.w}">${c.label}${currentSort.col===c.key ? `<span class="sort-arrow">${arrow(currentSort.dir)}</span>` : ''}</th>`;
   }).join('') + '</tr>';
