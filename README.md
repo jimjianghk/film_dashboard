@@ -62,6 +62,10 @@ Sortable, filterable table of every screening. Nine columns: date, title, year, 
 - Fade-up entrance animations with staggered delays
 - Responsive at 1200 / 1000 / 900 / 800 / 600 / 500px breakpoints
 
+### Alternative style: `economist.html`
+
+A second page, `economist.html`, renders the same charts and log on a cream background styled after *The Economist*. Same data, same chart logic — only the visual language changes: Economist Sans throughout, signature red masthead, black section rules, tabular figures, and rating tiles that blend translucently with the paper-cream background. It isn't linked from `index.html`; open it directly at `/economist.html` to compare.
+
 ## Data pipeline
 
 A GitHub Actions workflow (`.github/workflows/update-data.yml`) runs hourly:
