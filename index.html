@@ -74,8 +74,9 @@ header::before {
 }
 h1 {
   font-family: 'Economist Sans', sans-serif;
-  font-weight: 800;
+  font-weight: 700;
   font-size: 3.5rem;
+  text-transform: lowercase;
   letter-spacing: -0.02em;
   line-height: 1;
   color: var(--text);
@@ -112,7 +113,7 @@ h1 {
 .stat-card:hover { background: rgba(0,0,0,0.02); }
 .stat-val {
   font-family: 'Economist Sans', sans-serif;
-  font-size: 2.1rem;
+  font-size: 2.6rem;
   font-weight: 700;
   color: var(--accent);
   letter-spacing: -0.02em;
@@ -129,21 +130,7 @@ h1 {
 }
 
 /* SECTIONS */
-.section { margin: 48px 0; }
-.section-title {
-  font-family: 'Economist Sans', sans-serif;
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  margin-bottom: 18px;
-  display: flex;
-  align-items: center;
-  gap: 0;
-  color: var(--text);
-  padding-top: 8px;
-  border-top: 1px solid var(--text);
-}
-.section-title::before { display: none; }
+.section { margin: 48px 0; border-top: 1px solid var(--text); padding-top: 10px; }
 
 /* CHARTS GRID */
 .charts-grid {
@@ -164,7 +151,7 @@ h1 {
 .chart-label { white-space: nowrap; }
 .switch-label-text { white-space: nowrap; }
 .chart-label {
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: var(--text);
   margin-bottom: 18px;
@@ -204,7 +191,7 @@ h1 {
 .bar-label {
   font-family: 'Economist Sans', sans-serif;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--text);
   width: 48px;
   text-align: right;
@@ -233,7 +220,7 @@ h1 {
 .bar-label.rating-stars {
   width: 91px;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 22px;
   height: 22px;
   letter-spacing: 0;
@@ -266,7 +253,7 @@ h1 {
 .bar-count {
   font-family: 'Economist Sans', sans-serif;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 350;
   color: var(--text);
   width: 30px;
   flex-shrink: 0;
@@ -290,17 +277,8 @@ h1 {
 .venue-col { display: flex; flex-direction: column; }
 
 /* FORMAT STACKED BARS */
-.format-stacked { display: flex; flex-direction: column; gap: 8px; }
+.format-stacked { display: flex; flex-direction: column; gap: 6px; }
 .format-row { display: flex; align-items: center; gap: 12px; position: relative; }
-.format-row-label {
-  font-family: 'Economist Sans', sans-serif;
-  font-size: 1rem;
-  font-weight: 500;
-  color: var(--text);
-  width: 48px;
-  text-align: right;
-  flex-shrink: 0;
-}
 .format-bar-outer { flex: 1; height: 22px; display: flex; align-items: center; }
 .format-bar-track {
   height: 100%;
@@ -332,15 +310,6 @@ h1 {
     rgba(255,255,255,0.55) 2px 4px);
   pointer-events: none;
 }
-.format-row-total {
-  font-family: 'Economist Sans', sans-serif;
-  font-size: 1rem;
-  font-weight: 500;
-  color: var(--text);
-  width: 36px;
-  flex-shrink: 0;
-  font-variant-numeric: tabular-nums;
-}
 .format-legend {
   display: flex;
   flex-wrap: wrap;
@@ -365,7 +334,7 @@ h1 {
   inset: 0;
   background: repeating-linear-gradient(-45deg, transparent 0 2px, rgba(255,255,255,0.55) 2px 4px);
 }
-.legend-count { color: var(--text); margin-left: 2px; font-weight: 600; }
+.legend-count { color: var(--text); margin-left: 2px; font-weight: 350; }
 
 .seg-tooltip {
   position: fixed;
@@ -376,7 +345,7 @@ h1 {
   padding: 4px 10px;
   border-radius: 0;
   font-family: 'Economist Sans', sans-serif;
-  font-weight: 500;
+  font-weight: 400;
   font-size: 1rem;
   white-space: nowrap;
   z-index: 10000;
@@ -405,7 +374,7 @@ h1 {
 .heatmap-month-label {
   font-family: 'Economist Sans', sans-serif;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text);
   margin-bottom: 8px;
   letter-spacing: 0;
@@ -419,8 +388,8 @@ h1 {
 }
 .cal-dayname {
   font-family: 'Economist Sans', sans-serif;
-  font-size: 1rem;
-  font-weight: 500;
+  font-size: 0.9rem;
+  font-weight: 400;
   color: var(--text-dim);
   text-align: center;
   padding-bottom: 4px;
@@ -439,8 +408,8 @@ h1 {
   align-items: center;
   justify-content: center;
   font-family: 'Economist Sans', sans-serif;
-  font-size: 0.82rem;
-  font-weight: 500;
+  font-size: 0.9rem;
+  font-weight: 400;
   color: var(--text-dim);
   overflow: hidden;
   outline: 1px solid transparent;
@@ -503,16 +472,18 @@ h1 {
 
 /* TOOLTIP */
 .tt-rating-badge {
-  display: inline-block;
-  width: 26px; height: 22px;
-  line-height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px; height: 22px;
+  line-height: 1;
   text-align: center;
-  border-radius: 0;
+  border-radius: 50%;
   font-family: 'Economist Sans', sans-serif;
-  font-weight: 700;
+  font-weight: 400;
   font-size: 1rem;
   margin-left: 6px;
-  vertical-align: middle;
+  vertical-align: 0px;
   color: var(--text);
 }
 .tooltip {
@@ -532,8 +503,9 @@ h1 {
 }
 .tooltip-title {
   font-family: 'Economist Sans', sans-serif;
-  font-weight: 600;
-  font-size: 1.05rem;
+  font-weight: 500;
+  font-size: 1rem;
+  line-height: 25px;
   margin-bottom: 4px;
   letter-spacing: 0;
   color: var(--text);
@@ -541,7 +513,7 @@ h1 {
 .tooltip-meta {
   color: var(--text-dim);
   font-family: 'Economist Sans', sans-serif;
-  font-size: 1rem;
+  font-size: 0.9rem;
 }
 
 /* SERIES */
@@ -561,23 +533,26 @@ h1 {
   cursor: default;
 }
 .series-row:hover { background: rgba(0,0,0,0.02); }
-.series-name { flex: 1; font-size: 1.05rem; font-weight: 500; color: var(--text); }
+.series-name { flex: 1; font-size: 1rem; font-weight: 400; color: var(--text); }
 .series-count {
   font-family: 'Economist Sans', sans-serif;
   font-size: 1rem;
-  color: #fff;
-  background: var(--accent);
-  padding: 2px 8px;
-  border-radius: 0;
-  font-weight: 600;
+  color: var(--text);
+  font-weight: 350;
   font-variant-numeric: tabular-nums;
 }
 .series-venue {
   font-family: 'Economist Sans', sans-serif;
-  font-size: 1rem;
-  color: var(--text-dim);
+  font-size: 0.9rem;
+  background: var(--accent);
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: 0;
+  margin-left: 6px;
+  font-weight: 500;
   white-space: nowrap;
-  text-align: right;
+  position: relative;
+  top: -0.5px;
 }
 .series-toggle {
   margin-top: 14px;
@@ -619,12 +594,12 @@ thead { position: sticky; top: 0; z-index: 5; }
 th {
   font-family: 'Economist Sans', sans-serif;
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 500;
   text-transform: none;
   letter-spacing: 0;
   color: var(--text);
   text-align: left;
-  padding: 10px 14px 6px;
+  padding: 10px 14px 0;
   background: var(--bg);
   border-bottom: none;
   cursor: pointer;
@@ -644,19 +619,21 @@ tbody tr:hover { background: rgba(0,0,0,0.03); }
 tbody tr:last-child td { border-bottom: none; }
 .title-cell {
   font-family: 'Economist Sans', sans-serif;
-  font-weight: 600;
-  font-size: 1.05rem;
+  font-weight: 500;
+  font-size: 1rem;
   color: var(--text);
   letter-spacing: 0;
 }
 .rating-badge {
-  display: inline-block;
-  width: 32px; height: 24px;
-  line-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px; height: 24px;
+  line-height: 1;
   text-align: center;
-  border-radius: 0;
+  border-radius: 50%;
   font-family: 'Economist Sans', sans-serif;
-  font-weight: 700;
+  font-weight: 400;
   font-size: 1rem;
   color: var(--text);
   font-variant-numeric: tabular-nums;
@@ -674,42 +651,38 @@ tbody tr:last-child td { border-bottom: none; }
 .rating-badge.rating-unrated { background: rgba(126,127,113,0.75); color: var(--text); }
 .rewatch-badge {
   font-family: 'Economist Sans', sans-serif;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   background: var(--accent);
   color: #fff;
   padding: 1px 6px;
   border-radius: 0;
   margin-left: 6px;
-  font-weight: 600;
+  font-weight: 500;
+  position: relative;
+  top: -0.5px;
 }
 .format-tag {
   font-family: 'Economist Sans', sans-serif;
   font-size: 1rem;
   color: var(--text-dim);
 }
-.format-tag.special { color: var(--accent); font-weight: 600; }
-.price-free {
-  color: #3e7a4c;
+.price-cell {
   font-family: 'Economist Sans', sans-serif;
   font-size: 1rem;
-  font-weight: 600;
-}
-.price-paid {
-  font-family: 'Economist Sans', sans-serif;
-  font-size: 1rem;
+  color: var(--text-dim);
   font-variant-numeric: tabular-nums;
 }
 
 /* FILTER ROW */
 .filter-row-tr td {
-  padding: 2px 14px 8px;
+  padding: 3px 14px 8px;
   background: var(--bg);
   border-bottom: 1px solid var(--text);
 }
 .filter-row-tr select.col-filter {
   font-family: 'Economist Sans', sans-serif;
-  font-size: 1rem;
-  font-weight: 500;
+  font-size: 0.9rem;
+  font-weight: 400;
   background: transparent;
   color: var(--text-dim);
   border: 1px solid var(--border-strong);
@@ -733,15 +706,15 @@ tbody tr:last-child td { border-bottom: none; }
 
 .switch-toggle { position: relative; display: inline-block; width: 28px; height: 16px; flex-shrink: 0; }
 .switch-toggle input { opacity: 0; width: 0; height: 0; }
-.switch-slider { position: absolute; cursor: pointer; inset: 0; background: var(--border-strong); border-radius: 0; transition: background 0.2s; }
-.switch-slider::before { content: ''; position: absolute; height: 12px; width: 12px; left: 2px; top: 2px; background: var(--bg); transition: transform 0.2s, background 0.2s; }
-.switch-toggle input:checked + .switch-slider { background: var(--accent); }
-.switch-toggle input:checked + .switch-slider::before { transform: translateX(12px); background: var(--bg); }
-.switch-label-text { font-family: 'Economist Sans', sans-serif; font-size: 1rem; color: var(--text); letter-spacing: 0; text-transform: none; font-weight: 400; }
+.switch-slider { position: absolute; cursor: pointer; inset: 0; background: transparent; border: 1px solid var(--text); border-radius: 0; transition: border-color 0.2s; }
+.switch-slider::before { content: ''; position: absolute; height: 10px; width: 10px; left: 2px; top: 2px; background: var(--text); transition: transform 0.2s, background 0.2s; }
+.switch-toggle input:checked + .switch-slider { border-color: var(--accent); }
+.switch-toggle input:checked + .switch-slider::before { transform: translateX(12px); background: var(--accent); }
+.switch-label-text { font-family: 'Economist Sans', sans-serif; font-size: 1rem; color: var(--text); letter-spacing: 0; text-transform: none; font-weight: 500; }
 
 .filter-row-tr input.col-search {
   font-family: 'Economist Sans', sans-serif;
-  font-size: 1rem;
+  font-size: 0.9rem;
   background: transparent;
   color: var(--text);
   border: 1px solid var(--border-strong);
@@ -765,7 +738,6 @@ footer {
   font-size: 1rem;
   font-family: 'Economist Sans', sans-serif;
   letter-spacing: 0;
-  font-style: italic;
 }
 
 /* ANIMATIONS */
@@ -883,13 +855,13 @@ footer {
   </div>
 
   <div class="section animate delay-4">
-    <div class="section-title">Festivals &amp; Series</div>
+    <div class="chart-label">Festivals &amp; Series</div>
     <div id="series-list" class="series-list collapsed"></div>
     <button class="series-toggle" id="series-toggle">Show All Series</button>
   </div>
 
   <div class="section animate delay-5">
-    <div class="section-title">Complete Log</div>
+    <div class="chart-label">Complete Log</div>
     <div class="film-table-wrap">
       <table>
         <thead id="table-head"></thead>
@@ -1047,7 +1019,7 @@ function renderRuntimeChart() {
     } else {
       const h = Math.round((it.count / maxBinCount) * barMaxH);
       barsHtml += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:0;">
-        <div style="font-family:'Economist Sans',sans-serif;font-size:0.9rem;color:${it.count ? 'var(--text)' : 'var(--text-dim)'};margin-bottom:4px;">${it.count || ''}</div>
+        <div style="font-family:'Economist Sans',sans-serif;font-size:0.9rem;font-weight:350;color:${it.count ? 'var(--text)' : 'var(--text-dim)'};margin-bottom:4px;">${it.count || ''}</div>
         <div class="hist-bar" style="width:100%;height:${h}px;background:var(--accent);border-radius:0;${it.count ? '' : 'visibility:hidden;'}"></div>
       </div>`;
     }
@@ -1191,9 +1163,9 @@ const rowsHtml = bases.map(b => {
     return out;
   }).join('');
   return `<div class="format-row">
-    <div class="format-row-label">${b}</div>
+    <div class="bar-label">${b}</div>
     <div class="format-bar-outer"><div class="format-bar-track" style="width:${trackPct}%;">${segs}</div></div>
-    <div class="format-row-total">${data.total}</div>
+    <div class="bar-count">${data.total}</div>
   </div>`;
 }).join('');
 
@@ -1221,7 +1193,7 @@ const segTooltip = document.getElementById('seg-tooltip');
 function showSegTooltip(seg) {
   const label = seg.dataset.label;
   const count = Number(seg.dataset.count);
-  segTooltip.textContent = `${label} · ${count} film${count === 1 ? '' : 's'}`;
+  segTooltip.textContent = `${label} · ${count}`;
   segTooltip.style.display = 'block';
   const r = seg.getBoundingClientRect();
   let left = r.left + r.width / 2 - segTooltip.offsetWidth / 2;
@@ -1410,9 +1382,8 @@ FILMS.forEach(f => {
 const seriesArr = Object.entries(seriesCounts).sort((a,b) => b[1]-a[1]);
 document.getElementById('series-list').innerHTML = seriesArr.map(([s,c]) =>
   `<div class="series-row">
-    <span class="series-name">${s}</span>
-    <span class="series-venue">${Object.entries(seriesVenues[s]).sort((a,b) => b[1]-a[1]).map(e => e[0]).join(', ')}</span>
-    <span class="series-count">${c} film${c>1?'s':''}</span>
+    <span class="series-name">${s}${Object.entries(seriesVenues[s]).sort((a,b) => b[1]-a[1]).map(e => `<span class="series-venue">${e[0]}</span>`).join('')}</span>
+    <span class="series-count">${c}</span>
   </div>`
 ).join('');
 
@@ -1432,14 +1403,14 @@ const activeFilters = {};
 const filterableKeys = ['date', 'year', 'rating', 'format', 'venue', 'series'];
 const columns = [
   { key:'date', label:'Date', w:'8%' },
-  { key:'title', label:'Title', w:'28%' },
+  { key:'title', label:'Title', w:'24%' },
   { key:'year', label:'Year', w:'8%' },
   { key:'runtime', label:'Length', w:'6%' },
   { key:'rating', label:'Rating', w:'8%' },
   { key:'format', label:'Format', w:'8%' },
   { key:'price', label:'Price', w:'6%' },
   { key:'venue', label:'Venue', w:'8%' },
-  { key:'series', label:'Series', w:'20%' }
+  { key:'series', label:'Series', w:'24%' }
 ];
 
 function getFilterOptions(key) {
@@ -1527,19 +1498,18 @@ function renderTable() {
 
   document.getElementById('table-body').innerHTML = filtered.map(f => {
     const rClass = f.rating != null ? 'rating-' + f.rating : 'rating-unrated';
-    const fmtClass = f.format !== 'DCP' ? 'special' : '';
     const dateStr = new Date(f.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    const priceStr = f.price === 0 ? '<span class="price-free">Free</span>' : `<span class="price-paid">$${f.price % 1 === 0 ? f.price : f.price.toFixed(2)}</span>`;
+    const priceStr = f.price === 0 ? 'Free' : `$${f.price % 1 === 0 ? f.price : f.price.toFixed(2)}`;
     return `<tr>
       <td><span style="font-family:'Economist Sans',sans-serif;font-size:1rem;color:var(--text-dim)">${dateStr}</span></td>
-      <td><span class="title-cell">${f.title}</span>${f.rewatch ? '<span class="rewatch-badge">rewatch</span>' : ''}</td>
+      <td><span class="title-cell">${f.title}</span>${f.rewatch ? '<span class="rewatch-badge">Rewatch</span>' : ''}</td>
       <td style="font-family:'Economist Sans',sans-serif;font-size:1rem;color:var(--text-dim)">${f.year}</td>
-      <td style="font-family:'Economist Sans',sans-serif;font-size:1rem">${f.runtime}</td>
+      <td style="font-family:'Economist Sans',sans-serif;font-size:1rem;color:var(--text-dim)">${f.runtime}</td>
       <td><span class="rating-badge ${rClass}">${f.rating != null ? f.rating : '–'}</span></td>
-      <td><span class="format-tag ${fmtClass}">${f.format}</span></td>
-      <td>${priceStr}</td>
-      <td style="font-family:'Economist Sans',sans-serif;font-size:1rem">${f.venue}</td>
-      <td style="font-size:1rem;color:var(--text-dim);line-height:1.3">${f.series||'\u2014'}</td>
+      <td><span class="format-tag">${f.format}</span></td>
+      <td><span class="price-cell">${priceStr}</span></td>
+      <td style="font-family:'Economist Sans',sans-serif;font-size:1rem;color:var(--text-dim)">${f.venue}</td>
+      <td style="font-family:'Economist Sans',sans-serif;font-size:1rem;color:var(--text-dim);line-height:1.3">${f.series||'\u2014'}</td>
     </tr>`;
   }).join('');
 
@@ -1583,7 +1553,7 @@ function renderTable() {
 }
 
 renderTable();
-document.getElementById('footer-text').textContent = totalFilms + (totalFilms === 1 ? ' film' : ' films') + ' \u2022 Built from the cinema log spreadsheet \u2022 Updated daily';
+document.getElementById('footer-text').textContent = 'Built from the cinema log spreadsheet \u2022 Updated daily';
 
 });
 </script>
