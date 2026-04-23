@@ -483,9 +483,6 @@ h1 {
 @media (max-width: 499px) {
   .rating-filter-toggle { order: 3; }
 }
-@media (max-width: 499px) {
-  .rt-label-odd { display: none; }
-}
 .calendar-header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 @media (min-width: 500px) {
   .calendar-header { flex-wrap: nowrap; }
@@ -862,7 +859,9 @@ footer img.footer-favicon {
           <span class="switch-label-text" id="runtime-dedup-label">Unique titles</span>
         </span>
       </div>
-      <div id="runtime-chart" style="display:flex;align-items:flex-end;gap:2px;height:160px;padding-top:12px;max-width:825px;width:100%;margin:0 auto;"></div>
+      <div style="overflow-x:auto;padding:12px 18px 22px;">
+        <div id="runtime-chart" style="display:flex;align-items:flex-end;gap:2px;height:160px;padding-top:12px;width:100%;max-width:825px;margin:0 auto;"></div>
+      </div>
     </div>
     <div class="chart-card full animate delay-3">
       <div class="chart-label">Screening venue</div>
@@ -1041,29 +1040,26 @@ function renderRuntimeChart() {
   let barsHtml = '';
   items.forEach(it => {
     if (it.type === 'gap') {
-      barsHtml += `<div style="flex:2 2 0;min-width:0;"></div>`;
+      barsHtml += `<div style="flex:2 2 0;min-width:44px;"></div>`;
     } else {
       const h = Math.round((it.count / maxBinCount) * barMaxH);
-      barsHtml += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:0;">
+      barsHtml += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:22px;">
         <div style="font-family:'Economist Sans',sans-serif;font-size:0.9rem;font-weight:350;color:${it.count ? 'var(--text)' : 'var(--text-dim)'};margin-bottom:4px;">${it.count || ''}</div>
         <div class="hist-bar" style="width:100%;height:${h}px;background:var(--accent);border-radius:0;${it.count ? '' : 'visibility:hidden;'}"></div>
       </div>`;
     }
   });
   barsHtml += `<div style="position:absolute;bottom:0;left:0;right:0;display:flex;gap:2px;">`;
-  let barIdx = 0;
   items.forEach(it => {
     if (it.type === 'gap') {
-      barsHtml += `<div style="flex:2 2 0;min-width:0;position:relative;">
+      barsHtml += `<div style="flex:2 2 0;min-width:44px;position:relative;">
         <span class="rt-label" style="position:absolute;left:0;top:0;transform:translateX(-50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim);white-space:nowrap;font-variant-numeric:tabular-nums;">${it.gapStartBin}</span>
         <span style="position:absolute;left:calc(50% + 2px);top:0;transform:translateX(-50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim);white-space:nowrap;font-variant-numeric:tabular-nums;letter-spacing:2px;pointer-events:none;">···</span>
       </div>`;
     } else {
-      const oddClass = barIdx % 2 !== 0 ? ' rt-label-odd' : '';
-      barsHtml += `<div style="flex:1;position:relative;min-width:0;">
-        <span class="rt-label${oddClass}" style="position:absolute;left:0;top:0;transform:translateX(-50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim);white-space:nowrap;font-variant-numeric:tabular-nums;">${it.bin}</span>
+      barsHtml += `<div style="flex:1;position:relative;min-width:22px;">
+        <span class="rt-label" style="position:absolute;left:0;top:0;transform:translateX(-50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim);white-space:nowrap;font-variant-numeric:tabular-nums;">${it.bin}</span>
       </div>`;
-      barIdx++;
     }
   });
   const lastBar = [...items].reverse().find(x => x.type === 'bar');
