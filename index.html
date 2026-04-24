@@ -114,7 +114,7 @@ h1 {
   background: transparent;
 }
 .stat-card:last-child { border-right: none; }
-.stat-card:hover { background: rgba(0,0,0,0.02); }
+.stat-card:hover { background: rgba(0,0,0,0.05); }
 .stat-val {
   font-family: 'Economist Sans', sans-serif;
   font-size: 2.6rem;
@@ -310,7 +310,7 @@ h1 {
   min-width: 3px;
   position: relative;
 }
-.format-seg:hover { filter: brightness(1.08); }
+.format-seg:hover { filter: brightness(1.15); }
 .format-seg.seg-standard { background: var(--accent); }
 .format-seg.seg-imax { background: var(--blue-light); }
 .format-seg.seg-dolby { background: var(--peach); }
@@ -470,7 +470,7 @@ h1 {
   background: var(--text);
   color: var(--bg);
 }
-.cal-toggle:hover:not(.active) { background: var(--surface3); }
+.cal-toggle:hover:not(.active) { background: rgba(0,0,0,0.05); }
 
 /* RESPONSIVE HEADERS */
 .rating-header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
@@ -531,14 +531,14 @@ h1 {
 }
 
 /* SERIES */
-.series-list { display: grid; gap: 4px; }
+.series-list { display: grid; }
 .series-list.collapsed .series-row:nth-child(n+6) { display: none; }
 .series-list.expanded { max-height: 384px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
 .series-row {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 6px 0;
+  padding: 8px 12px;
   background: transparent;
   border: none;
   border-bottom: 1px solid var(--border);
@@ -546,7 +546,7 @@ h1 {
   transition: background 0.2s;
   cursor: default;
 }
-.series-row:hover { background: rgba(0,0,0,0.02); }
+.series-row:hover { background: rgba(0,0,0,0.05); }
 .series-name { flex: 1; font-size: 1rem; font-weight: 400; color: var(--text); }
 .series-count {
   font-family: 'Economist Sans', sans-serif;
@@ -629,7 +629,7 @@ td {
   vertical-align: middle;
 }
 tbody tr { transition: background 0.15s; }
-tbody tr:hover { background: rgba(0,0,0,0.03); }
+tbody tr:hover { background: rgba(0,0,0,0.05); }
 tbody tr:last-child td { border-bottom: none; }
 .title-cell {
   font-family: 'Economist Sans', sans-serif;
@@ -878,7 +878,7 @@ footer img.footer-favicon {
   <div class="section animate delay-4">
     <div class="chart-label">Festivals &amp; series</div>
     <div id="series-list" class="series-list collapsed"></div>
-    <button class="series-toggle" id="series-toggle">Show All Series</button>
+    <button class="series-toggle" id="series-toggle">Show all series</button>
   </div>
 
   <div class="section animate delay-5">
@@ -1208,25 +1208,32 @@ const legendHtml = `<div class="format-legend">
 document.getElementById('format-chart').innerHTML = `<div class="format-stacked">${rowsHtml}</div>${legendHtml}`;
 
 const segTooltip = document.getElementById('seg-tooltip');
-function showSegTooltip(seg) {
-  const label = seg.dataset.label;
-  const count = Number(seg.dataset.count);
-  segTooltip.textContent = `${label} · ${count}`;
-  segTooltip.style.display = 'block';
+function positionSegTooltip(seg, cursorX) {
   const r = seg.getBoundingClientRect();
-  let left = r.left + r.width / 2 - segTooltip.offsetWidth / 2;
+  let left = cursorX - segTooltip.offsetWidth / 2;
   if (left + segTooltip.offsetWidth > window.innerWidth - 8) left = window.innerWidth - segTooltip.offsetWidth - 8;
   if (left < 8) left = 8;
   segTooltip.style.left = left + 'px';
   segTooltip.style.top = (r.top - segTooltip.offsetHeight - 6) + 'px';
 }
+function showSegTooltip(seg, cursorX) {
+  const label = seg.dataset.label;
+  const count = Number(seg.dataset.count);
+  segTooltip.textContent = `${label} · ${count}`;
+  segTooltip.style.display = 'block';
+  const r = seg.getBoundingClientRect();
+  if (cursorX == null) cursorX = r.left + r.width / 2;
+  positionSegTooltip(seg, cursorX);
+}
 function hideSegTooltip() { segTooltip.style.display = 'none'; }
 document.querySelectorAll('.format-seg').forEach(seg => {
-  seg.addEventListener('mouseenter', () => showSegTooltip(seg));
+  seg.addEventListener('mouseenter', e => showSegTooltip(seg, e.clientX));
+  seg.addEventListener('mousemove', e => positionSegTooltip(seg, e.clientX));
   seg.addEventListener('mouseleave', hideSegTooltip);
   seg.addEventListener('touchstart', e => {
     e.preventDefault();
-    showSegTooltip(seg);
+    const t = e.touches[0];
+    showSegTooltip(seg, t ? t.clientX : null);
   }, {passive: false});
 });
 document.addEventListener('touchstart', e => {
@@ -1411,7 +1418,7 @@ seriesToggleBtn.addEventListener('click', () => {
   const isCollapsed = seriesListEl.classList.contains('collapsed');
   seriesListEl.classList.toggle('collapsed');
   seriesListEl.classList.toggle('expanded');
-  seriesToggleBtn.textContent = isCollapsed ? 'Show Fewer' : 'Show All Series';
+  seriesToggleBtn.textContent = isCollapsed ? 'Show fewer' : 'Show all series';
 });
 
 // ====== FILM TABLE ======
