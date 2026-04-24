@@ -206,15 +206,11 @@ h1 {
   font-weight: 400;
   color: var(--text);
   width: 48px;
-  text-align: right;
+  text-align: left;
+  padding-left: 4px;
   flex-shrink: 0;
   position: relative;
   font-variant-numeric: tabular-nums;
-}
-#venue-chart .bar-label,
-.format-row .bar-label {
-  text-align: left;
-  padding-left: 4px;
 }
 #venue-chart .bar-track {
   margin-left: 8px;
@@ -244,8 +240,7 @@ h1 {
   line-height: 22px;
   height: 22px;
   letter-spacing: 0;
-  text-align: left;
-  padding-left: 4px;
+  padding-left: 3px;
   margin-right: -8px;
   overflow: hidden;
   color: var(--text);
@@ -627,7 +622,7 @@ th {
   transition: color 0.2s;
 }
 th:hover { color: var(--accent); }
-th .sort-arrow { margin-left: 4px; color: var(--accent); display: inline-block; vertical-align: middle; line-height: 0; position: relative; top: -1px; }
+th .sort-arrow { margin-left: 1px; color: var(--accent); display: inline-block; vertical-align: middle; line-height: 0; position: relative; top: -1px; }
 td {
   padding: 9px 14px;
   border-bottom: 1px solid var(--border);
@@ -972,7 +967,7 @@ function renderRatingChart(filter) {
       <div class="bar-count">${c}</div>
     </div>`
   ).join('') + (allRatingCounts['unrated'] ? `<div class="bar-row">
-      <div class="bar-label" style="width:91px;text-align:left;padding-left:5.5px;margin-right:-8px">Unrated</div>
+      <div class="bar-label" style="width:91px;margin-right:-8px">Unrated</div>
       <div class="bar-track"><div class="bar-fill" style="width:${(unrated/maxRatingAll)*100}%;background:#7e7f71"></div></div>
       <div class="bar-count">${unrated}</div>
     </div>` : '');
@@ -1425,15 +1420,15 @@ const activeFilters = {};
 
 const filterableKeys = ['date', 'year', 'rating', 'format', 'venue', 'series'];
 const columns = [
-  { key:'date', label:'Date', w:'7.5%' },
-  { key:'title', label:'Title', w:'24%' },
+  { key:'date', label:'Date', w:'7.75%' },
+  { key:'title', label:'Title', w:'23.75%' },
   { key:'year', label:'Year', w:'7.5%' },
-  { key:'runtime', label:'Length', w:'6%' },
+  { key:'runtime', label:'Length', w:'6.25%' },
   { key:'rating', label:'Rating', w:'7.5%' },
   { key:'format', label:'Format', w:'10%' },
   { key:'price', label:'Price', w:'7%' },
   { key:'venue', label:'Venue', w:'7.5%' },
-  { key:'series', label:'Series', w:'23%' }
+  { key:'series', label:'Series', w:'22.75%' }
 ];
 
 function getFilterOptions(key) {
