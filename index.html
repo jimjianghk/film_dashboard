@@ -186,13 +186,12 @@ h1 {
 .format-row::before {
   content: '';
   position: absolute;
-  top: -3px;
-  bottom: -3px;
+  top: -6px;
+  bottom: -2px;
   width: 1.5px;
   background: var(--text);
   z-index: 1;
 }
-.format-row::before { top: -4px; bottom: -4px; }
 #rating-chart .bar-row::before { left: 95px; }
 #decade-chart .bar-row::before,
 .format-row::before { left: 60px; }
@@ -856,7 +855,7 @@ footer img.footer-favicon {
         </span>
       </div>
       <div style="overflow-x:auto;padding:12px 18px 22px;">
-        <div id="runtime-chart" style="display:flex;align-items:flex-end;gap:2px;height:160px;padding-top:12px;width:100%;max-width:825px;margin:0 auto;"></div>
+        <div id="runtime-chart" style="display:flex;align-items:flex-end;gap:2px;height:160px;padding-top:12px;width:100%;"></div>
       </div>
     </div>
     <div class="chart-card full animate delay-3">
@@ -1031,41 +1030,69 @@ function renderRuntimeChart() {
   }
 
   const chartEl = document.getElementById('runtime-chart');
-  chartEl.style.cssText += `;display:flex;align-items:flex-end;gap:2px;position:relative;padding-bottom:4px;`;
-  const gapDot = `<span style="width:1.5px;height:1.5px;background:var(--text-dim);border-radius:50%;display:block;"></span>`;
+  // Compute scaled gap: bars can grow to barW > MIN_BAR, and we want gap = barW / GAP_RATIO.
+  // Floor at MIN_GAP so the chart becomes scrollable before bars shrink below MIN_BAR.
+  const MIN_BAR = 24, MIN_GAP = 2, GAP_RATIO = 12;
+  const barCountForCalc = items.filter(i => i.type === 'bar').length;
+  const gapItemCountForCalc = items.filter(i => i.type === 'gap').length;
+  const totalUnits = barCountForCalc + 2 * gapItemCountForCalc;
+  const flexGaps = Math.max(0, items.length - 1);
+  // Reset to measure available width
+  chartEl.style.cssText = `display:flex;align-items:flex-end;gap:${MIN_GAP}px;position:relative;padding-bottom:4px;height:160px;padding-top:12px;width:100%;`;
+  const availableW = chartEl.getBoundingClientRect().width;
+  const estBarW = availableW / (totalUnits + flexGaps / GAP_RATIO);
+  const gap = estBarW >= MIN_BAR ? Math.max(MIN_GAP, Math.round(estBarW / GAP_RATIO)) : MIN_GAP;
+  chartEl.style.gap = gap + 'px';
+  const halfGap = gap / 2;
+  // Render ticks and labels AS CHILDREN of each bar/gap-item so they share the bar's
+  // rasterization context. In a separate overlay (even one anchored to measured bar
+  // positions), the browser can rasterize the overlay at slightly different subpixel
+  // offsets from the bars under fractional page zoom, causing visible drift.
+  // By nesting them in the same flex-item subtree, zoom transforms apply uniformly.
+  const labelCss = `position:absolute;top:0;transform:translateX(-50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;font-weight:350;color:var(--text);white-space:nowrap;font-variant-numeric:tabular-nums;`;
   let barsHtml = '';
-  items.forEach(it => {
+  items.forEach((it, idx) => {
+    const shift = idx > 0 ? halfGap : 0;
+    // Tick + label both anchored to bar's left edge, offset by halfGap into the preceding flex gap.
+    // Final tick+label (for the right edge after the last bar) rendered inside the last bar using right:.
+    const tick = `<span style="position:absolute;left:${-shift - 0.75}px;bottom:-5px;width:1.5px;height:5px;background:var(--text);pointer-events:none;"></span>`;
+    const label = `<span style="left:${-shift}px;bottom:-22px;${labelCss.replace('top:0;','')}">${it.type === 'gap' ? it.gapStartBin : it.bin}</span>`;
+    const isLast = idx === items.length - 1;
+    // On the last item, also render the right-edge tick and label (for the bin end value)
+    let endTick = '', endLabel = '', dotsLabel = '';
+    if (isLast) {
+      const lastBar = [...items].reverse().find(x => x.type === 'bar');
+      const lastVal = lastBar ? lastBar.bin + binSize : maxBin + binSize;
+      endTick = `<span style="position:absolute;right:-0.75px;bottom:-5px;width:1.5px;height:5px;background:var(--text);pointer-events:none;"></span>`;
+      endLabel = `<span style="right:0;bottom:-22px;${labelCss.replace('top:0;','').replace('transform:translateX(-50%);','transform:translateX(50%);')}">${lastVal}</span>`;
+    }
     if (it.type === 'gap') {
-      barsHtml += `<div style="flex:2 2 0;min-width:44px;"></div>`;
+      dotsLabel = `<span style="left:50%;bottom:-22px;letter-spacing:2px;${labelCss.replace('top:0;','')}">···</span>`;
+      barsHtml += `<div style="flex:2 2 0;min-width:48px;position:relative;">${tick}${label}${dotsLabel}${endTick}${endLabel}</div>`;
     } else {
       const h = Math.round((it.count / maxBinCount) * barMaxH);
-      barsHtml += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:22px;">
+      const prevIsBar = idx > 0 && items[idx-1].type === 'bar';
+      const nextIsBar = idx < items.length-1 && items[idx+1].type === 'bar';
+      const lo = prevIsBar ? halfGap : 8;
+      const ro = nextIsBar ? halfGap : 8;
+      barsHtml += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:24px;position:relative;">
         <div style="font-family:'Economist Sans',sans-serif;font-size:0.9rem;font-weight:350;color:${it.count ? 'var(--text)' : 'var(--text-dim)'};margin-bottom:4px;">${it.count || ''}</div>
         <div class="hist-bar" style="width:100%;height:${h}px;background:var(--accent);border-radius:0;${it.count ? '' : 'visibility:hidden;'}"></div>
+        <div style="position:absolute;left:-${lo}px;right:-${ro}px;bottom:0;height:1.5px;background:var(--text);pointer-events:none;"></div>
+        ${tick}${label}${endTick}${endLabel}
       </div>`;
     }
   });
-  barsHtml += `<div style="position:absolute;bottom:0;left:0;right:0;display:flex;gap:2px;">`;
-  items.forEach(it => {
-    if (it.type === 'gap') {
-      barsHtml += `<div style="flex:2 2 0;min-width:44px;position:relative;">
-        <span style="position:absolute;left:0;top:0;transform:translateX(-50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim);white-space:nowrap;font-variant-numeric:tabular-nums;">${it.gapStartBin}</span>
-        <span style="position:absolute;left:calc(50% + 2px);top:0;transform:translateX(-50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim);white-space:nowrap;font-variant-numeric:tabular-nums;letter-spacing:2px;pointer-events:none;">···</span>
-      </div>`;
-    } else {
-      barsHtml += `<div style="flex:1;position:relative;min-width:22px;">
-        <span style="position:absolute;left:0;top:0;transform:translateX(-50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim);white-space:nowrap;font-variant-numeric:tabular-nums;">${it.bin}</span>
-      </div>`;
-    }
-  });
-  const lastBar = [...items].reverse().find(x => x.type === 'bar');
-  const lastVal = lastBar ? lastBar.bin + binSize : maxBin + binSize;
-  barsHtml += `<div style="flex:0 0 0;position:relative;"><span style="position:absolute;right:0;top:0;transform:translateX(50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;color:var(--text-dim);white-space:nowrap;font-variant-numeric:tabular-nums;">${lastVal}</span></div>`;
-  barsHtml += `</div>`;
   chartEl.innerHTML = barsHtml;
 }
 renderRuntimeChart();
 document.getElementById('runtime-dedup').addEventListener('change', renderRuntimeChart);
+// Re-render on resize so the flex gap rescales with bar width
+let runtimeResizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(runtimeResizeTimer);
+  runtimeResizeTimer = setTimeout(renderRuntimeChart, 120);
+});
 
 // ====== VENUE CHART ======
 const venueCounts = {};
