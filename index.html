@@ -16,6 +16,13 @@
   font-style: normal;
   font-display: swap;
 }
+@font-face {
+  font-family: 'Economist Sans Headline';
+  src: url('fonts/economist-sans-headline.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
 :root {
   --bg: #e9e4d7;
   --surface: #e9e4d7;
@@ -98,38 +105,48 @@ h1 {
 
 /* STAT CARDS */
 .stats-row {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 0;
-  margin: 16px 0 48px;
-  border-top: 1px solid var(--border-strong);
-  border-bottom: 1px solid var(--border-strong);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  column-gap: 24px;
+  row-gap: 0;
+  margin: 0 0 48px;
+}
+.stats-row::after {
+  content: '';
+  width: 0;
+  padding: 0;
+  flex: 0 0 0;
 }
 .stat-card {
-  padding: 18px 20px;
+  padding: 8px 0 8px 20px;
   text-align: left;
-  border-right: 1px solid var(--border);
-  transition: background 0.2s;
   position: relative;
   background: transparent;
 }
-.stat-card:last-child { border-right: none; }
-.stat-card:hover { background: rgba(0,0,0,0.05); }
+.stat-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 20px;
+  bottom: 12px;
+  width: 9px;
+  background: var(--text);
+}
 .stat-val {
-  font-family: 'Economist Sans', sans-serif;
-  font-size: 2.6rem;
+  font-family: 'Economist Sans Headline', 'Economist Sans', sans-serif;
+  font-size: 4rem;
   font-weight: 700;
   color: var(--accent);
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   line-height: 1.1;
-  font-variant-numeric: tabular-nums;
 }
 .stat-label {
   font-size: 1.05rem;
   color: var(--text-dim);
-  margin-top: 0;
+  margin-top: -6px;
   letter-spacing: 0;
-  font-weight: 400;
+  font-weight: 500;
   text-transform: none;
 }
 
@@ -774,9 +791,8 @@ footer img.footer-favicon {
 .delay-5 { animation-delay: 0.45s; }
 
 @media (max-width: 1000px) {
-  .stats-row { grid-template-columns: repeat(3, 1fr); }
-  .stat-card { border-right: 1px solid var(--border); }
-  .stat-card:nth-child(3n) { border-right: none; }
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); column-gap: 0; row-gap: 0; }
+  .stats-row::after { display: none; }
 }
 @media (max-width: 800px) {
   .chart-card { flex-basis: 100%; }
@@ -784,9 +800,7 @@ footer img.footer-favicon {
   .venue-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 500px) {
-  .stats-row { grid-template-columns: repeat(2, 1fr); }
-  .stat-card:nth-child(2n+1) { border-right: 1px solid var(--border); }
-  .stat-card:nth-child(2n) { border-right: none; }
+  .stats-row { display: grid; grid-template-columns: repeat(2, 1fr); column-gap: 0; row-gap: 0; }
   header { padding: 48px 0 32px; }
 }
 </style>

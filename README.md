@@ -10,7 +10,7 @@ The page loads `data.json` — an array of film objects with date, title, year, 
 
 ### Stats row
 
-Six summary cards: total screenings, average rating (excluding unrated films), total runtime in hours, total spent, unique venues visited, and rewatch count.
+Six summary cards: total screenings, average rating (excluding unrated films), total runtime in hours, total spent, unique venues visited, and rewatch count. Values are set in Economist Sans Headline (condensed display cut) with a thick black accent bar to the left of each stat. In a single row the cards size to content and gaps distribute evenly across the viewport (including a matching trailing gap after the last card); at narrower breakpoints the row wraps to three, then two, equal-width columns.
 
 ### Rating chart
 
@@ -57,7 +57,7 @@ Sortable, filterable table of every screening. Nine columns: date, title, year, 
 ## Design
 
 - Cream paper background styled after *The Economist*
-- Economist Sans throughout, signature red masthead, black section rules, tabular figures
+- Economist Sans throughout (with Economist Sans Headline for the hero stat values), signature red masthead, black section rules, tabular figures
 - Rating tiles blend translucently with the paper-cream background
 - Fade-up entrance animations with staggered delays
 - Responsive at 1200 / 1000 / 900 / 800 / 600 / 500px breakpoints
