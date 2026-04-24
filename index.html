@@ -482,6 +482,7 @@ h1 {
 .rating-dedup-toggle { margin-left: 6px; }
 @media (max-width: 499px) {
   .rating-filter-toggle { order: 3; }
+  .chart-dedup { margin-left: auto; }
 }
 .calendar-header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 @media (min-width: 500px) {
@@ -823,7 +824,7 @@ footer img.footer-favicon {
           <button class="cal-toggle" id="rat-toggle-new">New releases</button>
           <button class="cal-toggle" id="rat-toggle-rep">Repertory</button>
         </span>
-        <span class="rating-dedup-toggle" style="display:flex;align-items:center;gap:6px;">
+        <span class="rating-dedup-toggle chart-dedup" style="display:flex;align-items:center;gap:6px;">
           <label class="switch-toggle" title="De-duplicate rewatches">
             <input type="checkbox" id="rating-dedup">
             <span class="switch-slider"></span>
@@ -835,7 +836,7 @@ footer img.footer-favicon {
     </div>
     <div class="chart-card animate delay-2">
       <div class="chart-label" style="display:flex;align-items:center;gap:18px;min-height:29px;">Production decade
-        <span style="display:flex;align-items:center;gap:6px;">
+        <span class="chart-dedup" style="display:flex;align-items:center;gap:6px;">
           <label class="switch-toggle" title="De-duplicate rewatches">
             <input type="checkbox" id="decade-dedup">
             <span class="switch-slider"></span>
@@ -851,7 +852,7 @@ footer img.footer-favicon {
     </div>
     <div class="chart-card full animate delay-3">
       <div class="chart-label" style="display:flex;align-items:center;gap:18px;">Runtime distribution
-        <span style="display:flex;align-items:center;gap:6px;">
+        <span class="chart-dedup" style="display:flex;align-items:center;gap:6px;">
           <label class="switch-toggle" title="De-duplicate rewatches">
             <input type="checkbox" id="runtime-dedup">
             <span class="switch-slider"></span>
@@ -1424,15 +1425,15 @@ const activeFilters = {};
 
 const filterableKeys = ['date', 'year', 'rating', 'format', 'venue', 'series'];
 const columns = [
-  { key:'date', label:'Date', w:'7%' },
-  { key:'title', label:'Title', w:'25%' },
-  { key:'year', label:'Year', w:'7%' },
+  { key:'date', label:'Date', w:'7.5%' },
+  { key:'title', label:'Title', w:'24%' },
+  { key:'year', label:'Year', w:'7.5%' },
   { key:'runtime', label:'Length', w:'6%' },
-  { key:'rating', label:'Rating', w:'7%' },
+  { key:'rating', label:'Rating', w:'7.5%' },
   { key:'format', label:'Format', w:'10%' },
   { key:'price', label:'Price', w:'7%' },
-  { key:'venue', label:'Venue', w:'7%' },
-  { key:'series', label:'Series', w:'24%' }
+  { key:'venue', label:'Venue', w:'7.5%' },
+  { key:'series', label:'Series', w:'23%' }
 ];
 
 function getFilterOptions(key) {
