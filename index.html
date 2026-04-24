@@ -214,7 +214,7 @@ h1 {
 .format-row::before { left: 60px; }
 #venue-chart .bar-row::before { left: 68px; }
 .bar-row:hover .bar-fill { filter: brightness(1.15); }
-.hist-bar { transition: filter 0.15s; cursor: default; }
+.hist-bar { transition: filter 0.15s, height 0.8s cubic-bezier(0.22,1,0.36,1); cursor: default; }
 .hist-bar:hover { filter: brightness(1.2); }
 .bar-label {
   font-family: 'Economist Sans', sans-serif;
@@ -972,18 +972,28 @@ function renderRatingChart(filter) {
   for (let i=1;i<=10;i++) ratingCounts[i] = 0;
   ratingCounts['unrated'] = 0;
   subset.forEach(f => { if (f.rating != null) ratingCounts[f.rating]++; else ratingCounts['unrated']++; });
-  const unrated = ratingCounts['unrated'];
-  document.getElementById('rating-chart').innerHTML = Object.entries(ratingCounts).filter(([r]) => r !== 'unrated').map(([r,c]) =>
-    `<div class="bar-row">
-      <div class="bar-label rating-stars">${toStars(Number(r))}</div>
-      <div class="bar-track"><div class="bar-fill rating-${r}" style="width:${(c/maxRatingAll)*100}%"></div></div>
-      <div class="bar-count">${c}</div>
-    </div>`
-  ).join('') + (allRatingCounts['unrated'] ? `<div class="bar-row">
-      <div class="bar-label" style="width:91px;margin-right:-8px">Unrated</div>
-      <div class="bar-track"><div class="bar-fill" style="width:${(unrated/maxRatingAll)*100}%;background:#7e7f71"></div></div>
-      <div class="bar-count">${unrated}</div>
-    </div>` : '');
+  const container = document.getElementById('rating-chart');
+  if (!container.dataset.init) {
+    container.innerHTML = Object.keys(ratingCounts).filter(r => r !== 'unrated').map(r =>
+      `<div class="bar-row" data-rating="${r}">
+        <div class="bar-label rating-stars">${toStars(Number(r))}</div>
+        <div class="bar-track"><div class="bar-fill rating-${r}" style="width:0"></div></div>
+        <div class="bar-count">0</div>
+      </div>`
+    ).join('') + (allRatingCounts['unrated'] ? `<div class="bar-row" data-rating="unrated">
+        <div class="bar-label" style="width:91px;margin-right:-8px">Unrated</div>
+        <div class="bar-track"><div class="bar-fill" style="width:0;background:#7e7f71"></div></div>
+        <div class="bar-count">0</div>
+      </div>` : '');
+    container.dataset.init = '1';
+  }
+  const maxRating = Math.max(...Object.values(ratingCounts), 1);
+  for (const [r, c] of Object.entries(ratingCounts)) {
+    const row = container.querySelector(`.bar-row[data-rating="${r}"]`);
+    if (!row) continue;
+    row.querySelector('.bar-fill').style.width = (c / maxRating) * 100 + '%';
+    row.querySelector('.bar-count').textContent = c;
+  }
 }
 renderRatingChart('all');
 let activeRatFilter = 'all';
@@ -998,26 +1008,48 @@ let activeRatFilter = 'all';
 document.getElementById('rating-dedup').addEventListener('change', () => renderRatingChart(activeRatFilter));
 
 // ====== RUNTIME DISTRIBUTION ======
+const RUNTIME_BIN_SIZE = 5;
+const RUNTIME_BAR_MAX_H = 140;
+function computeRuntimeBins(films) {
+  const runtimes = films.map(f => f.runtime).filter(r => r > 0);
+  const allRuntimes = FILMS.map(f => f.runtime).filter(r => r > 0);
+  const minBin = Math.floor(Math.min(...allRuntimes) / RUNTIME_BIN_SIZE) * RUNTIME_BIN_SIZE;
+  const maxBin = Math.floor(Math.max(...allRuntimes) / RUNTIME_BIN_SIZE) * RUNTIME_BIN_SIZE;
+  const bins = {};
+  for (let b = minBin; b <= maxBin; b += RUNTIME_BIN_SIZE) bins[b] = 0;
+  runtimes.forEach(r => { bins[Math.floor(r / RUNTIME_BIN_SIZE) * RUNTIME_BIN_SIZE]++; });
+  return { bins, minBin, maxBin };
+}
+function updateRuntimeHeights() {
+  const dedup = document.getElementById('runtime-dedup').checked;
+  const films = dedup ? dedupFilms(FILMS) : FILMS;
+  const { bins } = computeRuntimeBins(films);
+  const maxBinCount = Math.max(...Object.values(bins), 1);
+  document.querySelectorAll('#runtime-chart [data-bin]').forEach(el => {
+    const b = Number(el.dataset.bin);
+    const c = bins[b] || 0;
+    const h = Math.round((c / maxBinCount) * RUNTIME_BAR_MAX_H);
+    const bar = el.querySelector('.hist-bar');
+    if (bar) {
+      bar.style.height = h + 'px';
+      bar.style.visibility = c ? '' : 'hidden';
+    }
+    const label = el.querySelector('.hist-count');
+    if (label) {
+      label.textContent = c || '';
+      label.style.color = c ? 'var(--text)' : 'var(--text-dim)';
+    }
+  });
+}
 function renderRuntimeChart() {
   const dedup = document.getElementById('runtime-dedup').checked;
-  const binSize = 5;
+  const binSize = RUNTIME_BIN_SIZE;
   const films = dedup ? dedupFilms(FILMS) : FILMS;
-  const allRuntimes = FILMS.map(f => f.runtime).filter(r => r > 0);
-  const allMinBin = Math.floor(Math.min(...allRuntimes) / binSize) * binSize;
-  const allMaxBin = Math.floor(Math.max(...allRuntimes) / binSize) * binSize;
-  const allBins = {};
-  for (let b = allMinBin; b <= allMaxBin; b += binSize) allBins[b] = 0;
-  allRuntimes.forEach(r => { allBins[Math.floor(r / binSize) * binSize]++; });
-  const maxBinCount = Math.max(...Object.values(allBins), 1);
-
-  const runtimes = films.map(f => f.runtime).filter(r => r > 0);
-  const minBin = allMinBin;
-  const maxBin = allMaxBin;
-  const bins = {};
-  for (let b = minBin; b <= maxBin; b += binSize) bins[b] = 0;
-  runtimes.forEach(r => { bins[Math.floor(r / binSize) * binSize]++; });
-  const barMaxH = 140;
-  const binArr = Object.entries(bins).map(([b, c]) => ({ bin: Number(b), count: c }));
+  const { bins: allBins } = computeRuntimeBins(FILMS);
+  const { bins, maxBin } = computeRuntimeBins(films);
+  const maxBinCount = Math.max(...Object.values(bins), 1);
+  const barMaxH = RUNTIME_BAR_MAX_H;
+  const binArr = Object.entries(allBins).map(([b]) => ({ bin: Number(b), count: allBins[b] }));
 
   const items = [];
   {
@@ -1084,14 +1116,15 @@ function renderRuntimeChart() {
       dotsLabel = `<span style="left:50%;bottom:-22px;letter-spacing:2px;${labelCss.replace('top:0;','')}">···</span>`;
       barsHtml += `<div style="flex:2 2 0;min-width:48px;position:relative;">${tick}${label}${dotsLabel}${endTick}${endLabel}</div>`;
     } else {
-      const h = Math.round((it.count / maxBinCount) * barMaxH);
+      const c = bins[it.bin] || 0;
+      const h = Math.round((c / maxBinCount) * barMaxH);
       const prevIsBar = idx > 0 && items[idx-1].type === 'bar';
       const nextIsBar = idx < items.length-1 && items[idx+1].type === 'bar';
       const lo = prevIsBar ? halfGap : 8;
       const ro = nextIsBar ? halfGap : 8;
-      barsHtml += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:24px;position:relative;">
-        <div style="font-family:'Economist Sans',sans-serif;font-size:0.9rem;font-weight:350;color:${it.count ? 'var(--text)' : 'var(--text-dim)'};margin-bottom:4px;">${it.count || ''}</div>
-        <div class="hist-bar" style="width:100%;height:${h}px;background:var(--accent);border-radius:0;${it.count ? '' : 'visibility:hidden;'}"></div>
+      barsHtml += `<div data-bin="${it.bin}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:24px;position:relative;">
+        <div class="hist-count" style="font-family:'Economist Sans',sans-serif;font-size:0.9rem;font-weight:350;color:${c ? 'var(--text)' : 'var(--text-dim)'};margin-bottom:4px;">${c || ''}</div>
+        <div class="hist-bar" style="width:100%;height:${h}px;background:var(--accent);border-radius:0;${c ? '' : 'visibility:hidden;'}"></div>
         <div style="position:absolute;left:-${lo}px;right:-${ro}px;bottom:0;height:1.5px;background:var(--text);pointer-events:none;"></div>
         ${tick}${label}${endTick}${endLabel}
       </div>`;
@@ -1100,7 +1133,7 @@ function renderRuntimeChart() {
   chartEl.innerHTML = barsHtml;
 }
 renderRuntimeChart();
-document.getElementById('runtime-dedup').addEventListener('change', renderRuntimeChart);
+document.getElementById('runtime-dedup').addEventListener('change', updateRuntimeHeights);
 // Re-render on resize so the flex gap rescales with bar width
 let runtimeResizeTimer;
 window.addEventListener('resize', () => {
@@ -1146,15 +1179,26 @@ function renderDecadeChart() {
   });
   const allDecadeCounts = {};
   FILMS.forEach(f => { const d = Math.floor(f.year/10)*10; allDecadeCounts[d] = (allDecadeCounts[d]||0)+1; });
-  const maxDecade = Math.max(...Object.values(allDecadeCounts));
-  const decadeArr = Object.entries(decadeCounts).sort((a,b) => a[0]-b[0]);
-  document.getElementById('decade-chart').innerHTML = decadeArr.map(([d,c]) =>
-    `<div class="bar-row">
-      <div class="bar-label">${d}s</div>
-      <div class="bar-track"><div class="bar-fill venue-bar" style="width:${(c/maxDecade)*100}%"></div></div>
-      <div class="bar-count">${c}</div>
-    </div>`
-  ).join('');
+  const maxDecade = Math.max(...Object.values(decadeCounts), 1);
+  const decadeArr = Object.keys(allDecadeCounts).sort((a,b) => a-b);
+  const container = document.getElementById('decade-chart');
+  if (!container.dataset.init) {
+    container.innerHTML = decadeArr.map(d =>
+      `<div class="bar-row" data-decade="${d}">
+        <div class="bar-label">${d}s</div>
+        <div class="bar-track"><div class="bar-fill venue-bar" style="width:0"></div></div>
+        <div class="bar-count">0</div>
+      </div>`
+    ).join('');
+    container.dataset.init = '1';
+  }
+  for (const d of decadeArr) {
+    const c = decadeCounts[d] || 0;
+    const row = container.querySelector(`.bar-row[data-decade="${d}"]`);
+    if (!row) continue;
+    row.querySelector('.bar-fill').style.width = (c / maxDecade) * 100 + '%';
+    row.querySelector('.bar-count').textContent = c;
+  }
 }
 renderDecadeChart();
 document.getElementById('decade-dedup').addEventListener('change', renderDecadeChart);

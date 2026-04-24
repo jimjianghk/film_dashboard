@@ -14,11 +14,11 @@ Six summary cards: total screenings, average rating (excluding unrated films), t
 
 ### Rating chart
 
-Horizontal bar chart with star labels (half-star to five stars). Bars are color-coded red-to-green. An additional grey "Unrated" bar appears when applicable. Three filter toggles (All / New releases / Repertory) subset by production year, and a dedup toggle collapses rewatches to unique titles. Bar widths are anchored to the global max so the scale stays stable across filters.
+Horizontal bar chart with star labels (half-star to five stars). Bars are color-coded red-to-green. An additional grey "Unrated" bar appears when applicable. Three filter toggles (All / New releases / Repertory) subset by production year, and a dedup toggle collapses rewatches to unique titles. Bar widths rescale to the tallest bar in the current view and animate between states on toggle.
 
 ### Production decade chart
 
-Horizontal bar chart grouping films by the decade they were produced. Has its own dedup toggle.
+Horizontal bar chart grouping films by the decade they were produced. Has its own dedup toggle; bars rescale to the tallest decade in the current view and animate between states.
 
 ### Screening format chart
 
@@ -26,7 +26,7 @@ Horizontal stacked bar chart with one row per base projection format (DCP / 35mm
 
 ### Runtime distribution
 
-Vertical histogram with 5-minute bins. Has its own dedup toggle. The chart always fills the available viewport width; once bars hit their min-width it becomes horizontally scrollable rather than dropping labels. Inter-bar gaps scale proportionally with bar width (~1/12 ratio) down to a 2px floor. A horizontal axis line runs beneath the bars with downward tick marks at every bin boundary; when an outlier bin is separated from the main mass by 5+ consecutive empty bins, those empty bins collapse into a gap sized at ~2× bar width — three dots sit inline with the x-axis labels, the start of the elided range is labeled at the gap's left edge, and the axis line breaks into two segments (mass and outlier) each with a short extension past its endpoints.
+Vertical histogram with 5-minute bins. Has its own dedup toggle; bin structure stays fixed across views while heights rescale to the tallest bin in the current view and animate between states. The chart always fills the available viewport width; once bars hit their min-width it becomes horizontally scrollable rather than dropping labels. Inter-bar gaps scale proportionally with bar width (~1/12 ratio) down to a 2px floor. A horizontal axis line runs beneath the bars with downward tick marks at every bin boundary; when an outlier bin is separated from the main mass by 5+ consecutive empty bins, those empty bins collapse into a gap sized at ~2× bar width — three dots sit inline with the x-axis labels, the start of the elided range is labeled at the gap's left edge, and the axis line breaks into two segments (mass and outlier) each with a short extension past its endpoints.
 
 ### Screening venue chart
 
