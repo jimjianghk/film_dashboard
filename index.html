@@ -177,15 +177,37 @@ h1 {
   min-width: 0;
 }
 .chart-card.full { flex-basis: 100%; }
-.chart-label { white-space: nowrap; }
 .switch-label-text { white-space: nowrap; }
 .chart-label {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px 12px;
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--text);
   margin-bottom: 18px;
   letter-spacing: -0.005em;
   text-transform: none;
+}
+.chart-num {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 29px;
+  height: 29px;
+  padding: 0 8px;
+  border: 1.5px solid var(--text);
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  font-family: 'Economist Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 /* BAR CHARTS */
@@ -226,7 +248,6 @@ h1 {
   padding-left: 4px;
   flex-shrink: 0;
   position: relative;
-  font-variant-numeric: tabular-nums;
 }
 #venue-chart .bar-track {
   margin-left: 8px;
@@ -288,7 +309,6 @@ h1 {
   color: var(--text);
   width: 30px;
   flex-shrink: 0;
-  font-variant-numeric: tabular-nums;
 }
 
 /* RATING BAR COLORS — red → yellow → green (tuned for cream bg) */
@@ -493,7 +513,10 @@ h1 {
 .rating-dedup-toggle { margin-left: 6px; }
 @media (max-width: 499px) {
   .rating-filter-toggle { order: 3; }
-  .chart-dedup { margin-left: auto; }
+  .rating-dedup-toggle { order: 4; margin-left: auto; }
+  .rating-header > span:first-child { min-width: 120px; }
+  .calendar-header .cal-toggle-wrap { order: 3; }
+  .rating-filter-toggle .cal-toggle { padding: 4px 8px; }
 }
 .calendar-header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 @media (min-width: 500px) {
@@ -569,7 +592,6 @@ h1 {
   font-size: 1rem;
   color: var(--text);
   font-weight: 350;
-  font-variant-numeric: tabular-nums;
 }
 .series-venue {
   font-family: 'Economist Sans', sans-serif;
@@ -666,7 +688,6 @@ tbody tr:last-child td { border-bottom: none; }
   font-weight: 400;
   font-size: 1rem;
   color: var(--text);
-  font-variant-numeric: tabular-nums;
 }
 .rating-badge.rating-1 { background: rgba(214,72,72,0.75); }
 .rating-badge.rating-2 { background: rgba(222,90,48,0.75); }
@@ -700,7 +721,6 @@ tbody tr:last-child td { border-bottom: none; }
   font-family: 'Economist Sans', sans-serif;
   font-size: 1rem;
   color: var(--text-dim);
-  font-variant-numeric: tabular-nums;
 }
 
 /* FILTER ROW */
@@ -839,6 +859,7 @@ footer img.footer-favicon {
           </label>
           <span class="switch-label-text">Unique titles</span>
         </span>
+        <span class="chart-num">1</span>
       </div>
       <div id="rating-chart"></div>
     </div>
@@ -851,11 +872,12 @@ footer img.footer-favicon {
           </label>
           <span class="switch-label-text">Unique titles</span>
         </span>
+        <span class="chart-num">2</span>
       </div>
       <div id="decade-chart"></div>
     </div>
     <div class="chart-card full animate delay-3">
-      <div class="chart-label">Screening format</div>
+      <div class="chart-label">Screening format<span class="chart-num">3</span></div>
       <div id="format-chart"></div>
     </div>
     <div class="chart-card full animate delay-3">
@@ -867,13 +889,14 @@ footer img.footer-favicon {
           </label>
           <span class="switch-label-text" id="runtime-dedup-label">Unique titles</span>
         </span>
+        <span class="chart-num">4</span>
       </div>
       <div style="overflow-x:auto;padding:12px 18px 22px;">
         <div id="runtime-chart" style="display:flex;align-items:flex-end;gap:2px;height:160px;padding-top:12px;width:100%;"></div>
       </div>
     </div>
     <div class="chart-card full animate delay-3">
-      <div class="chart-label">Screening venue</div>
+      <div class="chart-label">Screening venue<span class="chart-num">5</span></div>
       <div id="venue-chart" class="venue-grid"></div>
     </div>
     <div class="chart-card full animate delay-4">
@@ -883,19 +906,20 @@ footer img.footer-favicon {
           <button class="cal-toggle active" id="cal-toggle-screenings"># of screenings</button>
           <button class="cal-toggle" id="cal-toggle-rating">Avg rating</button>
         </span>
+        <span class="chart-num">6</span>
       </div>
       <div id="heatmap" class="heatmap-wrap"></div>
     </div>
   </div>
 
   <div class="section animate delay-4">
-    <div class="chart-label">Festivals &amp; series</div>
+    <div class="chart-label">Festivals &amp; series<span class="chart-num">7</span></div>
     <div id="series-list" class="series-list collapsed"></div>
     <button class="series-toggle" id="series-toggle">Show all series</button>
   </div>
 
   <div class="section animate delay-5">
-    <div class="chart-label">Complete log</div>
+    <div class="chart-label">Complete log<span class="chart-num">8</span></div>
     <div class="film-table-wrap">
       <table>
         <thead id="table-head"></thead>
@@ -1100,7 +1124,7 @@ function renderRuntimeChart() {
   // positions), the browser can rasterize the overlay at slightly different subpixel
   // offsets from the bars under fractional page zoom, causing visible drift.
   // By nesting them in the same flex-item subtree, zoom transforms apply uniformly.
-  const labelCss = `position:absolute;top:0;transform:translateX(-50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;font-weight:350;color:var(--text);white-space:nowrap;font-variant-numeric:tabular-nums;`;
+  const labelCss = `position:absolute;top:0;transform:translateX(-50%);font-family:'Economist Sans',sans-serif;font-size:0.85rem;font-weight:350;color:var(--text);white-space:nowrap;`;
   let barsHtml = '';
   items.forEach((it, idx) => {
     const shift = idx > 0 ? halfGap : 0;
