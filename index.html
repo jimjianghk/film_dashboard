@@ -987,7 +987,12 @@ function renderRatingChart(filter) {
       </div>` : '');
     container.dataset.init = '1';
   }
-  const maxRating = Math.max(...Object.values(ratingCounts), 1);
+  const allSubset = dedup ? dedupFilms(FILMS) : FILMS;
+  const allCounts = {};
+  for (let i=1;i<=10;i++) allCounts[i] = 0;
+  allCounts['unrated'] = 0;
+  allSubset.forEach(f => { if (f.rating != null) allCounts[f.rating]++; else allCounts['unrated']++; });
+  const maxRating = Math.max(...Object.values(allCounts), 1);
   for (const [r, c] of Object.entries(ratingCounts)) {
     const row = container.querySelector(`.bar-row[data-rating="${r}"]`);
     if (!row) continue;
