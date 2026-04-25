@@ -639,7 +639,7 @@ h1 {
   overflow-x: auto;
   max-height: 640px;
   overflow-y: auto;
-  overscroll-behavior-y: contain;
+  overscroll-behavior-y: auto;
   overscroll-behavior-x: none;
   scrollbar-width: thin;
   scrollbar-color: var(--border-strong) transparent;
@@ -1727,7 +1727,7 @@ function renderTable() {
   if (wrapEl) {
     const needsScroll = wrapEl.scrollHeight > wrapEl.clientHeight + 1;
     wrapEl.style.overflowY = needsScroll ? 'auto' : 'hidden';
-    wrapEl.style.overscrollBehaviorY = needsScroll ? 'contain' : 'none';
+    wrapEl.style.overscrollBehaviorY = needsScroll ? 'auto' : 'none';
     wrapEl.style.touchAction = needsScroll ? 'pan-x pan-y' : 'pan-x';
   }
 
