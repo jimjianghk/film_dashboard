@@ -72,12 +72,11 @@ header {
   position: relative;
   text-align: left;
 }
-header::before {
-  content: '';
+.header-masthead {
   display: block;
-  width: 114px;
-  height: 15px;
-  background: var(--accent);
+  width: 150px;
+  max-width: 100%;
+  height: auto;
   margin-bottom: 20px;
 }
 .header-label {
@@ -92,6 +91,9 @@ h1 {
   line-height: 1;
   color: var(--text);
   margin-bottom: 10px;
+}
+@media (max-width: 599px) {
+  h1 { font-size: 3.25rem; }
 }
 .header-divider { display: none; }
 .header-date {
@@ -838,8 +840,9 @@ footer img.footer-favicon {
 
 <div class="container">
   <header>
+    <img class="header-masthead" src="masthead.png" alt="Jim's Films">
     <div class="header-label">Cinema Log</div>
-    <h1>2026 in Films</h1>
+    <h1>2026 cinema log</h1>
     <div class="header-divider"><span class="header-diamond"></span></div>
     <div class="header-date" id="date-range"></div>
   </header>
