@@ -66,10 +66,6 @@ Sortable, filterable table of every screening. Nine columns: date, title, year, 
 - Fade-up entrance animations with staggered delays
 - Responsive at 1200 / 1000 / 900 / 800 / 600 / 500px breakpoints
 
-### Alternative style: `alt.html`
-
-A second page, `alt.html`, renders the same charts and log in a dark theme with gold (#d4a44c) accent and film-grain SVG noise overlay. The data and chart logic are identical; only the visual language changes: Playfair Display (headings/values), DM Sans (body), JetBrains Mono (labels/data), Noto Serif SC (CJK fallback). It isn't linked from `index.html`; open it directly at `/alt.html` to compare.
-
 ## Data pipeline
 
 A GitHub Actions workflow (`.github/workflows/update-data.yml`) runs hourly:
