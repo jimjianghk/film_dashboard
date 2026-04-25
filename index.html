@@ -60,6 +60,10 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+button, label, a, select, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
 .container {
   max-width: 1280px;
   margin: 0 auto;
@@ -626,7 +630,9 @@ h1 {
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
 }
-.series-toggle:hover { background: var(--text); color: var(--bg); }
+@media (hover: hover) {
+  .series-toggle:hover { background: var(--text); color: var(--bg); }
+}
 
 /* FILM TABLE */
 .film-table-wrap {
@@ -734,7 +740,8 @@ tbody tr:last-child td { border-bottom: none; }
   background: var(--bg);
   border-bottom: 1px solid var(--text);
 }
-.filter-row-tr select.col-filter {
+.col-filter-wrap { position: relative; display: block; }
+.filter-row-tr .col-filter {
   font-family: 'Economist Sans', sans-serif;
   font-size: 0.9rem;
   font-weight: 400;
@@ -746,18 +753,65 @@ tbody tr:last-child td { border-bottom: none; }
   cursor: pointer;
   text-transform: none;
   letter-spacing: 0;
-  -webkit-appearance: none;
-  appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%235a564d'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 6px center;
   transition: border-color 0.2s, color 0.2s;
+  width: 100%;
+  max-width: 100%;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+  line-height: 1.4;
 }
-.filter-row-tr td { overflow: hidden; }
-.filter-row-tr select.col-filter { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
-.filter-row-tr select.col-filter:focus { border-color: var(--accent); outline: none; }
-.filter-row-tr select.col-filter.active { border-color: var(--accent); color: var(--accent); }
-.filter-row-tr select.col-filter.no-uppercase { text-transform: none; }
+.filter-row-tr .col-filter:focus { border-color: var(--accent); outline: none; }
+.filter-row-tr .col-filter.active { border-color: var(--accent); color: var(--accent); }
+.filter-row-tr .col-filter.no-uppercase { text-transform: none; }
+.filter-row-tr .col-filter[aria-expanded="true"] { border-color: var(--accent); }
+.col-filter-menu {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  min-width: 100%;
+  width: max-content;
+  max-height: 260px;
+  overflow-y: auto;
+  background: var(--bg);
+  border: 1px solid var(--text);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  z-index: 100;
+  font-family: 'Economist Sans', sans-serif;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+.col-filter-menu.wrap {
+  right: -14px;
+  width: auto;
+  min-width: 0;
+  max-width: none;
+}
+.col-filter-menu li {
+  padding: 3px 10px;
+  cursor: pointer;
+  color: var(--text-dim);
+  line-height: 1.25;
+  text-transform: none;
+  white-space: nowrap;
+}
+.col-filter-menu.wrap li {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.1;
+}
+.col-filter-menu li:hover,
+.col-filter-menu li.selected {
+  background: var(--text);
+  color: var(--bg);
+}
 
 .switch-toggle { position: relative; display: inline-block; width: 28px; height: 16px; flex-shrink: 0; }
 .switch-toggle input { opacity: 0; width: 0; height: 0; }
@@ -1606,10 +1660,14 @@ function renderTable() {
     if (!filterable) return '<td></td>';
     const options = getFilterOptions(c.key);
     const curVal = activeFilters[c.key] || '';
-    return `<td><select class="col-filter${curVal ? ' active' : ''}${c.key === 'year' ? ' no-uppercase' : ''}" data-filter-col="${c.key}">
-      <option value="">${c.key === 'year' ? 'All' : 'All'}</option>
-      ${options.map(v => `<option value="${v}"${v === curVal ? ' selected' : ''}>${v}</option>`).join('')}
-    </select></td>`;
+    const noUp = c.key === 'year' ? ' no-uppercase' : '';
+    return `<td><div class="col-filter-wrap" data-filter-col="${c.key}">
+      <button type="button" class="col-filter${curVal ? ' active' : ''}${noUp}" aria-haspopup="listbox" aria-expanded="false">${curVal || 'All'}</button>
+      <ul class="col-filter-menu${c.key === 'series' ? ' wrap' : ''}" role="listbox" hidden>
+        <li role="option" data-value=""${!curVal ? ' class="selected"' : ''}>All</li>
+        ${options.map(v => `<li role="option" data-value="${v.replace(/"/g,'&quot;')}"${v === curVal ? ' class="selected"' : ''}>${v}</li>`).join('')}
+      </ul>
+    </div></td>`;
   }).join('') + '</tr>';
 
   document.getElementById('table-head').innerHTML += filterRow;
@@ -1660,7 +1718,7 @@ function renderTable() {
 
   document.querySelectorAll('th').forEach(th => {
     th.addEventListener('click', e => {
-      if (e.target.tagName === 'SELECT' || e.target.tagName === 'OPTION') return;
+      if (e.target.closest('.col-filter-wrap')) return;
       const col = th.dataset.col;
       if (currentSort.col === col) currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
       else { currentSort.col = col; currentSort.dir = 'asc'; }
@@ -1668,11 +1726,27 @@ function renderTable() {
     });
   });
 
-  document.querySelectorAll('.col-filter').forEach(sel => {
-    sel.addEventListener('change', e => {
-      const col = sel.dataset.filterCol;
-      activeFilters[col] = sel.value;
-      renderTable();
+  document.querySelectorAll('.col-filter-wrap').forEach(wrap => {
+    const btn = wrap.querySelector('.col-filter');
+    const menu = wrap.querySelector('.col-filter-menu');
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const willOpen = btn.getAttribute('aria-expanded') !== 'true';
+      document.querySelectorAll('.col-filter[aria-expanded="true"]').forEach(b => {
+        b.setAttribute('aria-expanded', 'false');
+        b.nextElementSibling.hidden = true;
+      });
+      if (willOpen) {
+        btn.setAttribute('aria-expanded', 'true');
+        menu.hidden = false;
+      }
+    });
+    menu.querySelectorAll('li').forEach(li => {
+      li.addEventListener('click', e => {
+        e.stopPropagation();
+        activeFilters[wrap.dataset.filterCol] = li.dataset.value;
+        renderTable();
+      });
     });
   });
 
@@ -1696,6 +1770,21 @@ function renderTable() {
     });
   }
 }
+
+document.addEventListener('click', () => {
+  document.querySelectorAll('.col-filter[aria-expanded="true"]').forEach(b => {
+    b.setAttribute('aria-expanded', 'false');
+    b.nextElementSibling.hidden = true;
+  });
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.col-filter[aria-expanded="true"]').forEach(b => {
+      b.setAttribute('aria-expanded', 'false');
+      b.nextElementSibling.hidden = true;
+    });
+  }
+});
 
 renderTable();
 document.getElementById('footer-text').textContent = 'Built from the cinema log spreadsheet \u2022 Updated daily';
