@@ -1076,7 +1076,9 @@ function renderCumulativeChart() {
   const hasFilmToday = !!dateCounts[todayStr];
   const dataDayIdx = Math.max(0, Math.min(daysInYear - 1, hasFilmToday ? todayIdx : todayIdx - 1));
   const todayMonth = todayDate.getMonth();
-  const endMonth = Math.min(11, todayMonth + 1);
+  const daysInTodayMonth = new Date(parseInt(dashYear), todayMonth + 1, 0).getDate();
+  const midpoint = Math.ceil(daysInTodayMonth / 2);
+  const endMonth = todayDate.getDate() > midpoint ? Math.min(11, todayMonth + 1) : todayMonth;
   const endMonthLastDay = new Date(parseInt(dashYear), endMonth + 1, 0, 12, 0, 0);
   const endIdx = Math.min(daysInYear - 1, Math.round((endMonthLastDay - yearStart) / dayMs));
   let cum = 0;
