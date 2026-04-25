@@ -1,12 +1,12 @@
 # Jim's 2026 Cinema Log
 
-A single-page dashboard that visualizes a year of moviegoing in New York City. Built with vanilla HTML, CSS, and JavaScript — no frameworks, no charting libraries.
+A single-page dashboard that visualizes a year of moviegoing in New York City. Built with vanilla HTML, CSS, and JavaScript, with no frameworks or charting libraries.
 
 Data is sourced from a personal spreadsheet on Dropbox and synced automatically via GitHub Actions.
 
 ## Dashboard
 
-The page loads `data.json` — an array of film objects with date, title, year, runtime, rating (1–10 or null), rewatch flag, format, price, venue, and series.
+The page loads `data.json`, an array of film objects with date, title, year, runtime, rating (1–10 or null), rewatch flag, format, price, venue, and series.
 
 ### Stats row
 
@@ -14,11 +14,11 @@ Six summary cards: total screenings, average rating (excluding unrated films), t
 
 ### Cumulative screenings
 
-Full-width SVG line chart tracking the running total of screenings over the year. The line is step-after style: flat between film days and sloped upward only across the day a screening was logged. The x-axis runs from January 1 through the end of the current month if today is on or before its midpoint, otherwise through the end of the following month — capped at December 31; month labels sit centered between consecutive month-start ticks, and the bottom axis line and ticks match the runtime histogram. The y-axis scales to the next multiple of 25 above the current total, with right-aligned labels and faint horizontal gridlines. A dashed vertical marker indicates the most recent "data day" — today if a screening has been logged today, otherwise yesterday; in the latter case the line terminates flat at yesterday regardless of whether yesterday itself had any screenings.
+Full-width SVG line chart tracking the running total of screenings over the year. The line uses step-after style: flat between film days and sloped upward only across the day a screening was logged. The x-axis runs from January 1 through the end of the current month if today is on or before its midpoint, otherwise through the end of the following month (capped at December 31). Month labels sit centered between consecutive month-start ticks, and the bottom axis line and ticks match the runtime histogram. The y-axis scales to the next multiple of 25 above the current total, with right-aligned labels and faint horizontal gridlines. A dashed vertical marker indicates the most recent "data day": today if a screening has been logged today, otherwise yesterday. When the marker falls on yesterday, the line terminates flat at that point regardless of whether yesterday had any screenings.
 
 ### Rating chart
 
-Horizontal bar chart with star labels (half-star to five stars). Bars are color-coded red-to-green. An additional grey "Unrated" bar appears when applicable. Three filter toggles (All / New releases / Repertory) subset by production year, and a dedup toggle collapses rewatches to unique titles. Bar widths are anchored to the tallest bar across all films at the current dedup state, so switching between All / New / Rep doesn't rescale — only toggling dedup does. Bars animate between states on toggle.
+Horizontal bar chart with star labels (half-star to five stars). Bars are color-coded red-to-green. An additional grey "Unrated" bar appears when applicable. Three filter toggles (All / New releases / Repertory) subset by production year, and a dedup toggle collapses rewatches to unique titles. Bar widths are anchored to the tallest bar across all films at the current dedup state, so switching between All / New / Rep doesn't rescale; only toggling dedup does. Bars animate between states on toggle.
 
 ### Production decade chart
 
@@ -30,7 +30,7 @@ Horizontal stacked bar chart with one row per base projection format (DCP / 35mm
 
 ### Runtime distribution
 
-Vertical histogram with 5-minute bins. Has its own dedup toggle; bin structure stays fixed across views while heights rescale to the tallest bin in the current view and animate between states. The chart always fills the available viewport width; once bars hit their min-width it becomes horizontally scrollable rather than dropping labels. Inter-bar gaps scale proportionally with bar width (~1/12 ratio) down to a 2px floor. A horizontal axis line runs beneath the bars with downward tick marks at every bin boundary; when an outlier bin is separated from the main mass by 5+ consecutive empty bins, those empty bins collapse into a gap sized at ~2× bar width — three dots sit inline with the x-axis labels, the start of the elided range is labeled at the gap's left edge, and the axis line breaks into two segments (mass and outlier) each with a short extension past its endpoints.
+Vertical histogram with 5-minute bins. Has its own dedup toggle; bin structure stays fixed across views while heights rescale to the tallest bin in the current view and animate between states. The chart always fills the available viewport width; once bars hit their min-width it becomes horizontally scrollable rather than dropping labels. Inter-bar gaps scale proportionally with bar width (~1/12 ratio) down to a 2px floor. A horizontal axis line runs beneath the bars with downward tick marks at every bin boundary. When an outlier bin is separated from the main mass by 5+ consecutive empty bins, those empty bins collapse into a gap sized at ~2× bar width. Three dots sit inline with the x-axis labels, the start of the elided range is labeled at the gap's left edge, and the axis line breaks into two segments (mass and outlier) each with a short extension past its endpoints.
 
 ### Screening venue chart
 
@@ -40,8 +40,8 @@ Two-column horizontal bar chart sorted by count. Hovering a venue code reveals t
 
 Monthly heatmap grid from January 1 through the current date. Rows cap at 4 months wide regardless of viewport, wrapping to fewer per row on narrower screens. Two modes toggled by buttons:
 
-- **Number of screenings** — tile color darkens with count across five discrete steps, from pale peach through red to deep crimson for 1–5+ films.
-- **Average rating** — tile color interpolates across the red-to-green rating scale. Days with only unrated screenings are grey.
+- **Number of screenings**: tile color darkens with count across five discrete steps, from pale peach through red to deep crimson for 1–5+ films.
+- **Average rating**: tile color interpolates across the red-to-green rating scale. Days with only unrated screenings are grey.
 
 Hovering a tile shows a tooltip with film titles and color-coded rating badges.
 
@@ -68,7 +68,7 @@ Sortable, filterable table of every screening. Nine columns: date, title, year, 
 
 ### Alternative style: `alt.html`
 
-A second page, `alt.html`, renders the same charts and log in a dark theme with gold (#d4a44c) accent and film-grain SVG noise overlay. Same data, same chart logic — only the visual language changes: Playfair Display (headings/values), DM Sans (body), JetBrains Mono (labels/data), Noto Serif SC (CJK fallback). It isn't linked from `index.html`; open it directly at `/alt.html` to compare.
+A second page, `alt.html`, renders the same charts and log in a dark theme with gold (#d4a44c) accent and film-grain SVG noise overlay. The data and chart logic are identical; only the visual language changes: Playfair Display (headings/values), DM Sans (body), JetBrains Mono (labels/data), Noto Serif SC (CJK fallback). It isn't linked from `index.html`; open it directly at `/alt.html` to compare.
 
 ## Data pipeline
 
