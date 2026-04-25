@@ -639,6 +639,8 @@ h1 {
   overflow-x: auto;
   max-height: 640px;
   overflow-y: auto;
+  overscroll-behavior-y: contain;
+  overscroll-behavior-x: none;
   scrollbar-width: thin;
   scrollbar-color: var(--border-strong) transparent;
   background: transparent;
@@ -778,6 +780,7 @@ tbody tr:last-child td { border-bottom: none; }
   width: max-content;
   max-height: 260px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   background: var(--bg);
   border: 1px solid var(--text);
   margin: 0;
@@ -807,9 +810,12 @@ tbody tr:last-child td { border-bottom: none; }
   overflow-wrap: anywhere;
   line-height: 1.1;
 }
-.col-filter-menu li:hover,
-.col-filter-menu li.selected {
+.col-filter-menu li:hover {
   background: var(--text);
+  color: var(--bg);
+}
+.col-filter-menu li.selected {
+  background: var(--accent);
   color: var(--bg);
 }
 
@@ -1646,6 +1652,7 @@ function matchesFilter(f, key, val) {
 }
 
 function renderTable() {
+  document.querySelectorAll('body > .col-filter-menu').forEach(m => m.remove());
   const arrow = dir => `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="7" viewBox="0 0 8 5"${dir === 'asc' ? ' style="transform:rotate(180deg)"' : ''}><path d="M0 0l4 5 4-5z" fill="currentColor"/></svg>`;
   document.getElementById('table-head').innerHTML = '<tr>' + columns.map(c => {
     return `<th data-col="${c.key}" style="width:${c.w}">${c.label}${currentSort.col===c.key ? `<span class="sort-arrow">${arrow(currentSort.dir)}</span>` : ''}</th>`;
@@ -1663,7 +1670,7 @@ function renderTable() {
     const noUp = c.key === 'year' ? ' no-uppercase' : '';
     return `<td><div class="col-filter-wrap" data-filter-col="${c.key}">
       <button type="button" class="col-filter${curVal ? ' active' : ''}${noUp}" aria-haspopup="listbox" aria-expanded="false">${curVal || 'All'}</button>
-      <ul class="col-filter-menu${c.key === 'series' ? ' wrap' : ''}" role="listbox" hidden>
+      <ul class="col-filter-menu${c.key === 'series' ? ' wrap' : ''}" role="listbox" data-filter-col="${c.key}" hidden>
         <li role="option" data-value=""${!curVal ? ' class="selected"' : ''}>All</li>
         ${options.map(v => `<li role="option" data-value="${v.replace(/"/g,'&quot;')}"${v === curVal ? ' class="selected"' : ''}>${v}</li>`).join('')}
       </ul>
@@ -1705,7 +1712,7 @@ function renderTable() {
     const priceStr = f.price === 0 ? 'Free' : `$${f.price % 1 === 0 ? f.price : f.price.toFixed(2)}`;
     return `<tr>
       <td><span style="font-family:'Economist Sans',sans-serif;font-size:1rem;color:var(--text-dim)">${dateStr}</span></td>
-      <td><span class="title-cell">${f.title}</span>${f.rewatch ? '<span class="rewatch-badge">Rewatch</span>' : ''}</td>
+      <td style="line-height:1.3"><span class="title-cell">${f.title}</span>${f.rewatch ? '<span class="rewatch-badge">Rewatch</span>' : ''}</td>
       <td style="font-family:'Economist Sans',sans-serif;font-size:1rem;color:var(--text-dim)">${f.year}</td>
       <td style="font-family:'Economist Sans',sans-serif;font-size:1rem;color:var(--text-dim)">${f.runtime}</td>
       <td><span class="rating-badge ${rClass}">${f.rating != null ? f.rating : '–'}</span></td>
@@ -1715,6 +1722,14 @@ function renderTable() {
       <td style="font-family:'Economist Sans',sans-serif;font-size:1rem;color:var(--text-dim);line-height:1.3">${f.series||'\u2014'}</td>
     </tr>`;
   }).join('');
+
+  const wrapEl = document.querySelector('.film-table-wrap');
+  if (wrapEl) {
+    const needsScroll = wrapEl.scrollHeight > wrapEl.clientHeight + 1;
+    wrapEl.style.overflowY = needsScroll ? 'auto' : 'hidden';
+    wrapEl.style.overscrollBehaviorY = needsScroll ? 'contain' : 'none';
+    wrapEl.style.touchAction = needsScroll ? 'pan-x pan-y' : 'pan-x';
+  }
 
   document.querySelectorAll('th').forEach(th => {
     th.addEventListener('click', e => {
@@ -1732,13 +1747,25 @@ function renderTable() {
     btn.addEventListener('click', e => {
       e.stopPropagation();
       const willOpen = btn.getAttribute('aria-expanded') !== 'true';
-      document.querySelectorAll('.col-filter[aria-expanded="true"]').forEach(b => {
-        b.setAttribute('aria-expanded', 'false');
-        b.nextElementSibling.hidden = true;
-      });
+      closeAllColFilters();
       if (willOpen) {
         btn.setAttribute('aria-expanded', 'true');
+        if (menu.parentElement !== document.body) document.body.appendChild(menu);
         menu.hidden = false;
+        const r = btn.getBoundingClientRect();
+        const pageY = r.bottom + window.scrollY;
+        const pageX = r.left + window.scrollX;
+        menu.style.position = 'absolute';
+        menu.style.top = (pageY + 2) + 'px';
+        menu.style.left = pageX + 'px';
+        menu.style.minWidth = r.width + 'px';
+        if (menu.classList.contains('wrap')) {
+          const tdr = btn.closest('td').getBoundingClientRect();
+          const pageRight = tdr.right + window.scrollX;
+          menu.style.width = (pageRight - pageX) + 'px';
+        }
+        const available = window.innerHeight - r.bottom - 12;
+        menu.style.maxHeight = Math.max(120, Math.min(260, available)) + 'px';
       }
     });
     menu.querySelectorAll('li').forEach(li => {
@@ -1771,19 +1798,16 @@ function renderTable() {
   }
 }
 
-document.addEventListener('click', () => {
+function closeAllColFilters() {
   document.querySelectorAll('.col-filter[aria-expanded="true"]').forEach(b => {
     b.setAttribute('aria-expanded', 'false');
-    b.nextElementSibling.hidden = true;
   });
-});
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    document.querySelectorAll('.col-filter[aria-expanded="true"]').forEach(b => {
-      b.setAttribute('aria-expanded', 'false');
-      b.nextElementSibling.hidden = true;
-    });
-  }
+  document.querySelectorAll('.col-filter-menu').forEach(m => { m.hidden = true; });
+}
+document.addEventListener('click', closeAllColFilters);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllColFilters(); });
+document.querySelectorAll('.film-table-wrap').forEach(el => {
+  el.addEventListener('scroll', closeAllColFilters);
 });
 
 renderTable();
