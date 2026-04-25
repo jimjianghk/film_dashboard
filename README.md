@@ -12,6 +12,10 @@ The page loads `data.json` — an array of film objects with date, title, year, 
 
 Six summary cards: total screenings, average rating (excluding unrated films), total runtime in hours, total spent, unique venues visited, and rewatch count. Values are set in Economist Sans Headline (condensed display cut) with a thick black accent bar to the left of each stat. In a single row the cards size to content and gaps distribute evenly across the viewport (including a matching trailing gap after the last card); at narrower breakpoints the row wraps to three, then two, equal-width columns.
 
+### Cumulative screenings
+
+Full-width SVG line chart tracking the running total of screenings over the year. The line is step-after style: flat between film days and sloped upward only across the day a screening was logged. The x-axis runs from January 1 through the end of the month following today, capped at December 31; month labels sit centered between consecutive month-start ticks, and the bottom axis line and ticks match the runtime histogram. The y-axis scales to the next multiple of 25 above the current total, with right-aligned labels and faint horizontal gridlines. A dashed vertical marker indicates the most recent "data day" — today if a screening has been logged today, otherwise yesterday; in the latter case the line terminates flat at yesterday regardless of whether yesterday itself had any screenings.
+
 ### Rating chart
 
 Horizontal bar chart with star labels (half-star to five stars). Bars are color-coded red-to-green. An additional grey "Unrated" bar appears when applicable. Three filter toggles (All / New releases / Repertory) subset by production year, and a dedup toggle collapses rewatches to unique titles. Bar widths are anchored to the tallest bar across all films at the current dedup state, so switching between All / New / Rep doesn't rescale — only toggling dedup does. Bars animate between states on toggle.

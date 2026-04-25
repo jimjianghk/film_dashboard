@@ -914,6 +914,10 @@ footer img.footer-favicon {
   <div class="stats-row animate delay-1" id="stats-row"></div>
 
   <div class="charts-grid">
+    <div class="chart-card full animate delay-2">
+      <div class="chart-label">Cumulative screenings<span class="chart-num">1</span></div>
+      <div id="cumulative-chart"></div>
+    </div>
     <div class="chart-card animate delay-2">
       <div class="chart-label rating-header">
         <span>Rating</span>
@@ -929,7 +933,7 @@ footer img.footer-favicon {
           </label>
           <span class="switch-label-text">Unique titles</span>
         </span>
-        <span class="chart-num">1</span>
+        <span class="chart-num">2</span>
       </div>
       <div id="rating-chart"></div>
     </div>
@@ -942,12 +946,12 @@ footer img.footer-favicon {
           </label>
           <span class="switch-label-text">Unique titles</span>
         </span>
-        <span class="chart-num">2</span>
+        <span class="chart-num">3</span>
       </div>
       <div id="decade-chart"></div>
     </div>
     <div class="chart-card full animate delay-3">
-      <div class="chart-label">Screening format<span class="chart-num">3</span></div>
+      <div class="chart-label">Screening format<span class="chart-num">4</span></div>
       <div id="format-chart"></div>
     </div>
     <div class="chart-card full animate delay-3">
@@ -959,14 +963,14 @@ footer img.footer-favicon {
           </label>
           <span class="switch-label-text" id="runtime-dedup-label">Unique titles</span>
         </span>
-        <span class="chart-num">4</span>
+        <span class="chart-num">5</span>
       </div>
       <div style="overflow-x:auto;padding:12px 18px 22px;">
         <div id="runtime-chart" style="display:flex;align-items:flex-end;gap:2px;height:160px;padding-top:12px;width:100%;"></div>
       </div>
     </div>
     <div class="chart-card full animate delay-3">
-      <div class="chart-label">Screening venue<span class="chart-num">5</span></div>
+      <div class="chart-label">Screening venue<span class="chart-num">6</span></div>
       <div id="venue-chart" class="venue-grid"></div>
     </div>
     <div class="chart-card full animate delay-4">
@@ -976,20 +980,20 @@ footer img.footer-favicon {
           <button class="cal-toggle active" id="cal-toggle-screenings"># of screenings</button>
           <button class="cal-toggle" id="cal-toggle-rating">Avg rating</button>
         </span>
-        <span class="chart-num">6</span>
+        <span class="chart-num">7</span>
       </div>
       <div id="heatmap" class="heatmap-wrap"></div>
     </div>
   </div>
 
   <div class="section animate delay-4">
-    <div class="chart-label">Festivals &amp; series<span class="chart-num">7</span></div>
+    <div class="chart-label">Festivals &amp; series<span class="chart-num">8</span></div>
     <div id="series-list" class="series-list collapsed"></div>
     <button class="series-toggle" id="series-toggle">Show all series</button>
   </div>
 
   <div class="section animate delay-5">
-    <div class="chart-label">Complete log<span class="chart-num">8</span></div>
+    <div class="chart-label">Complete log<span class="chart-num">9</span></div>
     <div class="film-table-wrap">
       <table>
         <thead id="table-head"></thead>
@@ -1049,6 +1053,94 @@ function dedupFilms(films) {
   });
   return result;
 }
+
+// ====== CUMULATIVE CHART ======
+function renderCumulativeChart() {
+  const container = document.getElementById('cumulative-chart');
+  const W = container.getBoundingClientRect().width;
+  if (!W) return;
+  const H = 260;
+  const ML = 10, MR = 36, MT = 16, MB = 28;
+  const innerW = W - ML - MR;
+  const innerH = H - MT - MB;
+  const yearStart = new Date(dashYear + '-01-01T12:00:00');
+  const yearEnd = new Date(dashYear + '-12-31T12:00:00');
+  const dayMs = 86400000;
+  const daysInYear = Math.round((yearEnd - yearStart) / dayMs) + 1;
+  const sortedFilms = [...FILMS].sort((a,b) => a.date.localeCompare(b.date));
+  const total = sortedFilms.length;
+  const dateCounts = {};
+  sortedFilms.forEach(f => { dateCounts[f.date] = (dateCounts[f.date] || 0) + 1; });
+  const todayDate = new Date(todayStr + 'T12:00:00');
+  const todayIdx = Math.round((todayDate - yearStart) / dayMs);
+  const hasFilmToday = !!dateCounts[todayStr];
+  const dataDayIdx = Math.max(0, Math.min(daysInYear - 1, hasFilmToday ? todayIdx : todayIdx - 1));
+  const todayMonth = todayDate.getMonth();
+  const endMonth = Math.min(11, todayMonth + 1);
+  const endMonthLastDay = new Date(parseInt(dashYear), endMonth + 1, 0, 12, 0, 0);
+  const endIdx = Math.min(daysInYear - 1, Math.round((endMonthLastDay - yearStart) / dayMs));
+  let cum = 0;
+  const points = [];
+  let lastDayIdx = -1;
+  Object.keys(dateCounts).sort().forEach(date => {
+    const dayIdx = Math.round((new Date(date+'T12:00:00') - yearStart) / dayMs);
+    if (dayIdx > dataDayIdx) return;
+    if (dayIdx >= 1 && lastDayIdx < dayIdx - 1) {
+      points.push({x: dayIdx - 1, y: cum});
+    }
+    cum += dateCounts[date];
+    points.push({x: dayIdx, y: cum});
+    lastDayIdx = dayIdx;
+  });
+  if (lastDayIdx < dataDayIdx) {
+    points.push({x: dataDayIdx, y: cum});
+  }
+  const xScale = day => ML + (day / endIdx) * innerW;
+  const niceMax = Math.max(10, Math.ceil(total / 25) * 25);
+  const yScale = v => MT + innerH - (v / niceMax) * innerH;
+  const pathD = points.map((p, i) =>
+    `${i === 0 ? 'M' : 'L'}${xScale(p.x).toFixed(1)},${yScale(p.y).toFixed(1)}`
+  ).join(' ');
+  const yTicks = 5;
+  let yAxis = '';
+  for (let i = 0; i <= yTicks; i++) {
+    const v = (niceMax / yTicks) * i;
+    const y = yScale(v);
+    yAxis += `<line x1="${i===0?ML-0.75:ML}" x2="${i===0?ML+innerW+0.75:ML+innerW}" y1="${y}" y2="${y}" stroke="${i===0?'var(--text)':'rgb(192,192,191)'}" stroke-width="1.5"/>`;
+    yAxis += `<text x="${W-6}" y="${y+5}" text-anchor="end" font-family="'Economist Sans',sans-serif" font-size="1rem" font-weight="350" fill="var(--text)">${Math.round(v)}</text>`;
+  }
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  let xAxis = '';
+  for (let m = 0; m <= endMonth; m++) {
+    const monthStart = new Date(dashYear + '-' + String(m+1).padStart(2,'0') + '-01T12:00:00');
+    const dayIdx = Math.round((monthStart - yearStart) / dayMs);
+    const x = xScale(dayIdx);
+    xAxis += `<line x1="${x}" x2="${x}" y1="${MT+innerH+0.75}" y2="${MT+innerH+5.75}" stroke="var(--text)" stroke-width="1.5"/>`;
+    let nextX;
+    if (m < endMonth) {
+      const nextMonthStart = new Date(dashYear + '-' + String(m+2).padStart(2,'0') + '-01T12:00:00');
+      nextX = xScale(Math.round((nextMonthStart - yearStart) / dayMs));
+    } else {
+      nextX = xScale(endIdx);
+    }
+    const labelX = (x + nextX) / 2;
+    xAxis += `<text x="${labelX}" y="${MT+innerH+20}" text-anchor="middle" font-family="'Economist Sans',sans-serif" font-size="1rem" font-weight="350" fill="var(--text)">${months[m]}</text>`;
+  }
+  const xEnd = xScale(endIdx);
+  xAxis += `<line x1="${xEnd}" x2="${xEnd}" y1="${MT+innerH+0.75}" y2="${MT+innerH+5.75}" stroke="var(--text)" stroke-width="1.5"/>`;
+  let todayMark = '';
+  if (todayDate >= yearStart && todayDate <= yearEnd) {
+    const tx = xScale(dataDayIdx);
+    todayMark = `<line x1="${tx}" x2="${tx}" y1="${MT}" y2="${MT+innerH-0.75}" stroke="rgb(192,192,191)" stroke-width="1.5" stroke-dasharray="8,5"/>`;
+  }
+  container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;overflow:visible;">${yAxis}${xAxis}${todayMark}<path d="${pathD}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+}
+renderCumulativeChart();
+let cumulativeResizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(cumulativeResizeTimer);
+  cumulativeResizeTimer = setTimeout(renderCumulativeChart, 120);
+});
 
 // ====== RATING CHART ======
 const toStars = r => { const full = Math.floor(r/2); const half = r%2; return '★'.repeat(full) + (half ? `<span class="half-star${full ? ' after-star' : ''}">½</span>` : ''); };
