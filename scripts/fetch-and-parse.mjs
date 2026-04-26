@@ -54,7 +54,9 @@ const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
 // 4. Transform rows
 const films = [];
+let membershipFees = 0;
 for (const r of rows) {
+  if (r && typeof r[16] === 'number') membershipFees += r[16];
   if (!r || !r[1]) continue;
 
   // Excel serial date → YYYY-MM-DD
@@ -79,5 +81,5 @@ for (const r of rows) {
 }
 
 // 5. Write data.json
-writeFileSync(OUTPUT, JSON.stringify(films));
-console.log(`Wrote ${films.length} films to data.json`);
+writeFileSync(OUTPUT, JSON.stringify({ films, membershipFees }));
+console.log(`Wrote ${films.length} films and $${membershipFees} membership fees to data.json`);

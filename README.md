@@ -6,11 +6,11 @@ Data is sourced from a personal spreadsheet on Dropbox and synced automatically 
 
 ## Dashboard
 
-The page loads `data.json`, an array of film objects with date, title, year, runtime, rating (1–10 or null), rewatch flag, format, price, venue, and series.
+The page loads `data.json`, an object with `films` (array of film objects with date, title, year, runtime, rating (1–10 or null), rewatch flag, format, price, venue, and series) and `membershipFees` (sum of column Q from the spreadsheet, added to total spent in the hero stats).
 
 ### Stats row
 
-Six summary cards: total screenings, average rating (excluding unrated films), total runtime in hours, total spent, unique venues visited, and rewatch count. Values are set in Economist Sans Headline (condensed display cut) with a thick black accent bar to the left of each stat. In a single row the cards size to content and gaps distribute evenly across the viewport (including a matching trailing gap after the last card); at narrower breakpoints the row wraps to three, then two, equal-width columns.
+Six summary cards: total screenings, average rating (excluding unrated films), total runtime in hours, total spent (per-screening prices plus membership fees, marked with an asterisk that ties to the page footnotes), unique venues visited, and rewatch count. Values are set in Economist Sans Headline (condensed display cut) with a thick black accent bar to the left of each stat. In a single row the cards size to content and gaps distribute evenly across the viewport (including a matching trailing gap after the last card); at narrower breakpoints the row wraps to three, then two, equal-width columns.
 
 ### Cumulative screenings
 
@@ -57,6 +57,11 @@ Sortable, filterable table of every screening. Nine columns: date, title, year, 
 - Dropdown filters on date (by month), year (by decade), rating (1–10 plus N/A), format, venue, and series.
 - Free-text search on title with IME composition support for CJK input.
 - Rating badges are color-coded circles matching the bar chart palette. Unrated films show a grey dash.
+- The Price column header carries a dagger that ties to the page footnotes (per-row prices exclude membership fees).
+
+### Page footnotes
+
+A row of small notes between the log table and the footer carries the asterisk and dagger callouts referenced from the hero "Total spent" stat and the table's Price column header. Both notes sit inline, separated by a 25px gap.
 
 ## Design
 

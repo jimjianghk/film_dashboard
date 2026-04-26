@@ -162,6 +162,7 @@ h1 {
 
 /* SECTIONS */
 .section { margin: 60px 0; padding-top: 10px; }
+.section:has(+ .page-footnotes) { margin-bottom: 0; }
 .section::before, .chart-card::before {
   content: '';
   display: block;
@@ -735,6 +736,15 @@ tbody tr:last-child td { border-bottom: none; }
   font-size: 1rem;
   color: var(--text-dim);
 }
+.page-footnotes {
+  font-family: 'Economist Sans', sans-serif;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  margin-top: 32px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 25px;
+}
 
 /* FILTER ROW */
 .filter-row-tr td {
@@ -845,8 +855,8 @@ tbody tr:last-child td { border-bottom: none; }
 .filter-row-tr input.col-search.active { border-color: var(--accent); }
 
 footer {
-  padding: 36px 0 32px;
-  margin-top: 32px;
+  padding: 50px 0;
+  margin-top: 0;
   text-align: left;
   color: var(--text-dim);
   font-size: 1rem;
@@ -857,8 +867,8 @@ footer {
   gap: 10px;
 }
 footer img.footer-favicon {
-  width: 20px;
-  height: 20px;
+  width: 30px;
+  height: 30px;
   display: block;
   flex-shrink: 0;
   user-select: none;
@@ -1002,13 +1012,15 @@ footer img.footer-favicon {
     </div>
   </div>
 
-  <footer><img class="footer-favicon" src="favicon-192.png" alt=""><span id="footer-text"></span></footer>
+  <div class="page-footnotes"><span>*Includes membership fees</span><span>†Excludes membership fees</span></div>
+
+  <footer><img class="footer-favicon" src="favicon-192.png" alt=""></footer>
 </div>
 
 <script>
 fetch('data.json', { cache: 'no-store' })
   .then(r => r.json())
-  .then(FILMS => {
+  .then(({ films: FILMS, membershipFees: MEMBERSHIP_FEES = 0 }) => {
 
 // ====== DATE RANGE HEADER ======
 const firstDate = FILMS[0].date;
@@ -1024,7 +1036,7 @@ const totalFilms = FILMS.length;
 const ratedFilms = FILMS.filter(f => f.rating != null);
 const avgRating = ratedFilms.length ? (ratedFilms.reduce((s,f) => s+f.rating, 0) / ratedFilms.length).toFixed(2) : '—';
 const totalRuntime = FILMS.reduce((s,f) => s+f.runtime, 0);
-const totalSpent = FILMS.reduce((s,f) => s+f.price, 0);
+const totalSpent = FILMS.reduce((s,f) => s+f.price, 0) + MEMBERSHIP_FEES;
 const rewatches = FILMS.filter(f => f.rewatch).length;
 const uniqueVenues = new Set(FILMS.map(f => f.venue)).size;
 
@@ -1032,7 +1044,7 @@ document.getElementById('stats-row').innerHTML = [
   { val: totalFilms, label: totalFilms === 1 ? 'Screening' : 'Screenings' },
   { val: avgRating, label: 'Average rating' },
   { val: `${(totalRuntime/60).toFixed(1)}h`, label: 'Total runtime' },
-  { val: `$${totalSpent.toFixed(0)}`, label: 'Total spent' },
+  { val: `$${totalSpent.toFixed(0)}`, label: 'Total spent*' },
   { val: uniqueVenues, label: 'Venues visited' },
   { val: rewatches, label: rewatches === 1 ? 'Rewatch' : 'Rewatches' }
 ].map(s => `<div class="stat-card"><div class="stat-val">${s.val}</div><div class="stat-label">${s.label}</div></div>`).join('');
@@ -1711,7 +1723,7 @@ const columns = [
   { key:'runtime', label:'Length', w:'6.25%' },
   { key:'rating', label:'Rating', w:'7.5%' },
   { key:'format', label:'Format', w:'10%' },
-  { key:'price', label:'Price', w:'7%' },
+  { key:'price', label:'Price†', w:'7%' },
   { key:'venue', label:'Venue', w:'7.5%' },
   { key:'series', label:'Series', w:'22.75%' }
 ];
@@ -1916,7 +1928,6 @@ document.querySelectorAll('.film-table-wrap').forEach(el => {
 });
 
 renderTable();
-document.getElementById('footer-text').textContent = 'Built from the cinema log spreadsheet \u2022 Updated daily';
 
 });
 </script>
