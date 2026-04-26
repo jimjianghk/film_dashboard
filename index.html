@@ -1819,7 +1819,7 @@ function renderTable() {
   document.getElementById('table-body').innerHTML = filtered.map(f => {
     const rClass = f.rating != null ? 'rating-' + f.rating : 'rating-unrated';
     const dateStr = new Date(f.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    const priceStr = f.price === 0 ? 'Free' : `$${f.price % 1 === 0 ? f.price : f.price.toFixed(2)}`;
+    const priceStr = f.price === 0 ? '—' : `$${f.price % 1 === 0 ? f.price : f.price.toFixed(2)}`;
     return `<tr>
       <td><span style="font-family:'Economist Sans',sans-serif;font-size:1rem;color:var(--text-dim)">${dateStr}</span></td>
       <td style="line-height:1.3">${(() => {
