@@ -10,7 +10,7 @@ The page loads `data.json`, an object with `films` (array of film objects with d
 
 ### Stats row
 
-Six summary cards: total screenings, average rating (excluding unrated films), total runtime in hours, total spent (per-screening prices plus membership fees, marked with an asterisk that ties to the page footnotes), unique venues visited, and rewatch count. Values are set in Economist Sans Headline (condensed display cut) with a thick black accent bar to the left of each stat. In a single row the cards size to content and gaps distribute evenly across the viewport (including a matching trailing gap after the last card); at narrower breakpoints the row wraps to three, then two, equal-width columns.
+Six summary cards: total screenings, days at the cinema (distinct screening dates over days elapsed, denominator counts today only if a film is logged today — same data-day rule as the cumulative chart's marker line; the slash between numerator and denominator is rendered at weight 900 and horizontally squeezed to 75% width), average rating (excluding unrated films), total runtime in hours, total spent (per-screening prices plus membership fees, marked with an asterisk that ties to the page footnotes), and unique NYC venues visited. Values are set in Economist Sans Headline (condensed display cut) with a thick black accent bar to the left of each stat. In a single row the cards size to content and gaps distribute evenly across the viewport (including a matching trailing gap after the last card); at narrower breakpoints the row wraps to three, then two, equal-width columns.
 
 ### Cumulative screenings
 

@@ -162,6 +162,7 @@ h1 {
   letter-spacing: 0;
   line-height: 1.1;
 }
+.stat-val-slash { display: inline-block; transform: scaleX(0.75); font-weight: 900; margin: 0 -0.04em; }
 .stat-label {
   font-size: 1.05rem;
   color: var(--text-dim);
@@ -1048,16 +1049,28 @@ const ratedFilms = FILMS.filter(f => f.rating != null);
 const avgRating = ratedFilms.length ? (ratedFilms.reduce((s,f) => s+f.rating, 0) / ratedFilms.length).toFixed(2) : '—';
 const totalRuntime = FILMS.reduce((s,f) => s+f.runtime, 0);
 const totalSpent = FILMS.reduce((s,f) => s+f.price, 0) + MEMBERSHIP_FEES;
-const rewatches = FILMS.filter(f => f.rewatch).length;
 const uniqueVenues = new Set(FILMS.map(f => f.venue)).size;
+
+// Days at the cinema: distinct screening dates / days elapsed (matching the
+// cumulative chart's data-day rule — counts today only if a film is logged today).
+const yearStartForStats = new Date(dashYear + '-01-01T12:00:00');
+const yearEndForStats = new Date(dashYear + '-12-31T12:00:00');
+const dayMsForStats = 86400000;
+const daysInYearForStats = Math.round((yearEndForStats - yearStartForStats) / dayMsForStats) + 1;
+const todayDateForStats = new Date(todayStr + 'T12:00:00');
+const todayIdxForStats = Math.round((todayDateForStats - yearStartForStats) / dayMsForStats);
+const hasFilmTodayForStats = FILMS.some(f => f.date === todayStr);
+const dataDayIdxForStats = Math.max(0, Math.min(daysInYearForStats - 1, hasFilmTodayForStats ? todayIdxForStats : todayIdxForStats - 1));
+const daysElapsed = dataDayIdxForStats + 1;
+const daysAtCinema = new Set(FILMS.map(f => f.date)).size;
 
 document.getElementById('stats-row').innerHTML = [
   { val: totalFilms, label: totalFilms === 1 ? 'Screening' : 'Screenings' },
+  { val: `${daysAtCinema}<span class="stat-val-slash">/</span>${daysElapsed}`, label: 'Days at the cinema' },
   { val: avgRating, label: 'Average rating' },
   { val: `${(totalRuntime/60).toFixed(1)}h`, label: 'Total runtime' },
   { val: `$${totalSpent.toFixed(0)}`, label: 'Total spent*' },
-  { val: uniqueVenues, label: 'Venues visited' },
-  { val: rewatches, label: rewatches === 1 ? 'Rewatch' : 'Rewatches' }
+  { val: uniqueVenues, label: 'NYC venues visited' }
 ].map(s => `<div class="stat-card"><div class="stat-val">${s.val}</div><div class="stat-label">${s.label}</div></div>`).join('');
 
 // ====== DEDUP HELPER ======
