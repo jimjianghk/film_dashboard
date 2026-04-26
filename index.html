@@ -1069,7 +1069,7 @@ document.getElementById('stats-row').innerHTML = [
   { val: `${daysAtCinema}<span class="stat-val-slash">/</span>${daysElapsed}`, label: 'Days at the cinema' },
   { val: avgRating, label: 'Average rating' },
   { val: `${(totalRuntime/60).toFixed(1)}h`, label: 'Total runtime' },
-  { val: `$${totalSpent.toFixed(0)}`, label: 'Total spent*' },
+  { val: `$${totalSpent.toFixed(0)}`, label: 'Total spending*' },
   { val: uniqueVenues, label: 'NYC venues visited' }
 ].map(s => `<div class="stat-card"><div class="stat-val">${s.val}</div><div class="stat-label">${s.label}</div></div>`).join('');
 
