@@ -1053,9 +1053,9 @@ const todayIdxForStats = Math.round((todayDateForStats - yearStartForStats) / da
 const hasFilmTodayForStats = FILMS.some(f => f.date === todayStr);
 const dataDayIdxForStats = Math.max(0, Math.min(daysInYearForStats - 1, hasFilmTodayForStats ? todayIdxForStats : todayIdxForStats - 1));
 const dataDayDate = new Date(yearStartForStats.getTime() + dataDayIdxForStats * dayMsForStats);
-const dataDayStr = `${dataDayDate.getFullYear()}-${String(dataDayDate.getMonth()+1).padStart(2,'0')}-${String(dataDayDate.getDate()).padStart(2,'0')}`;
+const endDate = `${dataDayDate.getFullYear()}-${String(dataDayDate.getMonth()+1).padStart(2,'0')}-${String(dataDayDate.getDate()).padStart(2,'0')}`;
 
-document.getElementById('date-range').innerHTML = `${fmtDate(dashYear+'-01-01')}—${fmtDate(dataDayStr)}&nbsp;&nbsp;·&nbsp;&nbsp;New York City`;
+document.getElementById('date-range').innerHTML = `${fmtDate(dashYear+'-01-01')}—${fmtDate(endDate)}&nbsp;&nbsp;·&nbsp;&nbsp;New York City`;
 
 // ====== STATS ======
 const totalFilms = FILMS.length;
