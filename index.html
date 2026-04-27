@@ -1760,7 +1760,7 @@ function applyCalMode() {
         const [r,g,b] = avgRatingColor(avg);
         cell.style.background = `rgba(${r},${g},${b},0.75)`;
         cell.classList.add('rating-colored');
-        if (avg <= 2 || avg >= 9) cell.classList.add('rating-colored-dark');
+        if (avg <= 3 || avg >= 8) cell.classList.add('rating-colored-dark');
       } else if (ratings.length > 0) {
         cell.style.background = `rgba(${unratedColor.join(',')},0.5)`;
         cell.classList.add('rating-colored');
