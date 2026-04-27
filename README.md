@@ -10,7 +10,7 @@ The page loads `data.json`, an object with `films` (array of film objects with d
 
 ### Masthead
 
-Red Economist-style masthead with a year-and-context subtitle ("Jan 1—{end date} · New York City"). The end date follows the same data-day rule as the cumulative chart's marker line: today if a film is logged today, otherwise yesterday.
+Red Economist-style masthead above an uppercase Economist Sans Headline title ("2026 in cinema"), followed by a bold year-and-context subtitle ("Jan 1—{end date} · New York City"). The end date follows the same data-day rule as the cumulative chart's marker line: today if a film is logged today, otherwise yesterday.
 
 ### Stats row
 
@@ -72,7 +72,7 @@ A row of small notes between the log table and the footer carries the asterisk a
 ## Design
 
 - Cream paper background styled after *The Economist*
-- Economist Sans throughout (with Economist Sans Headline for the hero stat values), signature red masthead, black section rules, tabular figures
+- Economist Sans throughout (with Economist Sans Headline for the page title and hero stat values), signature red masthead, black section rules, tabular figures
 - Rating tiles blend translucently with the paper-cream background
 - Fade-up entrance animations with staggered delays
 - Responsive at 1200 / 1000 / 900 / 800 / 600 / 500px breakpoints
