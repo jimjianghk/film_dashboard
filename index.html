@@ -722,6 +722,7 @@ tbody tr:last-child td { border-bottom: none; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
   width: 24px; height: 24px;
   line-height: 1;
   text-align: center;
@@ -730,6 +731,10 @@ tbody tr:last-child td { border-bottom: none; }
   font-weight: 400;
   font-size: 1rem;
   color: var(--text);
+}
+@media (max-width: 599px) {
+  .rating-badge { padding: 0 0 1px 0.5px; }
+  .rating-badge.rating-unrated { padding: 0 0 2px 0; }
 }
 .rating-badge.rating-1  { background: rgb(var(--rating-1));  color: #FAD0C4; }
 .rating-badge.rating-2  { background: rgb(var(--rating-2));  color: #FAD0C4; }
