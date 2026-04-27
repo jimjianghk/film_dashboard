@@ -10,7 +10,7 @@ The page loads `data.json`, an object with `films` (array of film objects with d
 
 ### Masthead
 
-Red Economist-style masthead above an uppercase Economist Sans Headline title ("2026 in cinema"), followed by a bold year-and-context subtitle ("Jan 1—{end date} · New York City"). The end date follows the same data-day rule as the cumulative chart's marker line: today if a film is logged today, otherwise yesterday.
+Red Economist-style masthead above an uppercase Economist Sans Headline title ("2026 in cinema"), tucked tight against an oversized light-weight Economist Sans Headline subtitle ("Jan 1–{end date} · New York City"). The end date follows the same data-day rule as the cumulative chart's marker line: today if a film is logged today, otherwise yesterday.
 
 ### Stats row
 
