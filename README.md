@@ -77,7 +77,7 @@ A row of small notes between the log table and the footer carries the asterisk a
 
 ## Data pipeline
 
-A GitHub Actions workflow (`.github/workflows/update-data.yml`) runs hourly:
+A GitHub Actions workflow (`.github/workflows/update-data.yml`) runs every 20 minutes, triggered externally by cron-job.org via `workflow_dispatch` (GitHub's own scheduled triggers drift by 5 to 30 minutes on free-tier repos):
 
 1. Downloads `Cinema.xlsx` from Dropbox using OAuth2 refresh token flow
 2. Parses the spreadsheet's sheet `"26"` with the `xlsx` library
