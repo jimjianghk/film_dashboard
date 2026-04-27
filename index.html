@@ -1138,15 +1138,25 @@ function renderCumulativeChart() {
     points.push({x: dataDayIdx, y: cum});
   }
   const xScale = day => ML + (day / endIdx) * innerW;
-  const niceMax = Math.max(10, Math.ceil(total / 25) * 25);
+  // Pick the smallest step such that the chart has at least 4 intervals (≥ 5
+  // ticks counting 0) and at most 6 intervals. Steps are multiples of 10,
+  // except for very low totals (≤ 30 films) which allow multiples of 5.
+  const minStep = total <= 30 ? 5 : 10;
+  let yStep = minStep;
+  while (yStep <= 1000) {
+    const m = Math.max(4 * yStep, Math.ceil(total / yStep) * yStep);
+    if (m / yStep <= 6) break;
+    yStep += minStep;
+  }
+  const niceMax = Math.max(4 * yStep, Math.ceil(total / yStep) * yStep);
+  const yTicks = niceMax / yStep;
   const yScale = v => MT + innerH - (v / niceMax) * innerH;
   const pathD = points.map((p, i) =>
     `${i === 0 ? 'M' : 'L'}${xScale(p.x).toFixed(1)},${yScale(p.y).toFixed(1)}`
   ).join(' ');
-  const yTicks = 5;
   let yAxis = '';
   for (let i = 0; i <= yTicks; i++) {
-    const v = (niceMax / yTicks) * i;
+    const v = yStep * i;
     const y = yScale(v);
     yAxis += `<line x1="${i===0?ML-0.75:ML}" x2="${i===0?ML+innerW+0.75:ML+innerW}" y1="${y}" y2="${y}" stroke="${i===0?'var(--text)':'rgb(192,192,191)'}" stroke-width="1.5"/>`;
     yAxis += `<text x="${W-6}" y="${y+5}" text-anchor="end" font-family="'Economist Sans',sans-serif" font-size="1rem" font-weight="350" fill="var(--text)">${Math.round(v)}</text>`;
