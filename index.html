@@ -573,7 +573,6 @@ h1 {
 /* TOOLTIP */
 /* Tooltip variant of .rating-badge: only overrides what differs from the base. */
 .rating-badge.tt-rating-badge {
-  width: 22px; height: 22px;
   margin-left: 6px;
   vertical-align: 0;
 }
@@ -734,7 +733,11 @@ tbody tr:last-child td { border-bottom: none; }
 }
 @media (max-width: 599px) {
   .rating-badge { padding: 0 0 1px 0.5px; }
+  .rating-badge.rating-10 { padding: 0 0 1px 1px; }
   .rating-badge.rating-unrated { padding: 0 0 2px 0; }
+}
+@media (min-width: 600px) {
+  .rating-badge.rating-10 { padding-left: 0.5px; }
 }
 .rating-badge.rating-1  { background: rgb(var(--rating-1));  color: #FAD0C4; }
 .rating-badge.rating-2  { background: rgb(var(--rating-2));  color: #FAD0C4; }
