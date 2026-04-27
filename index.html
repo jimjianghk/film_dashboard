@@ -923,6 +923,7 @@ footer img.footer-favicon {
   <div class="tooltip-meta" id="tt-meta"></div>
 </div>
 <div class="seg-tooltip" id="seg-tooltip"></div>
+<div class="seg-tooltip" id="cum-tooltip"></div>
 
 <div class="container">
   <header>
@@ -1174,7 +1175,93 @@ function renderCumulativeChart() {
     const tx = xScale(dataDayIdx);
     todayMark = `<line x1="${tx}" x2="${tx}" y1="${MT}" y2="${MT+innerH-0.75}" stroke="rgb(192,192,191)" stroke-width="1.5" stroke-dasharray="8,5"/>`;
   }
-  container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;overflow:visible;">${yAxis}${xAxis}${todayMark}<path d="${pathD}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+
+  // Build per-day cumulative lookup so a cursor anywhere on the chart can resolve to (date, count).
+  const cumByDay = new Array(dataDayIdx + 1).fill(0);
+  let runningCum = 0;
+  for (let i = 0; i <= dataDayIdx; i++) {
+    const d = new Date(yearStart.getTime() + i * dayMs);
+    const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    runningCum += (dateCounts[ds] || 0);
+    cumByDay[i] = runningCum;
+  }
+
+  const hoverLine = `<line class="cum-hover-line" x1="0" x2="0" y1="${MT}" y2="${MT+innerH}" stroke="var(--text)" stroke-width="1" visibility="hidden" pointer-events="none"/>`;
+  const hoverDot = `<circle class="cum-hover-dot" r="4" cx="0" cy="0" fill="var(--accent)" stroke="var(--bg)" stroke-width="2" visibility="hidden" pointer-events="none"/>`;
+  const hoverZone = `<rect class="cum-hover-zone" x="${ML}" y="${MT}" width="${innerW}" height="${innerH}" fill="transparent" style="cursor:crosshair;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none"/>`;
+  container.style.touchAction = 'none';
+  container.style.webkitUserSelect = 'none';
+  container.style.userSelect = 'none';
+  container.style.webkitTouchCallout = 'none';
+
+  container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;overflow:visible;">${yAxis}${xAxis}${todayMark}<path d="${pathD}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>${hoverLine}${hoverDot}${hoverZone}</svg>`;
+
+  const svg = container.querySelector('svg');
+  const lineEl = svg.querySelector('.cum-hover-line');
+  const dotEl = svg.querySelector('.cum-hover-dot');
+  const zoneEl = svg.querySelector('.cum-hover-zone');
+  const cumTooltip = document.getElementById('cum-tooltip');
+
+  let isDragging = false;
+  const showHover = (clientX, allowClamp = false) => {
+    const r = svg.getBoundingClientRect();
+    const svgX = (clientX - r.left) * (W / r.width);
+    const rawDayIdx = Math.round((svgX - ML) / innerW * endIdx);
+    if (rawDayIdx > dataDayIdx && !allowClamp) { hideHover(); return; }
+    const dayIdx = Math.max(0, Math.min(dataDayIdx, rawDayIdx));
+    const cum = cumByDay[dayIdx];
+    const x = xScale(dayIdx);
+    const y = yScale(cum);
+    lineEl.setAttribute('x1', x);
+    lineEl.setAttribute('x2', x);
+    lineEl.setAttribute('visibility', 'visible');
+    dotEl.setAttribute('cx', x);
+    dotEl.setAttribute('cy', y);
+    dotEl.setAttribute('visibility', 'visible');
+    const dt = new Date(yearStart.getTime() + dayIdx * dayMs);
+    const dateStr = dt.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+    cumTooltip.textContent = `${dateStr} · ${cum} ${cum === 1 ? 'screening' : 'screenings'}`;
+    cumTooltip.style.display = 'block';
+    const dotClientX = r.left + x * (r.width / W);
+    const dotClientY = r.top + y * (r.height / H);
+    let left = dotClientX - cumTooltip.offsetWidth / 2;
+    if (left + cumTooltip.offsetWidth > window.innerWidth - 8) left = window.innerWidth - cumTooltip.offsetWidth - 8;
+    if (left < 8) left = 8;
+    cumTooltip.style.left = left + 'px';
+    let top = dotClientY - cumTooltip.offsetHeight - 8;
+    if (top < 8) top = dotClientY + 16;
+    cumTooltip.style.top = top + 'px';
+  };
+  const hideHover = () => {
+    lineEl.setAttribute('visibility', 'hidden');
+    dotEl.setAttribute('visibility', 'hidden');
+    cumTooltip.style.display = 'none';
+  };
+
+  zoneEl.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'touch' || e.pointerType === 'pen') {
+      e.preventDefault();
+      try { zoneEl.setPointerCapture(e.pointerId); } catch (_) {}
+      isDragging = true;
+    }
+    showHover(e.clientX, false);
+  });
+  zoneEl.addEventListener('pointermove', e => {
+    if (e.pointerType !== 'mouse' && !zoneEl.hasPointerCapture?.(e.pointerId)) return;
+    showHover(e.clientX, isDragging);
+  });
+  // Mouse: leaving the zone hides. Touch/pen: tooltip persists after release until the user taps elsewhere.
+  zoneEl.addEventListener('pointerup', e => {
+    if (e.pointerType === 'mouse') hideHover();
+    isDragging = false;
+  });
+  zoneEl.addEventListener('pointercancel', () => { isDragging = false; hideHover(); });
+  zoneEl.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') hideHover(); });
+  if (container._cumDocHandler) document.removeEventListener('pointerdown', container._cumDocHandler);
+  container._cumDocHandler = e => {
+    if (e.pointerType !== 'mouse' && !container.contains(e.target)) hideHover();
+  };
+  document.addEventListener('pointerdown', container._cumDocHandler);
 }
 renderCumulativeChart();
 let cumulativeResizeTimer;
