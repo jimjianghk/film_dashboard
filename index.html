@@ -55,6 +55,21 @@
   --blue-light: #6290bf;
   --red: #d8232a;
   --green: #3e7a4c;
+
+  /* RATING COLORS — single source of truth, dark red (1) to dark navy (10).
+     Space-separated RGB so they compose with rgb()/alpha syntax.
+     The JS ratingColors array is derived from these on init. */
+  --rating-1: 175 24 18;
+  --rating-2: 210 45 39;
+  --rating-3: 224 89 82;
+  --rating-4: 239 122 112;
+  --rating-5: 244 169 154;
+  --rating-6: 168 195 220;
+  --rating-7: 122 159 203;
+  --rating-8: 84 119 182;
+  --rating-9: 53 81 159;
+  --rating-10: 31 46 122;
+  --rating-unrated: 126 127 113;
 }
 
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -337,12 +352,18 @@ h1 {
   margin-right: 6px;
 }
 
-/* RATING BAR COLORS — red → yellow → green (tuned for cream bg) */
-.rating-1 { background: #d64848; } .rating-2 { background: #de5a30; }
-.rating-3 { background: #e8782a; } .rating-4 { background: #ee9820; }
-.rating-5 { background: #eeb820; } .rating-6 { background: #e8cc1e; }
-.rating-7 { background: #c6d024; } .rating-8 { background: #8ec434; }
-.rating-9 { background: #58ac40; } .rating-10 { background: #2e9848; }
+/* RATING BAR COLORS — driven by --rating-N custom properties in :root */
+.rating-1  { background: rgb(var(--rating-1)); }
+.rating-2  { background: rgb(var(--rating-2)); }
+.rating-3  { background: rgb(var(--rating-3)); }
+.rating-4  { background: rgb(var(--rating-4)); }
+.rating-5  { background: rgb(var(--rating-5)); }
+.rating-6  { background: rgb(var(--rating-6)); }
+.rating-7  { background: rgb(var(--rating-7)); }
+.rating-8  { background: rgb(var(--rating-8)); }
+.rating-9  { background: rgb(var(--rating-9)); }
+.rating-10 { background: rgb(var(--rating-10)); }
+.rating-unrated { background: rgb(var(--rating-unrated)); }
 
 /* VENUE / DECADE BARS — signature red */
 .venue-bar { background: var(--accent); }
@@ -487,7 +508,7 @@ h1 {
   font-family: 'Economist Sans', sans-serif;
   font-size: 0.9rem;
   font-weight: 400;
-  color: var(--text-dim);
+  color: var(--text-dimmer);
   overflow: hidden;
   outline: 1px solid transparent;
   outline-offset: -1px;
@@ -501,6 +522,7 @@ h1 {
 .heatmap-cell.watched-4 { background: #d8232a; color: #fff; }
 .heatmap-cell.watched-5 { background: #9c1d23; color: #fff; }
 .heatmap-cell.rating-colored { color: var(--text); }
+.heatmap-cell.rating-colored-dark { color: #fff; }
 
 /* PILL TOGGLE */
 .cal-toggle-wrap {
@@ -549,20 +571,11 @@ h1 {
 }
 
 /* TOOLTIP */
-.tt-rating-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+/* Tooltip variant of .rating-badge: only overrides what differs from the base. */
+.rating-badge.tt-rating-badge {
   width: 22px; height: 22px;
-  line-height: 1;
-  text-align: center;
-  border-radius: 50%;
-  font-family: 'Economist Sans', sans-serif;
-  font-weight: 400;
-  font-size: 1rem;
   margin-left: 6px;
-  vertical-align: 0px;
-  color: var(--text);
+  vertical-align: 0;
 }
 .tooltip {
   position: fixed;
@@ -718,17 +731,18 @@ tbody tr:last-child td { border-bottom: none; }
   font-size: 1rem;
   color: var(--text);
 }
-.rating-badge.rating-1 { background: rgba(214,72,72,0.75); }
-.rating-badge.rating-2 { background: rgba(222,90,48,0.75); }
-.rating-badge.rating-3 { background: rgba(232,120,42,0.75); }
-.rating-badge.rating-4 { background: rgba(238,152,32,0.75); }
-.rating-badge.rating-5 { background: rgba(238,184,32,0.75); }
-.rating-badge.rating-6 { background: rgba(232,204,30,0.75); }
-.rating-badge.rating-7 { background: rgba(198,208,36,0.75); }
-.rating-badge.rating-8 { background: rgba(142,196,52,0.75); }
-.rating-badge.rating-9 { background: rgba(88,172,64,0.75); }
-.rating-badge.rating-10 { background: rgba(46,152,72,0.75); }
-.rating-badge.rating-unrated { background: rgba(126,127,113,0.75); color: var(--text); }
+.rating-badge.rating-1  { background: rgb(var(--rating-1));  color: #FAD0C4; }
+.rating-badge.rating-2  { background: rgb(var(--rating-2));  color: #FAD0C4; }
+.rating-badge.rating-3  { background: rgb(var(--rating-3));  color: #FDE6DE; }
+.rating-badge.rating-4  { background: rgb(var(--rating-4));  color: #5F1311; }
+.rating-badge.rating-5  { background: rgb(var(--rating-5));  color: #8A130F; }
+.rating-badge.rating-6  { background: rgb(var(--rating-6));  color: rgb(var(--rating-10)); }
+.rating-badge.rating-7  { background: rgb(var(--rating-7));  color: #F5F8FD; }
+.rating-badge.rating-8  { background: rgb(var(--rating-8));  color: #E8EFFA; }
+.rating-badge.rating-9  { background: rgb(var(--rating-9));  color: #D5E1F2; }
+.rating-badge.rating-10 { background: rgb(var(--rating-10)); color: #C9D7E8; }
+.rating-badge.rating-unrated { background: rgb(var(--rating-unrated)); color: #ECEAE2; }
+.rating-badge .em-narrow { display: inline-block; transform: scaleX(0.8); }
 .rewatch-badge {
   display: inline-block;
   width: 0.88em; height: 0.88em;
@@ -1306,7 +1320,7 @@ function renderRatingChart(filter) {
       </div>`
     ).join('') + (allRatingCounts['unrated'] ? `<div class="bar-row" data-rating="unrated">
         <div class="bar-label" style="width:91px;margin-right:-8px">Unrated</div>
-        <div class="bar-track"><div class="bar-fill" style="width:0;background:#7e7f71"></div></div>
+        <div class="bar-track"><div class="bar-fill rating-unrated" style="width:0"></div></div>
         <div class="bar-count">0</div>
       </div>` : '');
     container.dataset.init = '1';
@@ -1660,7 +1674,10 @@ FILMS.forEach(f => {
   if (!filmsByDate[f.date]) filmsByDate[f.date] = [];
   filmsByDate[f.date].push(f);
 });
-const ed = new Date(endDate+'T12:00:00');
+// Calendar caps at the actual current date, not endDate. endDate may resolve to
+// yesterday when no film is logged today; today's tile should still render so the
+// tooltip can show "Awaiting data".
+const ed = new Date(todayStr+'T12:00:00');
 const months = [];
 let cursor = new Date(parseInt(dashYear), 0, 1);
 while (cursor <= ed) {
@@ -1684,7 +1701,7 @@ months.forEach(m => {
   for (let d = 1; d <= m.days; d++) {
     const ds = `${m.year}-${String(m.month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const films = filmsByDate[ds] || [];
-    const isFuture = ds > endDate;
+    const isFuture = ds > todayStr;
     if (isFuture) {
       html += `<div class="heatmap-cell future">${d}</div>`;
     } else {
@@ -1699,19 +1716,22 @@ months.forEach(m => {
 heatmapEl.appendChild(calRow);
 
 // ====== CALENDAR TOGGLE ======
-const ratingColors = [
-  null,
-  [214,72,72],
-  [222,90,48],
-  [232,120,42],
-  [238,152,32],
-  [238,184,32],
-  [232,204,30],
-  [198,208,36],
-  [142,196,52],
-  [88,172,64],
-  [46,152,72]
-];
+// Read rating colors from CSS custom properties (--rating-1 ... --rating-10)
+// so the palette has a single source of truth in :root.
+const ratingColors = (() => {
+  const rootStyle = getComputedStyle(document.documentElement);
+  const colors = [null];
+  for (let i = 1; i <= 10; i++) {
+    colors.push(
+      rootStyle.getPropertyValue(`--rating-${i}`).trim().split(/\s+/).map(Number)
+    );
+  }
+  return colors;
+})();
+const unratedColor = (() => {
+  return getComputedStyle(document.documentElement)
+    .getPropertyValue('--rating-unrated').trim().split(/\s+/).map(Number);
+})();
 function avgRatingColor(avg) {
   if (avg <= 1) return ratingColors[1];
   if (avg >= 10) return ratingColors[10];
@@ -1727,20 +1747,22 @@ function applyCalMode() {
     const films = JSON.parse(cell.dataset.films || '[]');
     if (calMode === 'screenings') {
       cell.style.background = '';
-      cell.classList.remove('rating-colored');
+      cell.classList.remove('rating-colored', 'rating-colored-dark');
       const cls = films.length >= 5 ? 'watched-5' : films.length === 4 ? 'watched-4' : films.length === 3 ? 'watched-3' : films.length === 2 ? 'watched-2' : films.length === 1 ? 'watched-1' : '';
       cell.classList.remove('watched-1','watched-2','watched-3','watched-4','watched-5');
       if (cls) cell.classList.add(cls);
     } else {
       cell.classList.remove('watched-1','watched-2','watched-3','watched-4','watched-5');
+      cell.classList.remove('rating-colored-dark');
       const rated = ratings.filter(r => r != null);
       if (rated.length > 0) {
         const avg = rated.reduce((a,b) => a+b, 0) / rated.length;
         const [r,g,b] = avgRatingColor(avg);
         cell.style.background = `rgba(${r},${g},${b},0.75)`;
         cell.classList.add('rating-colored');
+        if (avg <= 2 || avg >= 9) cell.classList.add('rating-colored-dark');
       } else if (ratings.length > 0) {
-        cell.style.background = 'rgba(126,127,113,0.5)';
+        cell.style.background = `rgba(${unratedColor.join(',')},0.5)`;
         cell.classList.add('rating-colored');
       } else {
         cell.style.background = '';
@@ -1764,9 +1786,8 @@ document.getElementById('cal-toggle-rating').addEventListener('click', () => {
 
 const tooltip = document.getElementById('tooltip');
 function ttRatingBadge(rating) {
-  if (rating == null) return `<span class="tt-rating-badge" style="background:rgba(126,127,113,0.75);color:var(--text)">–</span>`;
-  const [r,g,b] = ratingColors[rating] || [138,147,163];
-  return `<span class="tt-rating-badge" style="background:rgba(${r},${g},${b},0.75)">${rating}</span>`;
+  if (rating == null) return `<span class="rating-badge tt-rating-badge rating-unrated"><span class="em-narrow">—</span></span>`;
+  return `<span class="rating-badge tt-rating-badge rating-${rating}">${rating}</span>`;
 }
 document.querySelectorAll('.heatmap-cell').forEach(cell => {
   cell.addEventListener('touchstart', e => {
@@ -1956,7 +1977,7 @@ function renderTable() {
       })()}</td>
       <td style="font-family:'Economist Sans',sans-serif;font-size:1rem;color:var(--text-dim)">${f.year}</td>
       <td style="font-family:'Economist Sans',sans-serif;font-size:1rem;color:var(--text-dim)">${f.runtime}</td>
-      <td><span class="rating-badge ${rClass}">${f.rating != null ? f.rating : '–'}</span></td>
+      <td><span class="rating-badge ${rClass}">${f.rating != null ? f.rating : '<span class="em-narrow">—</span>'}</span></td>
       <td><span class="format-tag">${f.format}</span></td>
       <td><span class="price-cell">${priceStr}</span></td>
       <td style="font-family:'Economist Sans',sans-serif;font-size:1rem;color:var(--text-dim)">${f.venue}</td>

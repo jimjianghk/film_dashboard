@@ -24,7 +24,7 @@ A cursor trace reveals the cumulative count for any day from January 1 through t
 
 ### Rating chart
 
-Horizontal bar chart with star labels (half-star to five stars). Bars are color-coded red-to-green. An additional grey "Unrated" bar appears when applicable. Three filter toggles (All / New releases / Repertory) subset by production year, and a dedup toggle collapses rewatches to unique titles. Bar widths are anchored to the tallest bar across all films at the current dedup state, so switching between All / New / Rep doesn't rescale; only toggling dedup does. Bars animate between states on toggle.
+Horizontal bar chart with star labels (half-star to five stars). Bars are color-coded across a 10-step palette running from deep red (1) through pastel salmon (5) to pastel blue (6) and deep navy (10), inspired by the Economist's political-spectrum gradient. An additional grey "Unrated" bar appears when applicable. Three filter toggles (All / New releases / Repertory) subset by production year, and a dedup toggle collapses rewatches to unique titles. Bar widths are anchored to the tallest bar across all films at the current dedup state, so switching between All / New / Rep doesn't rescale; only toggling dedup does. Bars animate between states on toggle.
 
 ### Production decade chart
 
@@ -44,12 +44,12 @@ Two-column horizontal bar chart sorted by count. Hovering a venue code reveals t
 
 ### Screening calendar
 
-Monthly heatmap grid from January 1 through the current date. Rows cap at 4 months wide regardless of viewport, wrapping to fewer per row on narrower screens. Two modes toggled by buttons:
+Monthly heatmap grid from January 1 through the current date. Rows cap at 4 months wide regardless of viewport, wrapping to fewer per row on narrower screens. Unlike the subtitle and cumulative chart, the calendar always extends through today regardless of whether a film has been logged, so the current day's tile is interactive even when empty. Two modes toggled by buttons:
 
 - **Number of screenings**: tile color darkens with count across five discrete steps, from pale peach through red to deep crimson for 1–5+ films.
-- **Average rating**: tile color interpolates across the red-to-green rating scale. Days with only unrated screenings are grey.
+- **Average rating**: tile color interpolates translucently across the same rating palette as the bar chart. Days with only unrated screenings are grey.
 
-Hovering a tile shows a tooltip with film titles and color-coded rating badges.
+Hovering a tile with screenings shows a tooltip with film titles and color-coded rating badges. Hovering an empty past tile shows "No screenings"; today's tile (when no film is logged yet) shows "Awaiting data" instead.
 
 ### Series list
 
@@ -62,7 +62,7 @@ Sortable, filterable table of every screening. Nine columns: date, title, year, 
 - Click any header to sort (ascending/descending). Null ratings always sort to the bottom.
 - Dropdown filters on date (by month), year (by decade), rating (1–10 plus N/A), format, venue, and series.
 - Free-text search on title with IME composition support for CJK input.
-- Rating badges are color-coded circles matching the bar chart palette. Unrated films show a grey dash.
+- Rating badges are color-coded circles matching the bar chart palette, with text colors picked from within the same palette family for legible contrast. Unrated films show a grey badge with a horizontally narrowed em dash.
 - The Price column header carries a dagger that ties to the page footnotes (per-row prices exclude membership fees).
 
 ### Page footnotes
