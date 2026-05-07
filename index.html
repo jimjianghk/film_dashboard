@@ -1062,11 +1062,21 @@ const firstDate = FILMS[0].date;
 const lastDate = FILMS[FILMS.length - 1].date;
 const fmtDate = ds => new Date(ds+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
 const dashYear = firstDate.slice(0,4);
-const now = new Date(); const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+const getTodayStrInNewYork = () => {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const values = Object.fromEntries(parts.map(p => [p.type, p.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+};
+const todayStr = getTodayStrInNewYork();
 
 // Data-day rule (shared with the cumulative chart): the most recent day with
-// data is today if a film is logged today, otherwise yesterday. Clamped to the
-// dashboard's year.
+// data is today in New York if a film is logged today, otherwise yesterday.
+// Clamped to the dashboard's year.
 const yearStartForStats = new Date(dashYear + '-01-01T12:00:00');
 const yearEndForStats = new Date(dashYear + '-12-31T12:00:00');
 const dayMsForStats = 86400000;
