@@ -1137,10 +1137,11 @@ function renderCumulativeChart() {
   const todayIdx = Math.round((todayDate - yearStart) / dayMs);
   const hasFilmToday = !!dateCounts[todayStr];
   const dataDayIdx = Math.max(0, Math.min(daysInYear - 1, hasFilmToday ? todayIdx : todayIdx - 1));
-  const todayMonth = todayDate.getMonth();
-  const daysInTodayMonth = new Date(parseInt(dashYear), todayMonth + 1, 0).getDate();
-  const midpoint = Math.ceil(daysInTodayMonth / 2);
-  const endMonth = todayDate.getDate() > midpoint ? Math.min(11, todayMonth + 1) : todayMonth;
+  const chartEndDate = todayDate > yearEnd ? yearEnd : todayDate;
+  const chartEndMonth = chartEndDate.getMonth();
+  const daysInChartEndMonth = new Date(parseInt(dashYear), chartEndMonth + 1, 0).getDate();
+  const midpoint = Math.ceil(daysInChartEndMonth / 2);
+  const endMonth = chartEndDate.getDate() > midpoint ? Math.min(11, chartEndMonth + 1) : chartEndMonth;
   const endMonthLastDay = new Date(parseInt(dashYear), endMonth + 1, 0, 12, 0, 0);
   const endIdx = Math.min(daysInYear - 1, Math.round((endMonthLastDay - yearStart) / dayMs));
   let cum = 0;
@@ -1203,7 +1204,7 @@ function renderCumulativeChart() {
   const xEnd = xScale(endIdx);
   xAxis += `<line x1="${xEnd}" x2="${xEnd}" y1="${MT+innerH+0.75}" y2="${MT+innerH+5.75}" stroke="var(--text)" stroke-width="1.5"/>`;
   let todayMark = '';
-  if (todayDate >= yearStart && todayDate <= yearEnd) {
+  if (chartEndDate >= yearStart && chartEndDate <= yearEnd) {
     const tx = xScale(dataDayIdx);
     todayMark = `<line x1="${tx}" x2="${tx}" y1="${MT}" y2="${MT+innerH-0.75}" stroke="rgb(192,192,191)" stroke-width="1.5" stroke-dasharray="8,5"/>`;
   }
@@ -1682,10 +1683,10 @@ FILMS.forEach(f => {
   if (!filmsByDate[f.date]) filmsByDate[f.date] = [];
   filmsByDate[f.date].push(f);
 });
-// Calendar caps at the actual current date, not endDate. endDate may resolve to
-// yesterday when no film is logged today; today's tile should still render so the
-// tooltip can show "Awaiting data".
-const ed = new Date(todayStr+'T12:00:00');
+// Calendar caps at the actual current date during the dashboard year, then at
+// Dec. 31 once the year has ended.
+const actualCalendarEnd = new Date(todayStr+'T12:00:00');
+const ed = actualCalendarEnd > yearEndForStats ? yearEndForStats : actualCalendarEnd;
 const months = [];
 let cursor = new Date(parseInt(dashYear), 0, 1);
 while (cursor <= ed) {
