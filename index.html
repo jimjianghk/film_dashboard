@@ -1751,13 +1751,24 @@ const unratedColor = (() => {
   return getComputedStyle(document.documentElement)
     .getPropertyValue('--rating-unrated').trim().split(/\s+/).map(Number);
 })();
+const lerp = (a, b, t) => a + t * (b - a);
+function fiveSixBridgeColor(t) {
+  const midpointLift = Math.sin(Math.PI * t);
+  const base = ratingColors[5].map((v,i) => lerp(v, ratingColors[6][i], t));
+  return [
+    base[0] + 7 * midpointLift,
+    base[1] - 5 * midpointLift,
+    base[2] + 8 * midpointLift
+  ].map(v => Math.round(Math.max(0, Math.min(255, v))));
+}
 function avgRatingColor(avg) {
   if (avg <= 1) return ratingColors[1];
   if (avg >= 10) return ratingColors[10];
   const lo = Math.floor(avg), hi = Math.ceil(avg);
   if (lo === hi) return ratingColors[lo];
   const t = avg - lo;
-  return ratingColors[lo].map((v,i) => Math.round(v + t * (ratingColors[hi][i] - v)));
+  if (lo === 5 && hi === 6) return fiveSixBridgeColor(t);
+  return ratingColors[lo].map((v,i) => Math.round(lerp(v, ratingColors[hi][i], t)));
 }
 let calMode = 'screenings';
 function applyCalMode() {

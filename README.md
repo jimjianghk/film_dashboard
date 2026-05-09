@@ -47,7 +47,7 @@ Two-column horizontal bar chart sorted by count. Hovering a venue code reveals t
 Monthly heatmap grid from January 1 through the current date in New York during the dashboard year, capped at December 31 once the year has ended. Rows cap at 4 months wide regardless of viewport, wrapping to fewer per row on narrower screens. Unlike the subtitle and cumulative chart, the calendar extends through today in New York during the active year regardless of whether a film has been logged, so the current day's tile is interactive even when empty. Two modes toggled by buttons:
 
 - **Number of screenings**: tile color darkens with count across five discrete steps, from pale peach through red to deep crimson for 1–5+ films.
-- **Average rating**: tile color interpolates translucently across the same rating palette as the bar chart. Days with only unrated screenings are grey.
+- **Average rating**: tile color interpolates translucently across the same rating palette as the bar chart, with a softened 5-to-6 bridge to keep midrange averages legible. Days with only unrated screenings are grey.
 
 Hovering a tile with screenings shows a tooltip with film titles and color-coded rating badges. Hovering an empty past tile shows "No screenings"; today's tile (when no film is logged yet) shows "Awaiting data" instead.
 
