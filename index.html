@@ -269,10 +269,10 @@ h1 {
   background: var(--text);
   z-index: 1;
 }
-#rating-chart .bar-row::before { left: 95px; }
+#rating-chart .bar-row::before,
 #decade-chart .bar-row::before,
-.format-row::before { left: 60px; }
-#venue-chart .bar-row::before { left: 68px; }
+#venue-chart .bar-row::before,
+.format-row::before { left: var(--bar-axis-left, 60px); }
 .bar-row:hover .bar-fill { filter: brightness(1.15); }
 .hist-bar { transition: filter 0.15s, height 0.8s cubic-bezier(0.22,1,0.36,1); cursor: default; }
 .hist-bar:hover { filter: brightness(1.2); }
@@ -287,8 +287,12 @@ h1 {
   flex-shrink: 0;
   position: relative;
 }
-#venue-chart .bar-track {
-  margin-left: 8px;
+#rating-chart .bar-label,
+#decade-chart .bar-label,
+#venue-chart .bar-label,
+#format-chart .bar-label {
+  width: var(--bar-label-width, 48px);
+  white-space: nowrap;
 }
 .venue-tip {
   display: none;
@@ -308,24 +312,6 @@ h1 {
   box-shadow: 2px 2px 0 rgba(0,0,0,0.15);
 }
 .bar-label:hover .venue-tip { display: block; }
-.bar-label.rating-stars {
-  width: 91px;
-  font-size: 1rem;
-  font-weight: 400;
-  line-height: 22px;
-  height: 22px;
-  letter-spacing: 0;
-  padding-left: 3px;
-  margin-right: -8px;
-  overflow: hidden;
-  color: var(--text);
-}
-.bar-label.rating-stars .half-star {
-  font-size: 1rem;
-  vertical-align: 0px;
-}
-.bar-label.rating-stars .half-star.after-star { margin-left: 1px; }
-.bar-label.rating-stars > .half-star:only-child { margin-left: 1.5px; }
 .bar-track {
   flex: 1;
   height: 22px;
@@ -1313,8 +1299,18 @@ window.addEventListener('resize', () => {
   cumulativeResizeTimer = setTimeout(renderCumulativeChart, 120);
 });
 
+const BAR_ROW_GAP = 12;
+function syncBarLabelColumn(container) {
+  const labels = [...container.querySelectorAll('.bar-label')];
+  if (!labels.length) return;
+  container.style.setProperty('--bar-label-width', 'auto');
+  const labelWidth = Math.max(...labels.map(label => Math.ceil(label.scrollWidth)));
+  container.style.setProperty('--bar-label-width', `${labelWidth}px`);
+  container.style.setProperty('--bar-axis-left', `${labelWidth + BAR_ROW_GAP}px`);
+}
+
 // ====== RATING CHART ======
-const toStars = r => { const full = Math.floor(r/2); const half = r%2; return '★'.repeat(full) + (half ? `<span class="half-star${full ? ' after-star' : ''}">½</span>` : ''); };
+const ratingLabel = r => r === 1 ? '1 out of 10' : String(r);
 const allRatingCounts = {};
 for (let i=1;i<=10;i++) allRatingCounts[i] = 0;
 allRatingCounts['unrated'] = 0;
@@ -1333,17 +1329,18 @@ function renderRatingChart(filter) {
   if (!container.dataset.init) {
     container.innerHTML = Object.keys(ratingCounts).filter(r => r !== 'unrated').map(r =>
       `<div class="bar-row" data-rating="${r}">
-        <div class="bar-label rating-stars">${toStars(Number(r))}</div>
+        <div class="bar-label">${ratingLabel(Number(r))}</div>
         <div class="bar-track"><div class="bar-fill rating-${r}" style="width:0"></div></div>
         <div class="bar-count">0</div>
       </div>`
     ).join('') + (allRatingCounts['unrated'] ? `<div class="bar-row" data-rating="unrated">
-        <div class="bar-label" style="width:91px;margin-right:-8px">Unrated</div>
+        <div class="bar-label">Unrated</div>
         <div class="bar-track"><div class="bar-fill rating-unrated" style="width:0"></div></div>
         <div class="bar-count">0</div>
       </div>` : '');
     container.dataset.init = '1';
   }
+  syncBarLabelColumn(container);
   const allSubset = dedup ? dedupFilms(FILMS) : FILMS;
   const allCounts = {};
   for (let i=1;i<=10;i++) allCounts[i] = 0;
@@ -1529,6 +1526,7 @@ const venueCol = arr => arr.map(([v,c]) =>
 document.getElementById('venue-chart').innerHTML =
   `<div class="venue-col">${venueCol(venueArr.slice(0, venueHalf))}</div>` +
   `<div class="venue-col">${venueCol(venueArr.slice(venueHalf))}</div>`;
+syncBarLabelColumn(document.getElementById('venue-chart'));
 
 // ====== DECADE CHART ======
 function renderDecadeChart() {
@@ -1554,6 +1552,7 @@ function renderDecadeChart() {
     ).join('');
     container.dataset.init = '1';
   }
+  syncBarLabelColumn(container);
   for (const d of decadeArr) {
     const c = decadeCounts[d] || 0;
     const row = container.querySelector(`.bar-row[data-decade="${d}"]`);
@@ -1564,6 +1563,14 @@ function renderDecadeChart() {
 }
 renderDecadeChart();
 document.getElementById('decade-dedup').addEventListener('change', renderDecadeChart);
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(() => {
+    syncBarLabelColumn(document.getElementById('rating-chart'));
+    syncBarLabelColumn(document.getElementById('decade-chart'));
+    syncBarLabelColumn(document.getElementById('venue-chart'));
+    syncBarLabelColumn(document.getElementById('format-chart'));
+  });
+}
 
 // ====== FORMAT CHART ======
 function parseFormat(raw) {
@@ -1653,6 +1660,7 @@ const legendHtml = `<div class="format-legend">
 </div>`;
 
 document.getElementById('format-chart').innerHTML = `<div class="format-stacked">${rowsHtml}</div>${legendHtml}`;
+syncBarLabelColumn(document.getElementById('format-chart'));
 
 const segTooltip = document.getElementById('seg-tooltip');
 function positionSegTooltip(seg, cursorX) {

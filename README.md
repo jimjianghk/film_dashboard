@@ -24,7 +24,7 @@ A cursor trace reveals the cumulative count for any day from January 1 through t
 
 ### Rating chart
 
-Horizontal bar chart with star labels (half-star to five stars). Bars are color-coded across a 10-step palette running from deep red (1) through pastel salmon (5) to pastel blue (6) and deep navy (10), inspired by the Economist's political-spectrum gradient. An additional grey "Unrated" bar appears when applicable. Three filter toggles (All / New releases / Repertory) subset by production year, and a dedup toggle collapses rewatches to unique titles. Bar widths are anchored to the tallest bar across all films at the current dedup state, so switching between All / New / Rep doesn't rescale; only toggling dedup does. Bars animate between states on toggle.
+Horizontal bar chart with numeric 1-to-10 labels; the first row is labeled "1 out of 10" and the remaining rows use numbers only. Bars are color-coded across a 10-step palette running from deep red (1) through pastel salmon (5) to pastel blue (6) and deep navy (10), inspired by the Economist's political-spectrum gradient. An additional grey "Unrated" bar appears when applicable. Three filter toggles (All / New releases / Repertory) subset by production year, and a dedup toggle collapses rewatches to unique titles. Bar widths are anchored to the tallest bar across all films at the current dedup state, so switching between All / New / Rep doesn't rescale; only toggling dedup does. Bars animate between states on toggle.
 
 ### Production decade chart
 
