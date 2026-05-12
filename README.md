@@ -69,6 +69,10 @@ Sortable, filterable table of every screening. Nine columns: date, title, year, 
 
 A row of small notes between the log table and the footer carries the asterisk and dagger callouts referenced from the hero "Total spending" stat and the table's Price column header. Both notes sit inline, separated by a 25px gap.
 
+### Sparse mode
+
+When the year has fewer than 5 logged films, the masthead and stats row render as usual but the charts grid, every chart and table section, and the Price-column footnote are hidden. In their place, a large Economist Sans note reads "Visualizations will display when there are more film entries." so the page stays presentable early in the year.
+
 ## Design
 
 - Cream paper background styled after *The Economist*
