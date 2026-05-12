@@ -765,6 +765,15 @@ tbody tr:last-child td { border-bottom: none; }
   flex-wrap: wrap;
   gap: 25px;
 }
+.sparse-note {
+  font-family: 'Economist Sans', sans-serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-dim);
+  margin: 60px 0;
+  padding-top: 10px;
+}
 
 /* FILTER ROW */
 .filter-row-tr td {
@@ -921,6 +930,7 @@ footer img.footer-favicon {
 @media (max-width: 500px) {
   .stats-row { display: grid; grid-template-columns: repeat(2, 1fr); column-gap: 0; row-gap: 0; }
   header { padding: 48px 0 32px; }
+  .sparse-note { font-size: 2rem; }
 }
 </style>
 </head>
@@ -1094,6 +1104,19 @@ document.getElementById('stats-row').innerHTML = [
   { val: `$${totalSpent.toFixed(0)}`, label: 'Total spending*' },
   { val: uniqueVenues, label: uniqueVenues === 1 ? 'NYC venue visited' : 'NYC venues visited' }
 ].map(s => `<div class="stat-card"><div class="stat-val">${s.val}</div><div class="stat-label">${s.label}</div></div>`).join('');
+
+// ====== SPARSE MODE (fewer than 5 films) ======
+if (FILMS.length < 5) {
+  document.querySelector('.charts-grid').style.display = 'none';
+  document.querySelectorAll('.section').forEach(el => el.style.display = 'none');
+  const footnoteSpans = document.querySelectorAll('.page-footnotes span');
+  if (footnoteSpans[1]) footnoteSpans[1].style.display = 'none';
+  const note = document.createElement('div');
+  note.className = 'sparse-note animate delay-2';
+  note.textContent = 'Visualizations will display when there are more film entries.';
+  document.querySelector('.charts-grid').insertAdjacentElement('afterend', note);
+  return;
+}
 
 // ====== DEDUP HELPER ======
 function dedupFilms(films) {
