@@ -1043,7 +1043,7 @@ footer img.footer-favicon {
     </div>
   </div>
 
-  <div class="page-footnotes"><span>*Includes membership fees</span><span>†Excludes membership fees</span></div>
+  <div class="page-footnotes"><span>*Includes membership fees</span><span>†DCP includes other digital</span><span>‡Excludes membership fees</span></div>
 
   <footer><img class="footer-favicon" src="favicon-192.png" alt=""></footer>
 </div>
@@ -1111,6 +1111,7 @@ if (FILMS.length < 5) {
   document.querySelectorAll('.section').forEach(el => el.style.display = 'none');
   const footnoteSpans = document.querySelectorAll('.page-footnotes span');
   if (footnoteSpans[1]) footnoteSpans[1].style.display = 'none';
+  if (footnoteSpans[2]) footnoteSpans[2].style.display = 'none';
   const note = document.createElement('div');
   note.className = 'sparse-note animate delay-2';
   note.textContent = 'Visualizations will display when there are more film entries.';
@@ -1658,7 +1659,7 @@ const rowsHtml = bases.map(b => {
     return out;
   }).join('');
   return `<div class="format-row">
-    <div class="bar-label">${b}</div>
+    <div class="bar-label">${b === 'DCP' ? 'DCP†' : b}</div>
     <div class="format-bar-outer"><div class="format-bar-track" style="width:${trackPct}%;">${segs}</div></div>
     <div class="bar-count">${data.total}</div>
   </div>`;
@@ -1928,8 +1929,8 @@ const columns = [
   { key:'year', label:'Year', w:'7.5%' },
   { key:'runtime', label:'Length', w:'6.25%' },
   { key:'rating', label:'Rating', w:'7.5%' },
-  { key:'format', label:'Format', w:'10%' },
-  { key:'price', label:'Price†', w:'7%' },
+  { key:'format', label:'Format†', w:'10%' },
+  { key:'price', label:'Price‡', w:'7%' },
   { key:'venue', label:'Venue', w:'7.5%' },
   { key:'series', label:'Series', w:'22.75%' }
 ];

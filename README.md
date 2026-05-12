@@ -63,15 +63,15 @@ Sortable, filterable table of every screening. Nine columns: date, title, year, 
 - Dropdown filters on date (by month), year (by decade), rating (1–10 plus N/A), format, venue, and series.
 - Free-text search on title with IME composition support for CJK input.
 - Rating badges are color-coded circles matching the bar chart palette, with text colors picked from within the same palette family for legible contrast. Unrated films show a grey badge with a horizontally narrowed em dash.
-- The Price column header carries a dagger that ties to the page footnotes (per-row prices exclude membership fees).
+- The Format column header carries a dagger that ties to the page footnotes (DCP includes other digital), and the Price column header carries a double dagger (per-row prices exclude membership fees).
 
 ### Page footnotes
 
-A row of small notes between the log table and the footer carries the asterisk and dagger callouts referenced from the hero "Total spending" stat and the table's Price column header. Both notes sit inline, separated by a 25px gap.
+A row of small notes between the log table and the footer carries the asterisk, dagger, and double dagger callouts referenced from the hero "Total spending" stat, the Format column (and the format chart's DCP row), and the Price column header. The notes sit inline, separated by a 25px gap.
 
 ### Sparse mode
 
-When the year has fewer than 5 logged films, the masthead and stats row render as usual but the charts grid, every chart and table section, and the Price-column footnote are hidden. In their place, a large Economist Sans note reads "Visualizations will display when there are more film entries." so the page stays presentable early in the year.
+When the year has fewer than 5 logged films, the masthead and stats row render as usual but the charts grid, every chart and table section, and the Format and Price column footnotes are hidden. In their place, a large Economist Sans note reads "Visualizations will display when there are more film entries." so the page stays presentable early in the year.
 
 ## Design
 
