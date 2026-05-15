@@ -353,6 +353,7 @@ h1 {
 
 /* VENUE / DECADE BARS — signature red */
 .venue-bar { background: var(--accent); }
+.venue-bar-other { background: rgb(var(--rating-unrated)); }
 .venue-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -907,6 +908,70 @@ footer img.footer-favicon {
   -webkit-user-drag: none;
   pointer-events: none;
 }
+.year-menu {
+  position: absolute;
+  top: 71px;
+  right: max(40px, calc((100vw - 1280px) / 2 + 40px));
+  z-index: 200;
+}
+.year-menu-button {
+  position: relative;
+  z-index: 2;
+  width: 38px;
+  height: 25px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.year-menu-button span {
+  display: block;
+  flex-shrink: 0;
+  width: 30px;
+  height: 3px;
+  background: var(--text);
+}
+.year-menu-button[aria-expanded="true"] span {
+  background: var(--accent);
+}
+@media (hover: hover) and (pointer: fine) {
+  .year-menu-button:hover span {
+    background: var(--accent);
+  }
+}
+.year-menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: -13px;
+  z-index: 1;
+  width: max-content;
+  display: none;
+  padding: 4px 10px 6px;
+  background: var(--bg);
+  border: 1.5px solid var(--text);
+}
+.year-menu-panel.open { display: block; }
+.year-menu-panel a {
+  position: relative;
+  display: block;
+  padding: 0;
+  color: var(--text-dimmer);
+  text-decoration: none;
+  font-family: 'Economist Sans Headline', 'Economist Sans', sans-serif;
+  font-size: 2.8rem;
+  line-height: 1.18;
+  font-weight: 700;
+  text-align: right;
+}
+.year-menu-panel a:hover,
+.year-menu-panel a[aria-current="page"] {
+  color: var(--accent);
+}
 
 /* ANIMATIONS */
 @keyframes fadeUp {
@@ -928,11 +993,14 @@ footer img.footer-favicon {
   .chart-card { flex-basis: 100%; }
   .container { padding: 0 16px; }
   .venue-grid { grid-template-columns: 1fr; }
+  .year-menu { right: 24px; }
 }
 @media (max-width: 500px) {
-  .stats-row { display: grid; grid-template-columns: repeat(2, 1fr); column-gap: 0; row-gap: 0; }
+  .stats-row { display: grid; grid-template-columns: 0.9fr 1.1fr; column-gap: 0; row-gap: 0; }
+  .stat-val { white-space: nowrap; }
   header { padding: 48px 0 32px; }
   .sparse-note { font-size: 2rem; }
+  .year-menu { top: 63px; }
 }
 </style>
 </head>
@@ -944,6 +1012,18 @@ footer img.footer-favicon {
 </div>
 <div class="seg-tooltip" id="seg-tooltip"></div>
 <div class="seg-tooltip" id="cum-tooltip"></div>
+
+<div class="year-menu">
+  <button class="year-menu-button" id="year-menu-button" type="button" aria-label="Open year menu" aria-expanded="false" aria-controls="year-menu-panel">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
+  <nav class="year-menu-panel" id="year-menu-panel" aria-label="Cinema log archive">
+    <a href="./" data-year="2026">2026</a>
+    <a href="?2025" data-year="2025">2025</a>
+  </nav>
+</div>
 
 <div class="container">
   <header>
@@ -1051,7 +1131,39 @@ footer img.footer-favicon {
 </div>
 
 <script>
-fetch('data.json', { cache: 'no-store' })
+const DATA_FILES_BY_YEAR = {
+  '2026': 'data.json',
+  '2025': 'data-2025.json',
+};
+const DEFAULT_DASHBOARD_YEAR = '2026';
+function getRequestedDashboardYear() {
+  const params = new URLSearchParams(window.location.search);
+  const paramYear = params.get('year') || params.get('y');
+  const bareYear = window.location.search.match(/^\?(\d{4})$/)?.[1];
+  const requestedYear = paramYear || bareYear;
+  return DATA_FILES_BY_YEAR[requestedYear] ? requestedYear : DEFAULT_DASHBOARD_YEAR;
+}
+const requestedDashboardYear = getRequestedDashboardYear();
+const dataFile = DATA_FILES_BY_YEAR[requestedDashboardYear];
+const yearMenuButton = document.getElementById('year-menu-button');
+const yearMenuPanel = document.getElementById('year-menu-panel');
+const setYearMenuOpen = open => {
+  yearMenuButton.setAttribute('aria-expanded', String(open));
+  yearMenuButton.setAttribute('aria-label', open ? 'Close year menu' : 'Open year menu');
+  yearMenuPanel.classList.toggle('open', open);
+};
+yearMenuButton.addEventListener('click', e => {
+  e.stopPropagation();
+  setYearMenuOpen(yearMenuButton.getAttribute('aria-expanded') !== 'true');
+});
+document.addEventListener('click', e => {
+  if (!e.target.closest('.year-menu')) setYearMenuOpen(false);
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') setYearMenuOpen(false);
+});
+
+fetch(dataFile, { cache: 'no-store' })
   .then(r => r.json())
   .then(({ films: FILMS, membershipFees: MEMBERSHIP_FEES = 0 }) => {
 
@@ -1060,6 +1172,15 @@ const firstDate = FILMS[0].date;
 const lastDate = FILMS[FILMS.length - 1].date;
 const fmtDate = ds => new Date(ds+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
 const dashYear = firstDate.slice(0,4);
+document.title = `Jim’s ${dashYear} Cinema Log`;
+document.querySelector('meta[property="og:title"]')?.setAttribute('content', `Jim’s ${dashYear} Cinema Log`);
+document.querySelector('meta[name="twitter:title"]')?.setAttribute('content', `Jim’s ${dashYear} Cinema Log`);
+document.querySelector('meta[property="og:url"]')?.setAttribute('content', dashYear === DEFAULT_DASHBOARD_YEAR ? 'https://jimsfilms.nyc/' : `https://jimsfilms.nyc/?${dashYear}`);
+document.querySelector('h1').textContent = `${dashYear} in cinema`;
+document.querySelectorAll('.year-menu-panel a').forEach(a => {
+  if (a.dataset.year === dashYear) a.setAttribute('aria-current', 'page');
+  else a.removeAttribute('aria-current');
+});
 const getTodayStrInNewYork = () => {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/New_York',
@@ -1094,7 +1215,7 @@ const ratedFilms = FILMS.filter(f => f.rating != null);
 const avgRating = ratedFilms.length ? (ratedFilms.reduce((s,f) => s+f.rating, 0) / ratedFilms.length).toFixed(2) : '—';
 const totalRuntime = FILMS.reduce((s,f) => s+f.runtime, 0);
 const totalSpent = FILMS.reduce((s,f) => s+f.price, 0) + MEMBERSHIP_FEES;
-const uniqueVenues = new Set(FILMS.map(f => f.venue)).size;
+const uniqueVenues = new Set(FILMS.map(f => f.venue).filter(v => v && v !== 'OTHER')).size;
 const daysElapsed = dataDayIdxForStats + 1;
 const daysAtCinema = new Set(FILMS.map(f => f.date)).size;
 
@@ -1226,7 +1347,8 @@ function renderCumulativeChart() {
   const xEnd = xScale(endIdx);
   xAxis += `<line x1="${xEnd}" x2="${xEnd}" y1="${MT+innerH+0.75}" y2="${MT+innerH+5.75}" stroke="var(--text)" stroke-width="1.5"/>`;
   let todayMark = '';
-  if (chartEndDate >= yearStart && chartEndDate <= yearEnd) {
+  const chartExtendsToYearEnd = endIdx >= daysInYear - 1;
+  if (!chartExtendsToYearEnd && chartEndDate >= yearStart && chartEndDate <= yearEnd) {
     const tx = xScale(dataDayIdx);
     todayMark = `<line x1="${tx}" x2="${tx}" y1="${MT}" y2="${MT+innerH-0.75}" stroke="rgb(192,192,191)" stroke-width="1.5" stroke-dasharray="8,5"/>`;
   }
@@ -1344,8 +1466,9 @@ FILMS.forEach(f => { if (f.rating != null) allRatingCounts[f.rating]++; else all
 const maxRatingAll = Math.max(...Object.values(allRatingCounts), 1);
 function renderRatingChart(filter) {
   const dedup = document.getElementById('rating-dedup').checked;
-  let subset = filter === 'new' ? FILMS.filter(f => f.year >= 2025)
-    : filter === 'rep' ? FILMS.filter(f => f.year < 2025) : FILMS;
+  const newReleaseCutoff = parseInt(dashYear, 10) - 1;
+  let subset = filter === 'new' ? FILMS.filter(f => f.year >= newReleaseCutoff)
+    : filter === 'rep' ? FILMS.filter(f => f.year < newReleaseCutoff) : FILMS;
   if (dedup) subset = dedupFilms(subset);
   const ratingCounts = {};
   for (let i=1;i<=10;i++) ratingCounts[i] = 0;
@@ -1529,7 +1652,11 @@ window.addEventListener('resize', () => {
 // ====== VENUE CHART ======
 const venueCounts = {};
 FILMS.forEach(f => venueCounts[f.venue] = (venueCounts[f.venue]||0)+1);
-const venueArr = Object.entries(venueCounts).sort((a,b) => b[1]-a[1]);
+const venueArr = Object.entries(venueCounts).sort((a,b) => {
+  if (a[0] === 'OTHER') return 1;
+  if (b[0] === 'OTHER') return -1;
+  return b[1] - a[1];
+});
 const maxVenue = venueArr[0][1];
 const venueHalf = Math.ceil(venueArr.length / 2);
 const venueFullNames = {
@@ -1541,12 +1668,12 @@ const venueFullNames = {
   AMC31:'AMC Kips Bay', REG13:'Regal Union Square', ANGEL:'Angelika Film Center',
   NITEP:'Nitehawk Prospect Park', NITEW:'Nitehawk Williamsburg',
   MET:'Metropolitan Museum of Art', AMC34:'AMC 34th Street', VEAST:'Village East Cinema',
-  SKIR:'NYU Skirball Center'
+  SKIR:'NYU Skirball Center', OTHER:'Non-NYC or non-standard venues'
 };
 const venueCol = arr => arr.map(([v,c]) =>
   `<div class="bar-row venue-has-tip">
     <div class="bar-label">${v}${venueFullNames[v] ? `<span class="venue-tip">${venueFullNames[v]}</span>` : ''}</div>
-    <div class="bar-track"><div class="bar-fill venue-bar" style="width:${(c/maxVenue)*100}%"></div></div>
+    <div class="bar-track"><div class="bar-fill venue-bar${v === 'OTHER' ? ' venue-bar-other' : ''}" style="width:${(c/maxVenue)*100}%"></div></div>
     <div class="bar-count">${c}</div>
   </div>`).join('');
 document.getElementById('venue-chart').innerHTML =

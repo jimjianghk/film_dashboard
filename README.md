@@ -6,7 +6,11 @@ Data is sourced from a personal spreadsheet on Dropbox and synced automatically 
 
 ## Dashboard
 
-The page loads `data.json`, an object with `films` (array of film objects with date, title, year, runtime, rating (1–10 or null), rewatch flag, format, price, venue, and series) and `membershipFees` (sum of column Q from the spreadsheet, added to total spending in the hero stats).
+The default page loads `data.json`, an object with `films` (array of film objects with date, title, year, runtime, rating (1–10 or null), rewatch flag, format, price, venue, and series) and `membershipFees` (sum of column Q from the spreadsheet, added to total spending in the hero stats). Archive views use the same `index.html` route with a year query and load frozen year-specific snapshots using the same JSON shape; for example, `?2025` loads `data-2025.json`.
+
+### Archive views
+
+Past years are data archives, not design archives: all years use the current `index.html` renderer. A hamburger menu in the top-right corner links between available years. The dashboard year is inferred from the first film date in the loaded data, so archive views keep the same chart, calendar, stats, and New releases / Repertory logic while capping time-based views at December 31 of the archived year.
 
 ### Masthead
 
@@ -14,11 +18,11 @@ Red *The Economist*-style masthead above an uppercase Economist Sans Headline ti
 
 ### Stats row
 
-Six summary cards: total screenings, days at the cinema (distinct screening dates over days elapsed, denominator counts the current New York date only if a film is logged today, matching the cumulative chart's marker-line rule; the slash between numerator and denominator is rendered at weight 900 and horizontally squeezed to 75% width), average rating (excluding unrated films), total runtime in hours, total spending (per-screening prices plus membership fees, marked with an asterisk that ties to the page footnotes), and unique NYC venues visited. Values are set in Economist Sans Headline (condensed display cut) with a thick black accent bar to the left of each stat. In a single row the cards size to content and gaps distribute evenly across the viewport (including a matching trailing gap after the last card); at narrower breakpoints the row wraps to three, then two, equal-width columns.
+Six summary cards: total screenings, days at the cinema (distinct screening dates over days elapsed, denominator counts the current New York date only if a film is logged today, matching the cumulative chart's marker-line rule; the slash between numerator and denominator is rendered at weight 900 and horizontally squeezed to 75% width), average rating (excluding unrated films), total runtime in hours, total spending (per-screening prices plus membership fees, marked with an asterisk that ties to the page footnotes), and unique NYC venues visited (excluding the `OTHER` catch-all). Values are set in Economist Sans Headline (condensed display cut) with a thick black accent bar to the left of each stat. In a single row the cards size to content and gaps distribute evenly across the viewport (including a matching trailing gap after the last card); at narrower breakpoints the row wraps to three, then two columns, with a slightly wider right column on narrow mobile screens to keep the days-at-cinema value on one line.
 
 ### Cumulative screenings
 
-Full-width SVG line chart tracking the running total of screenings over the year. The line uses step-after style: flat between film days and sloped upward only across the day a screening was logged. The x-axis runs from January 1 through the end of the current month if the active chart date is on or before its midpoint, otherwise through the end of the following month; after the dashboard year has ended, the active chart date is capped at December 31. Month labels sit centered between consecutive month-start ticks, and the bottom axis line and ticks match the runtime histogram. The y-axis top rounds the running total up to the next multiple of the chosen tick step, where the step is the smallest multiple of 10 producing 4–6 intervals (multiples of 5 are allowed when the total is ≤ 30 films); labels are right-aligned with faint horizontal gridlines. A dashed vertical marker indicates the most recent "data day": today in New York if a screening has been logged today, otherwise yesterday. When the marker falls on yesterday, the line terminates flat at that point regardless of whether yesterday had any screenings.
+Full-width SVG line chart tracking the running total of screenings over the year. The line uses step-after style: flat between film days and sloped upward only across the day a screening was logged. The x-axis runs from January 1 through the end of the current month if the active chart date is on or before its midpoint, otherwise through the end of the following month; after the dashboard year has ended, the active chart date is capped at December 31. Month labels sit centered between consecutive month-start ticks, and the bottom axis line and ticks match the runtime histogram. The y-axis top rounds the running total up to the next multiple of the chosen tick step, where the step is the smallest multiple of 10 producing 4–6 intervals (multiples of 5 are allowed when the total is ≤ 30 films); labels are right-aligned with faint horizontal gridlines. A dashed vertical marker indicates the most recent "data day": today in New York if a screening has been logged today, otherwise yesterday. When the marker falls on yesterday, the line terminates flat at that point regardless of whether yesterday had any screenings. If the chart extends through December 31, the marker is hidden.
 
 A cursor trace reveals the cumulative count for any day from January 1 through the data day. A thin vertical line and a small accent-colored dot snap to the nearest day, and a single-line tooltip in the format-chart style shows the date and the screening count. On desktop the trace follows the mouse and disappears when the cursor leaves the chart. On touch, a press-and-drag traces; releasing leaves the tooltip in place until the user taps elsewhere. Hovering or tapping past the data-day marker is treated as outside the chart and hides the trace, but if a continuous touch drag crosses past the marker the tooltip clamps to the data day and persists, including after the finger lifts.
 
@@ -40,7 +44,7 @@ Vertical histogram with 5-minute bins. Has its own dedup toggle; bin structure s
 
 ### Screening venue chart
 
-Two-column horizontal bar chart sorted by count. Hovering a venue code reveals the full cinema name via tooltip (e.g., METRO → Metrograph).
+Two-column horizontal bar chart sorted by count. Hovering a venue code reveals the full cinema name via tooltip (e.g., METRO → Metrograph). The `OTHER` catch-all maps to "Non-NYC or non-standard venues", always sorts last when present, and uses the same grey as the rating chart's Unrated bar.
 
 ### Screening calendar
 
@@ -89,6 +93,8 @@ A GitHub Actions workflow (`.github/workflows/update-data.yml`) runs every 20 mi
 2. Parses the spreadsheet's sheet `"26"` with the `xlsx` library
 3. Transforms rows into JSON (Excel serial dates → ISO dates, column mapping)
 4. Commits `data.json` if it changed
+
+Archive snapshots are generated manually from the corresponding annual sheet and committed as `data-YYYY.json`. The 2025 archive snapshot was generated from sheet `"25"` in `Cinema.xlsx` and is loaded by `?2025`.
 
 ### Secrets required
 
