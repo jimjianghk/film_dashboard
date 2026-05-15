@@ -1327,7 +1327,10 @@ function renderCumulativeChart() {
     yAxis += `<line x1="${i===0?ML-0.75:ML}" x2="${i===0?ML+innerW+0.75:ML+innerW}" y1="${y}" y2="${y}" stroke="${i===0?'var(--text)':'rgb(192,192,191)'}" stroke-width="1.5"/>`;
     yAxis += `<text x="${W-6}" y="${y+5}" text-anchor="end" font-family="'Economist Sans',sans-serif" font-size="1rem" font-weight="350" fill="var(--text)">${Math.round(v)}</text>`;
   }
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const useShortLabels = endMonth >= 10 && window.matchMedia('(max-width: 500px)').matches;
+  const months = useShortLabels
+    ? ['J','F','M','A','M','J','J','A','S','O','N','D']
+    : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   let xAxis = '';
   for (let m = 0; m <= endMonth; m++) {
     const monthStart = new Date(dashYear + '-' + String(m+1).padStart(2,'0') + '-01T12:00:00');
