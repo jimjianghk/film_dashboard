@@ -1211,7 +1211,7 @@ document.getElementById('date-range').innerHTML = `${fmtDate(dashYear+'-01-01')}
 
 // ====== STATS ======
 const totalFilms = FILMS.length;
-const ratedFilms = FILMS.filter(f => f.rating != null);
+const ratedFilms = dedupFilms(FILMS).filter(f => f.rating != null);
 const avgRating = ratedFilms.length ? (ratedFilms.reduce((s,f) => s+f.rating, 0) / ratedFilms.length).toFixed(2) : '—';
 const totalRuntime = FILMS.reduce((s,f) => s+f.runtime, 0);
 const totalSpent = FILMS.reduce((s,f) => s+f.price, 0) + MEMBERSHIP_FEES;
