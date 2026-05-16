@@ -1572,7 +1572,7 @@ function renderRuntimeChart() {
         while (j < binArr.length && binArr[j].count === 0) j++;
         const hasLeft = binArr.slice(0, i).some(x => x.count > 0);
         const hasRight = binArr.slice(j).some(x => x.count > 0);
-        if (j - i >= 5 && hasLeft && hasRight) {
+        if (j - i >= 4 && hasLeft && hasRight) {
           items.push({ type: 'gap', gapStartBin: lastBarBin + binSize });
         } else {
           for (let k = i; k < j; k++) items.push({ type: 'bar', ...binArr[k] });
