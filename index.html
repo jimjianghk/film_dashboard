@@ -265,14 +265,14 @@ h1 {
   position: absolute;
   top: -6px;
   bottom: -2px;
-  width: 1.5px;
+  width: var(--bar-axis-width, 1.5px);
   background: var(--text);
   z-index: 1;
 }
 #rating-chart .bar-row::before,
 #decade-chart .bar-row::before,
 #venue-chart .bar-row::before,
-.format-row::before { left: var(--bar-axis-left, 60px); }
+.format-row::before { left: calc(var(--bar-axis-left, 60px) - var(--bar-axis-width, 1.5px)); }
 .bar-row:hover .bar-fill { filter: brightness(1.15); }
 .hist-bar { transition: filter 0.15s, height 0.8s cubic-bezier(0.22,1,0.36,1); cursor: default; }
 .hist-bar:hover { filter: brightness(1.2); }
@@ -1636,7 +1636,7 @@ function renderRuntimeChart() {
       barsHtml += `<div data-bin="${it.bin}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:24px;position:relative;">
         <div class="hist-count" style="font-family:'Economist Sans',sans-serif;font-size:0.9rem;font-weight:350;color:${c ? 'var(--text)' : 'var(--text-dim)'};margin-bottom:4px;">${c || ''}</div>
         <div class="hist-bar" style="width:100%;height:${h}px;background:var(--accent);border-radius:0;${c ? '' : 'visibility:hidden;'}"></div>
-        <div style="position:absolute;left:-${lo}px;right:-${ro}px;bottom:0;height:1.5px;background:var(--text);pointer-events:none;"></div>
+        <div style="position:absolute;left:-${lo}px;right:-${ro}px;bottom:-1.5px;height:1.5px;background:var(--text);pointer-events:none;"></div>
         ${tick}${label}${endTick}${endLabel}
       </div>`;
     }
