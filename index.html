@@ -2100,6 +2100,14 @@ function matchesFilter(f, key, val) {
   return String(f[key] ?? '') === val;
 }
 
+function normalizeTitleSearchText(text) {
+  return String(text)
+    .replace(/'/g, '’')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .toLowerCase();
+}
+
 function renderTable() {
   document.querySelectorAll('body > .col-filter-menu').forEach(m => m.remove());
   const arrow = dir => `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="7" viewBox="0 0 8 5"${dir === 'asc' ? ' style="transform:rotate(180deg)"' : ''}><path d="M0 0l4 5 4-5z" fill="currentColor"/></svg>`;
@@ -2134,8 +2142,8 @@ function renderTable() {
     if (val) filtered = filtered.filter(f => matchesFilter(f, key, val));
   }
   if (activeFilters._titleSearch) {
-    const q = activeFilters._titleSearch.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-    filtered = filtered.filter(f => f.title.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes(q));
+    const q = normalizeTitleSearchText(activeFilters._titleSearch);
+    filtered = filtered.filter(f => normalizeTitleSearchText(f.title).includes(q));
   }
 
   filtered.forEach((f,i) => f._idx = i);
