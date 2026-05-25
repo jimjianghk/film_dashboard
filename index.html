@@ -382,10 +382,6 @@ h1 {
 }
 .format-seg:hover { filter: brightness(1.15); }
 .format-seg.seg-standard { background: var(--accent); }
-.format-seg.seg-imax { background: var(--blue-light); }
-.format-seg.seg-dolby { background: var(--peach); }
-.format-seg.seg-prime { background: var(--blue-dark); }
-.format-seg.seg-vista { background: #7e7f71; }
 .format-seg.seg-3d::after {
   content: '';
   position: absolute;
@@ -1745,9 +1741,11 @@ function parseFormat(raw) {
   return { base: 'DCP', premium: null, threeD };
 }
 const BASE_ORDER = ['DCP', '35mm', '70mm', '16mm'];
-const PREMIUM_ORDER = ['__std', 'IMAX', 'Dolby', 'Prime', 'VistaVision'];
-const PREMIUM_CLASS = { '__std': 'standard', 'IMAX': 'imax', 'Dolby': 'dolby', 'Prime': 'prime', 'VistaVision': 'vista' };
+const STANDARD_FORMAT_KEY = '__std';
+const PREMIUM_TIE_ORDER = ['Dolby', 'IMAX', 'Prime', 'VistaVision'];
+const PREMIUM_ORDER = [STANDARD_FORMAT_KEY, ...PREMIUM_TIE_ORDER];
 const PREMIUM_LABEL = { '__std': 'Standard', 'IMAX': 'IMAX', 'Dolby': 'Dolby Cinema', 'Prime': 'AMC Prime', 'VistaVision': 'VistaVision' };
+const PREMIUM_COLOR_SEQUENCE = ['#efa489', '#6290bf', '#293f84', '#7e7f71'];
 
 const formatBreakdown = {};
 const premiumTotals = { '__std': 0, 'IMAX': 0, 'Dolby': 0, 'Prime': 0, 'VistaVision': 0 };
@@ -1756,7 +1754,7 @@ FILMS.forEach(f => {
   const { base, premium, threeD } = parseFormat(f.format);
   if (!formatBreakdown[base]) formatBreakdown[base] = { total: 0, segs: {} };
   formatBreakdown[base].total++;
-  const pKey = premium || '__std';
+  const pKey = premium || STANDARD_FORMAT_KEY;
   const key = pKey + (threeD ? '|3D' : '');
   formatBreakdown[base].segs[key] = (formatBreakdown[base].segs[key] || 0) + 1;
   premiumTotals[pKey]++;
@@ -1765,8 +1763,35 @@ FILMS.forEach(f => {
 const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].total > 0);
 const maxBaseTotal = Math.max(...bases.map(b => formatBreakdown[b].total), 1);
 
+function premiumTotalInBase(base, premium) {
+  const segs = formatBreakdown[base]?.segs || {};
+  return (segs[premium] || 0) + (segs[premium + '|3D'] || 0);
+}
+function premiumRank(premium) {
+  const rank = PREMIUM_TIE_ORDER.indexOf(premium);
+  return rank === -1 ? PREMIUM_TIE_ORDER.length : rank;
+}
+function sortPremiumsByCount(a, b) {
+  return b.total - a.total || premiumRank(a.p) - premiumRank(b.p);
+}
+
+const premiumColorByName = {};
+let nextPremiumColorIndex = 0;
+[...bases]
+  .sort((a, b) => formatBreakdown[b].total - formatBreakdown[a].total || BASE_ORDER.indexOf(a) - BASE_ORDER.indexOf(b))
+  .forEach(base => {
+    PREMIUM_TIE_ORDER
+      .map(p => ({ p, total: premiumTotalInBase(base, p) }))
+      .filter(({ p, total }) => total > 0 && !premiumColorByName[p])
+      .sort(sortPremiumsByCount)
+      .forEach(({ p }) => {
+        premiumColorByName[p] = PREMIUM_COLOR_SEQUENCE[nextPremiumColorIndex];
+        nextPremiumColorIndex++;
+      });
+  });
+
 function segLabel(b, p, threeD) {
-  if (p === '__std') return threeD ? 'Standard 3D' : 'Standard ' + b;
+  if (p === STANDARD_FORMAT_KEY) return threeD ? 'Standard 3D' : 'Standard ' + b;
   if (p === 'IMAX' && b === '70mm') return 'IMAX 70mm' + (threeD ? ' 3D' : '');
   return PREMIUM_LABEL[p] + (threeD ? ' 3D' : '');
 }
@@ -1776,18 +1801,19 @@ const rowsHtml = bases.map(b => {
   const premiumsByCount = PREMIUM_ORDER
     .map(p => ({ p, total: (data.segs[p] || 0) + (data.segs[p + '|3D'] || 0) }))
     .filter(x => x.total > 0)
-    .sort((a, b) => b.total - a.total)
+    .sort((a, b) => b.total - a.total || PREMIUM_ORDER.indexOf(a.p) - PREMIUM_ORDER.indexOf(b.p))
     .map(x => x.p);
   const segs = premiumsByCount.flatMap(p => {
-    const cls = PREMIUM_CLASS[p];
+    const className = p === STANDARD_FORMAT_KEY ? ' seg-standard' : '';
+    const colorStyle = p === STANDARD_FORMAT_KEY ? '' : `background:${premiumColorByName[p]};`;
     const out = [];
     const plain = data.segs[p] || 0;
     const threeD = data.segs[p + '|3D'] || 0;
     if (plain > 0) {
-      out.push(`<div class="format-seg seg-${cls}" style="flex:${plain};" data-label="${segLabel(b, p, false)}" data-count="${plain}"></div>`);
+      out.push(`<div class="format-seg${className}" style="flex:${plain};${colorStyle}" data-label="${segLabel(b, p, false)}" data-count="${plain}"></div>`);
     }
     if (threeD > 0) {
-      out.push(`<div class="format-seg seg-${cls} seg-3d" style="flex:${threeD};" data-label="${segLabel(b, p, true)}" data-count="${threeD}"></div>`);
+      out.push(`<div class="format-seg${className} seg-3d" style="flex:${threeD};${colorStyle}" data-label="${segLabel(b, p, true)}" data-count="${threeD}"></div>`);
     }
     return out;
   }).join('');
@@ -1799,20 +1825,22 @@ const rowsHtml = bases.map(b => {
 }).join('');
 
 const legendItems = [
-  ['imax', 'IMAX', premiumTotals['IMAX']],
-  ['dolby', 'Dolby Cinema', premiumTotals['Dolby']],
-  ['prime', 'AMC Prime', premiumTotals['Prime']],
-  ['vista', 'VistaVision', premiumTotals['VistaVision']],
-  ['3d', '3D', threeDTotal],
-].filter(([,,n]) => n > 0)
-  .sort((a, b) => b[2] - a[2]);
-const swatchBg = { imax: '#6290bf', dolby: '#efa489', prime: '#293f84', vista: '#7e7f71' };
+  ...PREMIUM_TIE_ORDER.map(p => ({
+    key: p,
+    label: PREMIUM_LABEL[p],
+    count: premiumTotals[p],
+    color: premiumColorByName[p],
+    rank: premiumRank(p),
+  })),
+  { key: '3d', label: '3D', count: threeDTotal, rank: PREMIUM_TIE_ORDER.length },
+].filter(item => item.count > 0)
+  .sort((a, b) => b.count - a.count || a.rank - b.rank);
 const legendHtml = `<div class="format-legend">
-  ${legendItems.map(([cls, lbl, n]) => {
-    const swatch = cls === '3d'
+  ${legendItems.map(item => {
+    const swatch = item.key === '3d'
       ? '<span class="legend-swatch swatch-3d"></span>'
-      : `<span class="legend-swatch" style="background:${swatchBg[cls]}"></span>`;
-    return `<span class="legend-chip">${swatch}${lbl} <span class="legend-count">${n}</span></span>`;
+      : `<span class="legend-swatch" style="background:${item.color}"></span>`;
+    return `<span class="legend-chip">${swatch}${item.label} <span class="legend-count">${item.count}</span></span>`;
   }).join('')}
 </div>`;
 
