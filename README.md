@@ -36,7 +36,7 @@ Horizontal bar chart grouping films by the decade they were produced. Has its ow
 
 ### Screening format chart
 
-Horizontal stacked bar chart with one row per base projection format (DCP / 35mm / 70mm / 16mm). Within each bar, segments are grouped by premium tier (IMAX, Dolby Cinema, AMC Prime, VistaVision) and ordered by count; 3D variants render as a diagonal-stripe overlay within their tier's segment. Bar widths are proportional to the largest base-format total, so the DCP row dominates and rarer formats read accurately at scale. Hovering any segment shows the subcategory name and count. A legend below the bars lists every premium tier present with its total, sorted by count.
+Horizontal stacked bar chart with one row per base projection format (DCP / 35mm / 70mm / 16mm). Within each bar, segments are grouped by premium tier (IMAX, Dolby Cinema, AMC Prime, VistaVision) and ordered by count; 3D variants render as a diagonal-stripe overlay within their tier's segment. Standard segments use the accent red, while premium colors are assigned by usage rank from the sequence `#efa489`, `#6290bf`, `#293f84`, `#7e7f71`: base formats are scanned from highest total to lowest, then premium tiers within each base are ranked by count, with Dolby before IMAX before Prime before VistaVision for ties. Bar widths are proportional to the largest base-format total, so the DCP row dominates and rarer formats read accurately at scale. Hovering any segment shows the subcategory name and count. A legend below the bars lists every premium tier present with its total, sorted by count.
 
 ### Runtime distribution
 
