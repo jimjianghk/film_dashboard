@@ -1319,7 +1319,7 @@ const statComparisons = previousStats ? {
   totalFilms: formatStatDelta(currentStats.totalFilms - previousStats.totalFilms),
   daysAtCinema: formatStatDelta(currentStats.daysAtCinema - previousStats.daysAtCinema),
   avgRating: currentStats.avgRating == null || previousStats.avgRating == null ? null : formatStatDelta(currentStats.avgRating - previousStats.avgRating, { decimals: 2 }),
-  totalRuntimeHours: formatStatDelta(currentStats.totalRuntimeHours - previousStats.totalRuntimeHours, { decimals: 2, suffix: 'h' }),
+  totalRuntimeHours: formatStatDelta(currentStats.totalRuntimeHours - previousStats.totalRuntimeHours, { decimals: 1, suffix: 'h' }),
   totalSpent: formatStatDelta(currentStats.totalSpent - previousStats.totalSpent, { prefix: '$' }),
   uniqueVenues: formatStatDelta(currentStats.uniqueVenues - previousStats.uniqueVenues)
 } : {};
