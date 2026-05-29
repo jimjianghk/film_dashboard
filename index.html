@@ -70,6 +70,7 @@
   --rating-9: 53 81 159;
   --rating-10: 31 46 122;
   --rating-unrated: 126 127 113;
+  --rating-unrated-color: rgb(var(--rating-unrated));
 }
 
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -148,6 +149,7 @@ h1 {
   row-gap: 0;
   margin: 0 0 48px;
 }
+.stats-row.has-delta-toggle { margin-bottom: 14px; }
 .stats-row::after {
   content: '';
   width: 0;
@@ -168,7 +170,9 @@ h1 {
   bottom: 12px;
   width: 9px;
   background: var(--text);
+  transition: bottom 0.45s cubic-bezier(0.22,1,0.36,1);
 }
+.stats-row.show-stat-comparisons .stat-card-compare-ready::before { bottom: 8px; }
 .stat-val {
   font-family: 'Economist Sans Headline', 'Economist Sans', sans-serif;
   font-size: 4rem;
@@ -185,6 +189,45 @@ h1 {
   letter-spacing: 0;
   font-weight: 500;
   text-transform: none;
+}
+.stat-compare {
+  height: 0;
+  margin-top: 1px;
+  line-height: 1.1;
+  opacity: 0;
+  overflow: hidden;
+  transform: translateY(-3px);
+  transition:
+    height 0.45s cubic-bezier(0.22,1,0.36,1),
+    opacity 0.35s ease,
+    transform 0.45s cubic-bezier(0.22,1,0.36,1);
+}
+.stats-row.show-stat-comparisons .stat-compare {
+  height: 1.1em;
+  opacity: 1;
+  transform: translateY(0);
+}
+.stat-compare-badge {
+  font-family: 'Economist Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--accent);
+  white-space: nowrap;
+  opacity: 0.65;
+}
+.stat-compare-badge.is-muted { color: var(--text-dim); }
+.stats-compare-toggle {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 48px;
+}
+.stats-compare-toggle.is-visible { display: flex; }
+@media (prefers-reduced-motion: reduce) {
+  .stat-card::before,
+  .stat-compare {
+    transition: none;
+  }
 }
 
 /* SECTIONS */
@@ -349,11 +392,11 @@ h1 {
 .rating-8  { background: rgb(var(--rating-8)); }
 .rating-9  { background: rgb(var(--rating-9)); }
 .rating-10 { background: rgb(var(--rating-10)); }
-.rating-unrated { background: rgb(var(--rating-unrated)); }
+.rating-unrated { background: var(--rating-unrated-color); }
 
 /* VENUE / DECADE BARS — signature red */
 .venue-bar { background: var(--accent); }
-.venue-bar-other { background: rgb(var(--rating-unrated)); }
+.venue-bar-other { background: var(--rating-unrated-color); }
 .venue-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1032,6 +1075,13 @@ footer img.footer-favicon {
   </header>
 
   <div class="stats-row animate delay-1" id="stats-row"></div>
+  <div class="stats-compare-toggle animate delay-1" id="stats-compare-toggle-wrap">
+    <label class="switch-toggle" title="Show year comparisons">
+      <input type="checkbox" id="stats-compare-toggle" aria-label="Show year comparisons">
+      <span class="switch-slider"></span>
+    </label>
+    <span class="switch-label-text">Year-on-year comparisons</span>
+  </div>
 
   <div class="charts-grid">
     <div class="chart-card full animate delay-2">
@@ -1142,6 +1192,9 @@ function getRequestedDashboardYear() {
 }
 const requestedDashboardYear = getRequestedDashboardYear();
 const dataFile = DATA_FILES_BY_YEAR[requestedDashboardYear];
+const dashboardYears = Object.keys(DATA_FILES_BY_YEAR).sort();
+const earliestDashboardYear = dashboardYears[0];
+const previousDashboardYear = dashboardYears[dashboardYears.indexOf(requestedDashboardYear) - 1];
 const yearMenuButton = document.getElementById('year-menu-button');
 const yearMenuPanel = document.getElementById('year-menu-panel');
 const setYearMenuOpen = open => {
@@ -1160,9 +1213,15 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') setYearMenuOpen(false);
 });
 
-fetch(dataFile, { cache: 'no-store' })
-  .then(r => r.json())
-  .then(({ films: FILMS, membershipFees: MEMBERSHIP_FEES = 0 }) => {
+const currentDataPromise = fetch(dataFile, { cache: 'no-store' }).then(r => r.json());
+const previousDataPromise = previousDashboardYear
+  ? fetch(DATA_FILES_BY_YEAR[previousDashboardYear], { cache: 'no-store' })
+      .then(r => r.ok ? r.json() : null)
+      .catch(() => null)
+  : Promise.resolve(null);
+
+Promise.all([currentDataPromise, previousDataPromise])
+  .then(([{ films: FILMS, membershipFees: MEMBERSHIP_FEES = 0 }, previousYearData]) => {
 
 // ====== DATE RANGE HEADER ======
 const firstDate = FILMS[0].date;
@@ -1207,23 +1266,90 @@ const endDate = `${dataDayDate.getFullYear()}-${String(dataDayDate.getMonth()+1)
 document.getElementById('date-range').innerHTML = `${fmtDate(dashYear+'-01-01')}–${fmtDate(endDate)}&nbsp;&nbsp;·&nbsp;&nbsp;New York City`;
 
 // ====== STATS ======
-const totalFilms = FILMS.length;
-const ratedFilms = dedupFilms(FILMS).filter(f => f.rating != null);
-const avgRating = ratedFilms.length ? (ratedFilms.reduce((s,f) => s+f.rating, 0) / ratedFilms.length).toFixed(2) : '—';
-const totalRuntime = FILMS.reduce((s,f) => s+f.runtime, 0);
-const totalSpent = FILMS.reduce((s,f) => s+f.price, 0) + MEMBERSHIP_FEES;
-const uniqueVenues = new Set(FILMS.map(f => f.venue).filter(v => v && v !== 'OTHER')).size;
+const normalizeYearPoint = ds => ds.slice(5,10) === '02-29' ? '02-28' : ds.slice(5,10);
+const isOnOrBeforeYearPoint = (dateStr, cutoffDateStr) => normalizeYearPoint(dateStr) <= normalizeYearPoint(cutoffDateStr);
+const dateKeyForYearPoint = ds => ds.slice(5,10) === '02-29' ? `${ds.slice(0,5)}02-28` : ds;
+function countDaysThroughYearPoint(year, cutoffDateStr) {
+  const yearStart = new Date(year + '-01-01T12:00:00');
+  const yearEnd = new Date(year + '-12-31T12:00:00');
+  const daysInYear = Math.round((yearEnd - yearStart) / dayMsForStats) + 1;
+  let dayCount = 0;
+  for (let i = 0; i < daysInYear; i++) {
+    const date = new Date(yearStart.getTime() + i * dayMsForStats);
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+    if (isOnOrBeforeYearPoint(dateStr, cutoffDateStr)) dayCount++;
+  }
+  return dayCount;
+}
+function getHeroStats(films, membershipFees = 0) {
+  const rated = dedupFilms(films).filter(f => f.rating != null);
+  const totalRuntime = films.reduce((s,f) => s+f.runtime, 0);
+  const ticketSpent = films.reduce((s,f) => s+f.price, 0);
+  return {
+    totalFilms: films.length,
+    daysAtCinema: new Set(films.map(f => dateKeyForYearPoint(f.date))).size,
+    avgRating: rated.length ? rated.reduce((s,f) => s+f.rating, 0) / rated.length : null,
+    totalRuntimeHours: totalRuntime / 60,
+    totalSpent: ticketSpent + membershipFees,
+    uniqueVenues: new Set(films.map(f => f.venue).filter(v => v && v !== 'OTHER')).size
+  };
+}
+function formatStatDelta(value, { decimals = 0, prefix = '', suffix = '' } = {}) {
+  const rounded = Number(value.toFixed(decimals));
+  if (!Number.isFinite(rounded)) return null;
+  if (rounded === 0) return { text: 'Unchanged', isIncrease: false };
+  const sign = rounded > 0 ? '+' : '–';
+  return {
+    text: `${sign}${prefix}${Math.abs(rounded).toFixed(decimals)}${suffix}`,
+    isIncrease: rounded > 0
+  };
+}
+const currentStats = getHeroStats(FILMS, MEMBERSHIP_FEES);
+const previousFilmsAtCutoff = previousYearData?.films?.filter(f => isOnOrBeforeYearPoint(f.date, endDate)) || [];
+const previousYear = previousYearData?.films?.[0]?.date.slice(0,4) || previousDashboardYear;
+const previousYearMembershipFees = previousYearData?.membershipFees || 0;
+const previousYearDays = previousYear ? countDaysThroughYearPoint(previousYear, `${previousYear}-12-31`) : 0;
+const previousMembershipFeesAtCutoff = previousYearDays
+  ? previousYearMembershipFees * (countDaysThroughYearPoint(previousYear, endDate) / previousYearDays)
+  : 0;
+const previousStats = dashYear !== earliestDashboardYear && previousFilmsAtCutoff.length
+  ? getHeroStats(previousFilmsAtCutoff, previousMembershipFeesAtCutoff)
+  : null;
+const statComparisons = previousStats ? {
+  totalFilms: formatStatDelta(currentStats.totalFilms - previousStats.totalFilms),
+  daysAtCinema: formatStatDelta(currentStats.daysAtCinema - previousStats.daysAtCinema),
+  avgRating: currentStats.avgRating == null || previousStats.avgRating == null ? null : formatStatDelta(currentStats.avgRating - previousStats.avgRating, { decimals: 2 }),
+  totalRuntimeHours: formatStatDelta(currentStats.totalRuntimeHours - previousStats.totalRuntimeHours, { decimals: 2, suffix: 'h' }),
+  totalSpent: formatStatDelta(currentStats.totalSpent - previousStats.totalSpent, { prefix: '$' }),
+  uniqueVenues: formatStatDelta(currentStats.uniqueVenues - previousStats.uniqueVenues)
+} : {};
+const totalFilms = currentStats.totalFilms;
+const avgRating = currentStats.avgRating == null ? '—' : currentStats.avgRating.toFixed(2);
+const totalRuntime = currentStats.totalRuntimeHours * 60;
+const totalSpent = currentStats.totalSpent;
+const uniqueVenues = currentStats.uniqueVenues;
 const daysElapsed = dataDayIdxForStats + 1;
-const daysAtCinema = new Set(FILMS.map(f => f.date)).size;
+const daysAtCinema = currentStats.daysAtCinema;
 
-document.getElementById('stats-row').innerHTML = [
-  { val: totalFilms, label: totalFilms === 1 ? 'Screening' : 'Screenings' },
-  { val: `${daysAtCinema}<span class="stat-val-slash">/</span>${daysElapsed}`, label: daysAtCinema === 1 ? 'Day at the cinema' : 'Days at the cinema' },
-  { val: avgRating, label: 'Average rating' },
-  { val: `${(totalRuntime/60).toFixed(1)}h`, label: 'Total runtime' },
-  { val: `$${totalSpent.toFixed(0)}`, label: 'Total spending*' },
-  { val: uniqueVenues, label: uniqueVenues === 1 ? 'NYC venue visited' : 'NYC venues visited' }
-].map(s => `<div class="stat-card"><div class="stat-val">${s.val}</div><div class="stat-label">${s.label}</div></div>`).join('');
+const statsRowEl = document.getElementById('stats-row');
+const statsCompareToggleWrap = document.getElementById('stats-compare-toggle-wrap');
+const statsCompareToggle = document.getElementById('stats-compare-toggle');
+statsRowEl.innerHTML = [
+  { val: totalFilms, label: totalFilms === 1 ? 'Screening' : 'Screenings', compare: statComparisons.totalFilms },
+  { val: `${daysAtCinema}<span class="stat-val-slash">/</span>${daysElapsed}`, label: daysAtCinema === 1 ? 'Day at the cinema' : 'Days at the cinema', compare: statComparisons.daysAtCinema },
+  { val: avgRating, label: 'Average rating', compare: statComparisons.avgRating },
+  { val: `${(totalRuntime/60).toFixed(1)}h`, label: 'Total runtime', compare: statComparisons.totalRuntimeHours },
+  { val: `$${totalSpent.toFixed(0)}`, label: 'Total spending*', compare: statComparisons.totalSpent },
+  { val: uniqueVenues, label: uniqueVenues === 1 ? 'NYC venue visited' : 'NYC venues visited', compare: statComparisons.uniqueVenues }
+].map(s => `<div class="stat-card${s.compare ? ' stat-card-compare-ready' : ''}"><div class="stat-val">${s.val}</div><div class="stat-label">${s.label}</div>${s.compare ? `<div class="stat-compare"><span class="stat-compare-badge${s.compare.isIncrease ? '' : ' is-muted'}">${s.compare.text}</span></div>` : ''}</div>`).join('');
+if (previousStats) {
+  statsRowEl.classList.add('has-delta-toggle');
+  statsCompareToggleWrap.classList.add('is-visible');
+  statsCompareToggle.checked = false;
+  statsCompareToggle.addEventListener('change', () => {
+    statsRowEl.classList.toggle('show-stat-comparisons', statsCompareToggle.checked);
+  });
+}
 
 // ====== SPARSE MODE (fewer than 5 films) ======
 if (FILMS.length < 5) {
