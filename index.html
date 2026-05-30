@@ -421,7 +421,7 @@ h1 {
   height: 100%;
   cursor: default;
   transition: filter 0.15s;
-  min-width: 3px;
+  min-width: 0;
   position: relative;
 }
 .format-seg:hover { filter: brightness(1.15); }
@@ -1867,6 +1867,7 @@ if (document.fonts && document.fonts.ready) {
     syncBarLabelColumn(document.getElementById('decade-chart'));
     syncBarLabelColumn(document.getElementById('venue-chart'));
     syncBarLabelColumn(document.getElementById('format-chart'));
+    applyFormatSegmentWidths();
   });
 }
 
@@ -2005,7 +2006,80 @@ const legendHtml = `<div class="format-legend">
 </div>`;
 
 document.getElementById('format-chart').innerHTML = `<div class="format-stacked">${rowsHtml}</div>${legendHtml}`;
+const FORMAT_COUNT_COMFORT_PX = 3;
+const FORMAT_COUNT_BOOST_LIMIT = 10;
+const FORMAT_COUNT_MIN_STEP_PX = 1;
+function buildFormatCountScale(unitWidth) {
+  const widths = [0];
+  for (let count = 1; count <= maxBaseTotal; count++) {
+    const naturalWidth = count * unitWidth;
+    const boostRatio = count < FORMAT_COUNT_BOOST_LIMIT
+      ? (FORMAT_COUNT_BOOST_LIMIT - count) / (FORMAT_COUNT_BOOST_LIMIT - 1)
+      : 0;
+    let width = naturalWidth;
+    if (naturalWidth < FORMAT_COUNT_COMFORT_PX && boostRatio > 0) {
+      width += (FORMAT_COUNT_COMFORT_PX - naturalWidth) * boostRatio;
+    }
+    widths[count] = Math.max(width, widths[count - 1] + FORMAT_COUNT_MIN_STEP_PX);
+  }
+  return count => widths[count] || count * unitWidth;
+}
+function absorbFormatSegmentExcess(segments, excessWidth) {
+  let remaining = excessWidth;
+  let absorbers = segments.filter(seg => seg.count >= FORMAT_COUNT_BOOST_LIMIT && seg.width > FORMAT_COUNT_COMFORT_PX);
+  while (remaining > 0.01 && absorbers.length) {
+    const totalWeight = absorbers.reduce((sum, seg) => sum + seg.width, 0);
+    let absorbed = 0;
+    absorbers.forEach(seg => {
+      const share = remaining * (seg.width / totalWeight);
+      const maxReduction = seg.width - FORMAT_COUNT_COMFORT_PX;
+      const reduction = Math.min(share, maxReduction);
+      seg.width -= reduction;
+      absorbed += reduction;
+    });
+    if (absorbed <= 0.01) break;
+    remaining -= absorbed;
+    absorbers = absorbers.filter(seg => seg.width > FORMAT_COUNT_COMFORT_PX);
+  }
+  return remaining;
+}
+function applyFormatSegmentWidths() {
+  const tracks = [...document.querySelectorAll('.format-bar-track')];
+  const availableWidth = Math.max(...tracks.map(track => track.parentElement.getBoundingClientRect().width));
+  if (!availableWidth) return;
+  const countWidth = buildFormatCountScale(availableWidth / maxBaseTotal);
+  tracks.forEach(track => {
+    const outerWidth = track.parentElement.getBoundingClientRect().width;
+    const segEls = [...track.querySelectorAll('.format-seg')];
+    if (!outerWidth || !segEls.length) return;
+    const segments = segEls.map(el => {
+      const count = Number(el.dataset.count);
+      return { el, count, width: countWidth(count) };
+    });
+    const naturalTrackWidth = segments.reduce((sum, seg) => sum + seg.width, 0);
+    if (naturalTrackWidth > outerWidth) {
+      const remainingExcess = absorbFormatSegmentExcess(segments, naturalTrackWidth - outerWidth);
+      if (remainingExcess > 0.01) {
+        const scaledTotal = segments.reduce((sum, seg) => sum + seg.width, 0);
+        const scale = outerWidth / scaledTotal;
+        segments.forEach(seg => { seg.width *= scale; });
+      }
+    }
+    const trackWidth = segments.reduce((sum, seg) => sum + seg.width, 0);
+    track.style.width = `${trackWidth}px`;
+    segments.forEach(seg => {
+      seg.el.style.flex = `0 0 ${seg.width}px`;
+      seg.el.style.width = `${seg.width}px`;
+    });
+  });
+}
 syncBarLabelColumn(document.getElementById('format-chart'));
+applyFormatSegmentWidths();
+let formatResizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(formatResizeTimer);
+  formatResizeTimer = setTimeout(applyFormatSegmentWidths, 120);
+});
 
 const segTooltip = document.getElementById('seg-tooltip');
 function positionSegTooltip(seg, cursorX) {
