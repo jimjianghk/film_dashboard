@@ -414,6 +414,7 @@ h1 {
   border-radius: 0;
   display: flex;
   overflow: hidden;
+  min-width: 2px;
   transition: width 0.8s cubic-bezier(0.22,1,0.36,1);
 }
 .format-seg {
@@ -431,7 +432,7 @@ h1 {
   inset: 0;
   background: repeating-linear-gradient(-45deg,
     transparent 0 2px,
-    rgba(0,0,0,0.38) 2px 4px);
+    rgba(0,0,0,0.5) 2px 4px);
   pointer-events: none;
 }
 .format-legend {
@@ -457,7 +458,7 @@ h1 {
   content: '';
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(-45deg, transparent 0 2px, rgba(0,0,0,0.38) 2px 4px);
+  background: repeating-linear-gradient(-45deg, transparent 0 2px, rgba(0,0,0,0.5) 2px 4px);
 }
 .legend-count { color: var(--text); margin-left: 2px; font-weight: 350; }
 
@@ -1944,9 +1945,18 @@ function segLabel(b, p, threeD) {
   if (p === 'IMAX' && b === '70mm') return 'IMAX 70mm' + (threeD ? ' 3D' : '');
   return PREMIUM_LABEL[p] + (threeD ? ' 3D' : '');
 }
+function formatTrackMinWidth(base) {
+  const currentTotal = formatBreakdown[base].total;
+  const nextMoreNumerous = bases
+    .map(b => formatBreakdown[b].total)
+    .filter(total => total > currentTotal)
+    .sort((a, b) => a - b)[0];
+  return nextMoreNumerous && nextMoreNumerous > currentTotal * 8 ? 6 : 2;
+}
 const rowsHtml = bases.map(b => {
   const data = formatBreakdown[b];
   const trackPct = (data.total / maxBaseTotal) * 100;
+  const trackMinWidth = formatTrackMinWidth(b);
   const premiumsByCount = PREMIUM_ORDER
     .map(p => ({ p, total: (data.segs[p] || 0) + (data.segs[p + '|3D'] || 0) }))
     .filter(x => x.total > 0)
@@ -1968,7 +1978,7 @@ const rowsHtml = bases.map(b => {
   }).join('');
   return `<div class="format-row">
     <div class="bar-label">${b === 'DCP' ? 'DCP†' : b}</div>
-    <div class="format-bar-outer"><div class="format-bar-track" style="width:${trackPct}%;">${segs}</div></div>
+    <div class="format-bar-outer"><div class="format-bar-track" style="width:${trackPct}%;min-width:${trackMinWidth}px;">${segs}</div></div>
     <div class="bar-count">${data.total}</div>
   </div>`;
 }).join('');

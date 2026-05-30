@@ -10,7 +10,7 @@ The default page loads `data.json`, an object with `films` (array of film object
 
 ### Archive views
 
-Past years are data archives, not design archives: all years use the current `index.html` renderer. A year menu in the top-right corner links between every available year. The dashboard year is inferred from the first film date in the loaded data, so archive views keep the same chart, calendar, stats, and New releases / Repertory logic while capping time-based views at December 31 of the archived year.
+Past years are data archives, not design archives: all years use the current `index.html` renderer. A year menu in the top-right corner links between every available year. The dashboard year is inferred from the first film date in the loaded data, so archive views keep the same chart, calendar, stats, and New releases / Repertory logic while capping time-based chart, calendar, and stat views at December 31 of the archived year.
 
 ### Masthead
 
@@ -36,7 +36,7 @@ Horizontal bar chart grouping films by the decade they were produced. Has its ow
 
 ### Screening format chart
 
-Horizontal stacked bar chart with one row per base projection format (DCP / 35mm / 70mm / 16mm). Within each bar, segments are grouped by premium tier (IMAX, Dolby Cinema, AMC Prime, VistaVision) and ordered by count; 3D variants render as a diagonal-stripe overlay within their tier's segment. Standard segments use the accent red, while premium colors are assigned by usage rank from the sequence `#efa489`, `#6290bf`, `#293f84`, `#7e7f71`: base formats are scanned from highest total to lowest, then premium tiers within each base are ranked by count, with Dolby before IMAX before Prime before VistaVision for ties. Bar widths are proportional to the largest base-format total, so the DCP row dominates and rarer formats read accurately at scale. Hovering any segment shows the subcategory name and count. A legend below the bars lists every premium tier present with its total, sorted by count.
+Horizontal stacked bar chart with one row per base projection format (DCP / 35mm / 70mm / 16mm). Within each bar, Standard segments render first, followed by premium tiers (IMAX, Dolby Cinema, AMC Prime, VistaVision) ordered by count; 3D variants render as a dark diagonal-stripe overlay within their tier's segment. Standard segments use the accent red, while premium colors are assigned by usage rank from the sequence `#efa489`, `#6290bf`, `#293f84`, `#7e7f71`: base formats are scanned from highest total to lowest, then premium tiers within each base are ranked by count, with Dolby before IMAX before Prime before VistaVision for ties. Bar widths are proportional to the largest base-format total, so the DCP row dominates and rarer formats read accurately at scale; rare rows use a 2px minimum track, increased to 6px only when the nearest larger base category is more than 8× as large. Hovering any segment shows the subcategory name and count. A legend below the bars lists every premium tier present with its total, sorted by count.
 
 ### Runtime distribution
 
