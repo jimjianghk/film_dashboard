@@ -1062,6 +1062,7 @@ footer img.footer-favicon {
   <nav class="year-menu-panel" id="year-menu-panel" aria-label="Cinema log archive">
     <a href="./" data-year="2026">2026</a>
     <a href="?2025" data-year="2025">2025</a>
+    <a href="?2024" data-year="2024">2024</a>
   </nav>
 </div>
 
@@ -1181,8 +1182,10 @@ footer img.footer-favicon {
 const DATA_FILES_BY_YEAR = {
   '2026': 'data.json',
   '2025': 'data-2025.json',
+  '2024': 'data-2024.json',
 };
 const DEFAULT_DASHBOARD_YEAR = '2026';
+const yearMenuUrlForYear = year => year === DEFAULT_DASHBOARD_YEAR ? './' : `?${year}`;
 function getRequestedDashboardYear() {
   const params = new URLSearchParams(window.location.search);
   const paramYear = params.get('year') || params.get('y');
@@ -1192,11 +1195,14 @@ function getRequestedDashboardYear() {
 }
 const requestedDashboardYear = getRequestedDashboardYear();
 const dataFile = DATA_FILES_BY_YEAR[requestedDashboardYear];
-const dashboardYears = Object.keys(DATA_FILES_BY_YEAR).sort();
+const dashboardYears = Object.keys(DATA_FILES_BY_YEAR).sort((a, b) => Number(a) - Number(b));
 const earliestDashboardYear = dashboardYears[0];
 const previousDashboardYear = dashboardYears[dashboardYears.indexOf(requestedDashboardYear) - 1];
 const yearMenuButton = document.getElementById('year-menu-button');
 const yearMenuPanel = document.getElementById('year-menu-panel');
+yearMenuPanel.innerHTML = [...dashboardYears].reverse()
+  .map(year => `<a href="${yearMenuUrlForYear(year)}" data-year="${year}">${year}</a>`)
+  .join('');
 const setYearMenuOpen = open => {
   yearMenuButton.setAttribute('aria-expanded', String(open));
   yearMenuButton.setAttribute('aria-label', open ? 'Close year menu' : 'Open year menu');
@@ -1228,6 +1234,7 @@ const firstDate = FILMS[0].date;
 const lastDate = FILMS[FILMS.length - 1].date;
 const fmtDate = ds => new Date(ds+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
 const dashYear = firstDate.slice(0,4);
+const isCurrentDashboardYear = dashYear === DEFAULT_DASHBOARD_YEAR;
 document.title = `Jim’s ${dashYear} Cinema Log`;
 document.querySelector('meta[property="og:title"]')?.setAttribute('content', `Jim’s ${dashYear} Cinema Log`);
 document.querySelector('meta[name="twitter:title"]')?.setAttribute('content', `Jim’s ${dashYear} Cinema Log`);
@@ -1262,8 +1269,9 @@ const hasFilmTodayForStats = FILMS.some(f => f.date === todayStr);
 const dataDayIdxForStats = Math.max(0, Math.min(daysInYearForStats - 1, hasFilmTodayForStats ? todayIdxForStats : todayIdxForStats - 1));
 const dataDayDate = new Date(yearStartForStats.getTime() + dataDayIdxForStats * dayMsForStats);
 const endDate = `${dataDayDate.getFullYear()}-${String(dataDayDate.getMonth()+1).padStart(2,'0')}-${String(dataDayDate.getDate()).padStart(2,'0')}`;
+const subtitleEndDate = isCurrentDashboardYear ? endDate : lastDate;
 
-document.getElementById('date-range').innerHTML = `${fmtDate(dashYear+'-01-01')}–${fmtDate(endDate)}&nbsp;&nbsp;·&nbsp;&nbsp;New York City`;
+document.getElementById('date-range').innerHTML = `${fmtDate(firstDate)}–${fmtDate(subtitleEndDate)}&nbsp;&nbsp;·&nbsp;&nbsp;New York City`;
 
 // ====== STATS ======
 const normalizeYearPoint = ds => ds.slice(5,10) === '02-29' ? '02-28' : ds.slice(5,10);
@@ -1794,6 +1802,7 @@ const venueFullNames = {
   AMC31:'AMC Kips Bay', REG13:'Regal Union Square', ANGEL:'Angelika Film Center',
   NITEP:'Nitehawk Prospect Park', NITEW:'Nitehawk Williamsburg',
   MET:'Metropolitan Museum of Art', AMC34:'AMC 34th Street', VEAST:'Village East Cinema',
+  LOOK:'Look Dine-In Cinemas W57th', AMC84:'AMC 84th Street', AMC11:'AMC Village',
   SKIR:'NYU Skirball Center', OTHER:'Non-NYC or non-standard venues'
 };
 const venueCol = arr => arr.map(([v,c]) =>

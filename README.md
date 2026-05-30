@@ -10,11 +10,11 @@ The default page loads `data.json`, an object with `films` (array of film object
 
 ### Archive views
 
-Past years are data archives, not design archives: all years use the current `index.html` renderer. A hamburger menu in the top-right corner links between available years. The dashboard year is inferred from the first film date in the loaded data, so archive views keep the same chart, calendar, stats, and New releases / Repertory logic while capping time-based views at December 31 of the archived year.
+Past years are data archives, not design archives: all years use the current `index.html` renderer. A hamburger menu in the top-right corner links between every available year. The dashboard year is inferred from the first film date in the loaded data, so archive views keep the same chart, calendar, stats, and New releases / Repertory logic while capping time-based views at December 31 of the archived year.
 
 ### Masthead
 
-Red *The Economist*-style masthead above an uppercase Economist Sans Headline title ("2026 in cinema"), tucked tight against an oversized light-weight Economist Sans Headline subtitle ("Jan 1–{end date} · New York City"). The end date follows the same data-day rule as the cumulative chart's marker line: today in New York if a film is logged today, otherwise yesterday.
+Red *The Economist*-style masthead above an uppercase Economist Sans Headline title ("2026 in cinema"), tucked tight against an oversized light-weight Economist Sans Headline subtitle ("{first screening date}–{end date} · New York City"). Current-year end dates follow the same data-day rule as the cumulative chart's marker line: today in New York if a film is logged today, otherwise yesterday. Archive end dates use the last screening date in the archive.
 
 ### Stats row
 
@@ -94,7 +94,7 @@ A GitHub Actions workflow (`.github/workflows/update-data.yml`) runs every 20 mi
 3. Transforms rows into JSON (Excel serial dates → ISO dates, column mapping)
 4. Commits `data.json` if it changed
 
-Archive snapshots are generated manually from the corresponding annual sheet and committed as `data-YYYY.json`. The 2025 archive snapshot was generated from sheet `"25"` in `Cinema.xlsx` and is loaded by `?2025`.
+Archive snapshots are generated manually from the corresponding annual sheet and committed as `data-YYYY.json`. The 2025 archive snapshot was generated from sheet `"25"` in `Cinema.xlsx` and is loaded by `?2025`; the 2024 archive snapshot was generated from sheet `"24"` and is loaded by `?2024`.
 
 ### Secrets required
 
