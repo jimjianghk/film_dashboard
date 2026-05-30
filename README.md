@@ -10,7 +10,7 @@ The default page loads `data.json`, an object with `films` (array of film object
 
 ### Archive views
 
-Past years are data archives, not design archives: all years use the current `index.html` renderer. A hamburger menu in the top-right corner links between every available year. The dashboard year is inferred from the first film date in the loaded data, so archive views keep the same chart, calendar, stats, and New releases / Repertory logic while capping time-based views at December 31 of the archived year.
+Past years are data archives, not design archives: all years use the current `index.html` renderer. A year menu in the top-right corner links between every available year. The dashboard year is inferred from the first film date in the loaded data, so archive views keep the same chart, calendar, stats, and New releases / Repertory logic while capping time-based views at December 31 of the archived year.
 
 ### Masthead
 

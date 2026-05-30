@@ -950,38 +950,44 @@ footer img.footer-favicon {
 }
 .year-menu {
   position: absolute;
-  top: 71px;
+  top: 65px;
   right: max(40px, calc((100vw - 1280px) / 2 + 40px));
   z-index: 200;
 }
 .year-menu-button {
   position: relative;
   z-index: 2;
-  width: 38px;
-  height: 25px;
+  width: max-content;
+  height: auto;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: flex-end;
-  gap: 8px;
+  gap: 0;
   padding: 0;
   background: transparent;
   border: none;
+  color: var(--text-dimmer);
+  font-family: 'Economist Sans Headline', 'Economist Sans', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 500;
+  line-height: 0.78;
+  text-align: right;
   cursor: pointer;
 }
 .year-menu-button span {
   display: block;
   flex-shrink: 0;
-  width: 30px;
-  height: 3px;
-  background: var(--text);
+}
+.year-menu-button span:last-child {
+  margin-right: 1.5px;
 }
 .year-menu-button[aria-expanded="true"] span {
-  background: var(--accent);
+  color: var(--accent);
 }
 @media (hover: hover) and (pointer: fine) {
   .year-menu-button:hover span {
-    background: var(--accent);
+    color: var(--accent);
   }
 }
 .year-menu-panel {
@@ -1040,7 +1046,7 @@ footer img.footer-favicon {
   .stat-val { white-space: nowrap; }
   header { padding: 48px 0 32px; }
   .sparse-note { font-size: 2rem; }
-  .year-menu { top: 63px; }
+  .year-menu { top: 57px; }
 }
 </style>
 </head>
@@ -1055,9 +1061,8 @@ footer img.footer-favicon {
 
 <div class="year-menu">
   <button class="year-menu-button" id="year-menu-button" type="button" aria-label="Open year menu" aria-expanded="false" aria-controls="year-menu-panel">
-    <span></span>
-    <span></span>
-    <span></span>
+    <span>Choose</span>
+    <span>year</span>
   </button>
   <nav class="year-menu-panel" id="year-menu-panel" aria-label="Cinema log archive">
     <a href="./" data-year="2026">2026</a>
