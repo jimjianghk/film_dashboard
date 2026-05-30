@@ -416,6 +416,10 @@ h1 {
   overflow: hidden;
   min-width: 3px;
   transition: width 0.8s cubic-bezier(0.22,1,0.36,1);
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 .format-seg {
   height: 100%;
@@ -465,8 +469,10 @@ h1 {
 .seg-tooltip {
   position: fixed;
   display: none;
-  background: #fffdf5;
-  border: 1px solid var(--text);
+  background:
+    linear-gradient(#fffdf5, #fffdf5) padding-box,
+    var(--seg-tooltip-border-fill, linear-gradient(var(--text), var(--text)) border-box);
+  border: 3px solid transparent;
   color: var(--text);
   padding: 4px 10px;
   border-radius: 0;
@@ -2082,6 +2088,21 @@ window.addEventListener('resize', () => {
 });
 
 const segTooltip = document.getElementById('seg-tooltip');
+function formatSegmentBaseColor(seg) {
+  const color = getComputedStyle(seg).backgroundColor;
+  return color && color !== 'rgba(0, 0, 0, 0)' ? color : 'var(--accent)';
+}
+function applySegTooltipStyle(seg) {
+  const color = formatSegmentBaseColor(seg);
+  if (seg.classList.contains('seg-3d')) {
+    segTooltip.style.setProperty(
+      '--seg-tooltip-border-fill',
+      `repeating-linear-gradient(-45deg, transparent 0 2px, rgba(0,0,0,0.5) 2px 4px) border-box, linear-gradient(${color}, ${color}) border-box`
+    );
+  } else {
+    segTooltip.style.setProperty('--seg-tooltip-border-fill', `linear-gradient(${color}, ${color}) border-box`);
+  }
+}
 function positionSegTooltip(seg, cursorX) {
   const r = seg.getBoundingClientRect();
   let left = cursorX - segTooltip.offsetWidth / 2;
@@ -2094,12 +2115,30 @@ function showSegTooltip(seg, cursorX) {
   const label = seg.dataset.label;
   const count = Number(seg.dataset.count);
   segTooltip.textContent = `${label} · ${count}`;
+  applySegTooltipStyle(seg);
   segTooltip.style.display = 'block';
   const r = seg.getBoundingClientRect();
   if (cursorX == null) cursorX = r.left + r.width / 2;
   positionSegTooltip(seg, cursorX);
 }
 function hideSegTooltip() { segTooltip.style.display = 'none'; }
+function segmentAtPoint(track, clientX, clientY) {
+  const hit = document.elementFromPoint(clientX, clientY);
+  const hitSeg = hit?.closest?.('.format-seg');
+  if (hitSeg && track.contains(hitSeg)) return hitSeg;
+  const trackRect = track.getBoundingClientRect();
+  if (clientX < trackRect.left || clientX > trackRect.right) {
+    return null;
+  }
+  return [...track.querySelectorAll('.format-seg')].find(seg => {
+    const r = seg.getBoundingClientRect();
+    return clientX >= r.left && clientX <= r.right;
+  }) || null;
+}
+function showSegTooltipAtPoint(track, clientX, clientY) {
+  const seg = segmentAtPoint(track, clientX, clientY);
+  if (seg) showSegTooltip(seg, clientX);
+}
 document.querySelectorAll('.format-seg').forEach(seg => {
   seg.addEventListener('mouseenter', e => showSegTooltip(seg, e.clientX));
   seg.addEventListener('mousemove', e => positionSegTooltip(seg, e.clientX));
@@ -2110,8 +2149,33 @@ document.querySelectorAll('.format-seg').forEach(seg => {
     showSegTooltip(seg, t ? t.clientX : null);
   }, {passive: false});
 });
+document.querySelectorAll('.format-bar-track').forEach(track => {
+  track.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse') return;
+    e.preventDefault();
+    try { track.setPointerCapture(e.pointerId); } catch (_) {}
+    showSegTooltipAtPoint(track, e.clientX, e.clientY);
+  });
+  track.addEventListener('pointermove', e => {
+    if (e.pointerType === 'mouse' || !track.hasPointerCapture?.(e.pointerId)) return;
+    e.preventDefault();
+    showSegTooltipAtPoint(track, e.clientX, e.clientY);
+  });
+  track.addEventListener('pointercancel', hideSegTooltip);
+  if (!window.PointerEvent) {
+    track.addEventListener('touchmove', e => {
+      const t = e.touches[0];
+      if (!t) return;
+      e.preventDefault();
+      showSegTooltipAtPoint(track, t.clientX, t.clientY);
+    }, {passive: false});
+  }
+});
 document.addEventListener('touchstart', e => {
   if (!e.target.closest('.format-seg')) hideSegTooltip();
+});
+document.addEventListener('pointerdown', e => {
+  if (e.pointerType !== 'mouse' && !e.target.closest('.format-seg, .format-bar-track')) hideSegTooltip();
 });
 
 // ====== HEATMAP ======
