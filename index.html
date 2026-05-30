@@ -431,7 +431,7 @@ h1 {
   inset: 0;
   background: repeating-linear-gradient(-45deg,
     transparent 0 2px,
-    rgba(255,255,255,0.55) 2px 4px);
+    rgba(0,0,0,0.38) 2px 4px);
   pointer-events: none;
 }
 .format-legend {
@@ -452,12 +452,12 @@ h1 {
 }
 .legend-chip { display: inline-flex; align-items: center; gap: 6px; }
 .legend-swatch { width: 12px; height: 12px; display: inline-block; flex-shrink: 0; position: relative; overflow: hidden; }
-.legend-swatch.swatch-3d { background: #5a5a65; }
+.legend-swatch.swatch-3d { background: var(--surface3); }
 .legend-swatch.swatch-3d::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(-45deg, transparent 0 2px, rgba(255,255,255,0.55) 2px 4px);
+  background: repeating-linear-gradient(-45deg, transparent 0 2px, rgba(0,0,0,0.38) 2px 4px);
 }
 .legend-count { color: var(--text); margin-left: 2px; font-weight: 350; }
 
@@ -670,6 +670,7 @@ h1 {
   position: relative;
   top: -0.5px;
 }
+.series-venue-other { background: var(--rating-unrated-color); }
 .series-toggle {
   margin-top: 14px;
   font-family: 'Economist Sans', sans-serif;
@@ -1068,6 +1069,7 @@ footer img.footer-favicon {
     <a href="./" data-year="2026">2026</a>
     <a href="?2025" data-year="2025">2025</a>
     <a href="?2024" data-year="2024">2024</a>
+    <a href="?2023" data-year="2023">2023</a>
   </nav>
 </div>
 
@@ -1188,6 +1190,7 @@ const DATA_FILES_BY_YEAR = {
   '2026': 'data.json',
   '2025': 'data-2025.json',
   '2024': 'data-2024.json',
+  '2023': 'data-2023.json',
 };
 const DEFAULT_DASHBOARD_YEAR = '2026';
 const yearMenuUrlForYear = year => year === DEFAULT_DASHBOARD_YEAR ? './' : `?${year}`;
@@ -1808,6 +1811,7 @@ const venueFullNames = {
   NITEP:'Nitehawk Prospect Park', NITEW:'Nitehawk Williamsburg',
   MET:'Metropolitan Museum of Art', AMC34:'AMC 34th Street', VEAST:'Village East Cinema',
   LOOK:'Look Dine-In Cinemas W57th', AMC84:'AMC 84th Street', AMC11:'AMC Village',
+  WHITBY:'The Whitby Hotel',
   SKIR:'NYU Skirball Center', OTHER:'Non-NYC or non-standard venues'
 };
 const venueCol = arr => arr.map(([v,c]) =>
@@ -1914,6 +1918,11 @@ function premiumRank(premium) {
 function sortPremiumsByCount(a, b) {
   return b.total - a.total || premiumRank(a.p) - premiumRank(b.p);
 }
+function sortFormatRowPremiums(a, b) {
+  if (a.p === STANDARD_FORMAT_KEY && b.p !== STANDARD_FORMAT_KEY) return -1;
+  if (b.p === STANDARD_FORMAT_KEY && a.p !== STANDARD_FORMAT_KEY) return 1;
+  return b.total - a.total || PREMIUM_ORDER.indexOf(a.p) - PREMIUM_ORDER.indexOf(b.p);
+}
 
 const premiumColorByName = {};
 let nextPremiumColorIndex = 0;
@@ -1941,7 +1950,7 @@ const rowsHtml = bases.map(b => {
   const premiumsByCount = PREMIUM_ORDER
     .map(p => ({ p, total: (data.segs[p] || 0) + (data.segs[p + '|3D'] || 0) }))
     .filter(x => x.total > 0)
-    .sort((a, b) => b.total - a.total || PREMIUM_ORDER.indexOf(a.p) - PREMIUM_ORDER.indexOf(b.p))
+    .sort(sortFormatRowPremiums)
     .map(x => x.p);
   const segs = premiumsByCount.flatMap(p => {
     const className = p === STANDARD_FORMAT_KEY ? ' seg-standard' : '';
@@ -2205,7 +2214,7 @@ FILMS.forEach(f => {
 const seriesArr = Object.entries(seriesCounts).sort((a,b) => b[1]-a[1]);
 document.getElementById('series-list').innerHTML = seriesArr.map(([s,c]) =>
   `<div class="series-row">
-    <span class="series-name">${s}${Object.entries(seriesVenues[s]).sort((a,b) => b[1]-a[1]).map(e => `<span class="series-venue">${e[0]}</span>`).join('')}</span>
+    <span class="series-name">${s}${Object.entries(seriesVenues[s]).sort((a,b) => b[1]-a[1]).map(e => `<span class="series-venue${e[0] === 'OTHER' ? ' series-venue-other' : ''}">${e[0]}</span>`).join('')}</span>
     <span class="series-count">${c}</span>
   </div>`
 ).join('');

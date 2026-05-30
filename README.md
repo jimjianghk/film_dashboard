@@ -94,8 +94,6 @@ A GitHub Actions workflow (`.github/workflows/update-data.yml`) runs every 20 mi
 3. Transforms rows into JSON (Excel serial dates → ISO dates, column mapping)
 4. Commits `data.json` if it changed
 
-Archive snapshots are generated manually from the corresponding annual sheet and committed as `data-YYYY.json`. The 2025 archive snapshot was generated from sheet `"25"` in `Cinema.xlsx` and is loaded by `?2025`; the 2024 archive snapshot was generated from sheet `"24"` and is loaded by `?2024`.
-
 ### Secrets required
 
 | Secret | Purpose |
