@@ -414,7 +414,7 @@ h1 {
   border-radius: 0;
   display: flex;
   overflow: hidden;
-  min-width: 2px;
+  min-width: 3px;
   transition: width 0.8s cubic-bezier(0.22,1,0.36,1);
 }
 .format-seg {
@@ -1947,11 +1947,12 @@ function segLabel(b, p, threeD) {
 }
 function formatTrackMinWidth(base) {
   const currentTotal = formatBreakdown[base].total;
+  if (currentTotal === 1) return 3;
   const nextMoreNumerous = bases
     .map(b => formatBreakdown[b].total)
     .filter(total => total > currentTotal)
     .sort((a, b) => a - b)[0];
-  return nextMoreNumerous && nextMoreNumerous > currentTotal * 8 ? 6 : 2;
+  return nextMoreNumerous && nextMoreNumerous > currentTotal * 8 ? 6 : 3;
 }
 const rowsHtml = bases.map(b => {
   const data = formatBreakdown[b];
