@@ -429,6 +429,9 @@ h1 {
   position: relative;
 }
 .format-seg:hover { filter: brightness(1.15); }
+.format-stacked.is-touch-interacting .format-seg:hover { filter: none; }
+.format-stacked.is-touch-interacting .format-seg.is-touch-active,
+.format-stacked.is-touch-interacting .format-seg.is-touch-active:hover { filter: brightness(1.15); }
 .format-seg.seg-standard { background: var(--accent); }
 .format-seg.seg-3d::after {
   content: '';
@@ -2088,6 +2091,8 @@ window.addEventListener('resize', () => {
 });
 
 const segTooltip = document.getElementById('seg-tooltip');
+const formatStacked = document.querySelector('.format-stacked');
+let activeTouchFormatSeg = null;
 function formatSegmentBaseColor(seg) {
   const color = getComputedStyle(seg).backgroundColor;
   return color && color !== 'rgba(0, 0, 0, 0)' ? color : 'var(--accent)';
@@ -2102,6 +2107,20 @@ function applySegTooltipStyle(seg) {
   } else {
     segTooltip.style.setProperty('--seg-tooltip-border-fill', `linear-gradient(${color}, ${color}) border-box`);
   }
+}
+function setActiveTouchFormatSeg(seg) {
+  if (activeTouchFormatSeg === seg) return;
+  activeTouchFormatSeg?.classList.remove('is-touch-active');
+  activeTouchFormatSeg = seg;
+  if (seg) {
+    formatStacked?.classList.add('is-touch-interacting');
+    seg.classList.add('is-touch-active');
+  }
+}
+function clearActiveTouchFormatSeg() {
+  activeTouchFormatSeg?.classList.remove('is-touch-active');
+  activeTouchFormatSeg = null;
+  formatStacked?.classList.remove('is-touch-interacting');
 }
 function positionSegTooltip(seg, cursorX) {
   const r = seg.getBoundingClientRect();
@@ -2121,7 +2140,10 @@ function showSegTooltip(seg, cursorX) {
   if (cursorX == null) cursorX = r.left + r.width / 2;
   positionSegTooltip(seg, cursorX);
 }
-function hideSegTooltip() { segTooltip.style.display = 'none'; }
+function hideSegTooltip() {
+  segTooltip.style.display = 'none';
+  clearActiveTouchFormatSeg();
+}
 function segmentAtPoint(track, clientX, clientY) {
   const hit = document.elementFromPoint(clientX, clientY);
   const hitSeg = hit?.closest?.('.format-seg');
@@ -2137,7 +2159,9 @@ function segmentAtPoint(track, clientX, clientY) {
 }
 function showSegTooltipAtPoint(track, clientX, clientY) {
   const seg = segmentAtPoint(track, clientX, clientY);
-  if (seg) showSegTooltip(seg, clientX);
+  if (!seg) return;
+  setActiveTouchFormatSeg(seg);
+  showSegTooltip(seg, clientX);
 }
 document.querySelectorAll('.format-seg').forEach(seg => {
   seg.addEventListener('mouseenter', e => showSegTooltip(seg, e.clientX));
@@ -2146,6 +2170,7 @@ document.querySelectorAll('.format-seg').forEach(seg => {
   seg.addEventListener('touchstart', e => {
     e.preventDefault();
     const t = e.touches[0];
+    setActiveTouchFormatSeg(seg);
     showSegTooltip(seg, t ? t.clientX : null);
   }, {passive: false});
 });
