@@ -587,6 +587,7 @@ h1 {
 .calendar-legend {
   --calendar-legend-width: 240px;
   --calendar-legend-unrated-width: 56px;
+  --calendar-legend-unrated-gap: 12px;
   order: 4;
   flex: 0 0 100%;
   display: flex;
@@ -702,7 +703,7 @@ h1 {
 }
 .calendar-header.calendar-rating-mode.calendar-has-unrated-days .calendar-legend-unrated {
   width: var(--calendar-legend-unrated-width);
-  margin-left: 16px;
+  margin-left: var(--calendar-legend-unrated-gap);
   opacity: 1;
 }
 
@@ -806,11 +807,11 @@ h1 {
     transform: translateY(10px);
   }
   .calendar-header.calendar-has-unrated-days .calendar-legend {
-    flex-basis: calc(var(--calendar-legend-width) + 16px + var(--calendar-legend-unrated-width));
+    flex-basis: calc(var(--calendar-legend-width) + var(--calendar-legend-unrated-gap) + var(--calendar-legend-unrated-width));
   }
   .calendar-header.calendar-has-unrated-days .calendar-legend-unrated {
     width: var(--calendar-legend-unrated-width);
-    margin-left: 16px;
+    margin-left: var(--calendar-legend-unrated-gap);
     transition: opacity 0.2s;
   }
 }
