@@ -1,6 +1,6 @@
 # Jim's 2026 Cinema Log
 
-A single-page dashboard that visualizes a year of moviegoing in New York City. Built with vanilla HTML, CSS, and JavaScript, with no frameworks or charting libraries.
+A single-page dashboard that visualizes a year of filmgoing in New York City. Built with vanilla HTML, CSS, and JavaScript, with no frameworks or charting libraries.
 
 Data is sourced from a personal spreadsheet on Dropbox and synced automatically via GitHub Actions.
 
@@ -87,7 +87,7 @@ When the year has fewer than 5 logged films, the masthead and stats row render a
 
 ## Data pipeline
 
-A GitHub Actions workflow (`.github/workflows/update-data.yml`) runs every 20 minutes, triggered externally by cron-job.org via `workflow_dispatch` (GitHub's own scheduled triggers drift by 5 to 30 minutes on free-tier repos):
+A GitHub Actions workflow (`.github/workflows/update-data.yml`) runs every 10 minutes, triggered externally by cron-job.org via `workflow_dispatch` (GitHub's own scheduled triggers drift by 5 to 30 minutes on free-tier repos):
 
 1. Downloads `Cinema.xlsx` from Dropbox using OAuth2 refresh token flow
 2. Parses the spreadsheet's sheet `"26"` with the `xlsx` library
