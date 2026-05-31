@@ -586,15 +586,22 @@ h1 {
 
 .calendar-legend {
   --calendar-legend-width: 240px;
+  --calendar-legend-unrated-width: 56px;
   order: 4;
   flex: 0 0 100%;
   display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  width: auto;
+  max-width: 100%;
+  margin: 8px auto 0;
+}
+.calendar-legend-main {
+  display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 6px;
   width: var(--calendar-legend-width);
   max-width: 100%;
-  margin: 8px auto 0;
 }
 .calendar-legend-scales {
   position: relative;
@@ -653,6 +660,34 @@ h1 {
 }
 .calendar-legend-rating-labels span:first-child { color: rgb(var(--rating-1)); }
 .calendar-legend-rating-labels span:last-child { color: rgb(var(--rating-10)); }
+.calendar-legend-unrated {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 0;
+  margin-left: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition: opacity 0.2s, width 0.2s, margin-left 0.2s;
+}
+.calendar-legend-unrated-swatch {
+  width: 48px;
+  height: 10px;
+  background: rgb(var(--rating-unrated) / 0.75);
+}
+.calendar-legend-unrated-label {
+  font-family: 'Economist Sans', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.1;
+  color: rgb(var(--rating-unrated));
+  letter-spacing: 0;
+  white-space: nowrap;
+  text-align: center;
+  width: 48px;
+}
 .calendar-header.calendar-rating-mode .calendar-legend-screenings-scale {
   opacity: 0;
 }
@@ -663,6 +698,11 @@ h1 {
   opacity: 0;
 }
 .calendar-header.calendar-rating-mode .calendar-legend-rating-labels {
+  opacity: 1;
+}
+.calendar-header.calendar-rating-mode.calendar-has-unrated-days .calendar-legend-unrated {
+  width: var(--calendar-legend-unrated-width);
+  margin-left: 16px;
   opacity: 1;
 }
 
@@ -761,8 +801,17 @@ h1 {
     order: 2;
     flex: 0 0 var(--calendar-legend-width);
     align-items: flex-start;
+    justify-content: flex-start;
     margin: 0 0 0 16px;
     transform: translateY(10px);
+  }
+  .calendar-header.calendar-has-unrated-days .calendar-legend {
+    flex-basis: calc(var(--calendar-legend-width) + 16px + var(--calendar-legend-unrated-width));
+  }
+  .calendar-header.calendar-has-unrated-days .calendar-legend-unrated {
+    width: var(--calendar-legend-unrated-width);
+    margin-left: 16px;
+    transition: opacity 0.2s;
   }
 }
 
@@ -1365,25 +1414,31 @@ footer img.footer-favicon {
         </span>
         <span class="chart-num">7</span>
         <span class="calendar-legend" id="calendar-legend" aria-live="polite">
-          <span class="calendar-legend-scales" aria-hidden="true">
-            <span class="calendar-legend-scale calendar-legend-screenings-scale">
-              <span class="calendar-legend-block"></span>
-              <span class="calendar-legend-block"></span>
-              <span class="calendar-legend-block"></span>
-              <span class="calendar-legend-block"></span>
-              <span class="calendar-legend-block"></span>
+          <span class="calendar-legend-main">
+            <span class="calendar-legend-scales" aria-hidden="true">
+              <span class="calendar-legend-scale calendar-legend-screenings-scale">
+                <span class="calendar-legend-block"></span>
+                <span class="calendar-legend-block"></span>
+                <span class="calendar-legend-block"></span>
+                <span class="calendar-legend-block"></span>
+                <span class="calendar-legend-block"></span>
+              </span>
+              <span class="calendar-legend-scale calendar-legend-rating-scale"></span>
             </span>
-            <span class="calendar-legend-scale calendar-legend-rating-scale"></span>
+            <span class="calendar-legend-label-wrap">
+              <span class="calendar-legend-labels calendar-legend-screenings-labels">
+                <span>1 screening</span>
+                <span>5 or more</span>
+              </span>
+              <span class="calendar-legend-labels calendar-legend-rating-labels">
+                <span>Rated 1</span>
+                <span>Rated 10</span>
+              </span>
+            </span>
           </span>
-          <span class="calendar-legend-label-wrap">
-            <span class="calendar-legend-labels calendar-legend-screenings-labels">
-              <span>1 screening</span>
-              <span>5 or more</span>
-            </span>
-            <span class="calendar-legend-labels calendar-legend-rating-labels">
-              <span>Rated 1</span>
-              <span>Rated 10</span>
-            </span>
+          <span class="calendar-legend-unrated" aria-hidden="true">
+            <span class="calendar-legend-unrated-swatch"></span>
+            <span class="calendar-legend-unrated-label">Unrated</span>
           </span>
         </span>
       </div>
@@ -2580,6 +2635,7 @@ const dayNames = ['S','M','T','W','T','F','S'];
 const heatmapEl = document.getElementById('heatmap');
 const calRow = document.createElement('div');
 calRow.className = 'calendars-row';
+let hasUnratedCalendarDay = false;
 months.forEach(m => {
   const div = document.createElement('div');
   div.className = 'heatmap-month';
@@ -2594,6 +2650,7 @@ months.forEach(m => {
     if (isFuture) {
       html += `<div class="heatmap-cell future">${d}</div>`;
     } else {
+      if (films.length > 0 && films.every(f => f.rating == null)) hasUnratedCalendarDay = true;
       const cls = films.length >= 5 ? 'watched-5' : films.length === 4 ? 'watched-4' : films.length === 3 ? 'watched-3' : films.length === 2 ? 'watched-2' : films.length === 1 ? 'watched-1' : '';
       html += `<div class="heatmap-cell ${cls}" data-date="${ds}" data-films='${JSON.stringify(films.map(f=>f.title)).replace(/'/g,"&#39;")}' data-ratings='${JSON.stringify(films.map(f=>f.rating)).replace(/'/g,"&#39;")}'>${d}</div>`;
     }
@@ -2642,20 +2699,21 @@ function avgRatingColor(avg) {
 }
 const calendarHeader = document.querySelector('.calendar-header');
 const calendarRatingLegendScale = document.querySelector('.calendar-legend-rating-scale');
-const rgbString = rgb => `rgb(${rgb.join(',')})`;
+const rgbaString = (rgb, alpha) => `rgba(${rgb.join(',')},${alpha})`;
 if (calendarRatingLegendScale) {
   const ratingStops = [];
   const stopCount = 36;
   for (let i = 0; i <= stopCount; i++) {
     const pct = (i / stopCount) * 100;
     const rating = 1 + (9 * i / stopCount);
-    ratingStops.push(`${rgbString(avgRatingColor(rating))} ${pct}%`);
+    ratingStops.push(`${rgbaString(avgRatingColor(rating), 0.75)} ${pct}%`);
   }
   calendarRatingLegendScale.style.background = `linear-gradient(to right, ${ratingStops.join(',')})`;
 }
 let calMode = 'screenings';
 function syncCalendarLegend() {
   calendarHeader.classList.toggle('calendar-rating-mode', calMode === 'rating');
+  calendarHeader.classList.toggle('calendar-has-unrated-days', hasUnratedCalendarDay);
 }
 function applyCalMode() {
   document.querySelectorAll('.heatmap-cell:not(.empty):not(.future)').forEach(cell => {
@@ -2678,7 +2736,7 @@ function applyCalMode() {
         cell.classList.add('rating-colored');
         if (avg <= 3 || avg >= 8) cell.classList.add('rating-colored-dark');
       } else if (ratings.length > 0) {
-        cell.style.background = `rgba(${unratedColor.join(',')},0.5)`;
+        cell.style.background = `rgba(${unratedColor.join(',')},0.75)`;
         cell.classList.add('rating-colored');
       } else {
         cell.style.background = '';
