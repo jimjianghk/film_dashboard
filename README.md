@@ -28,7 +28,7 @@ A cursor trace reveals the cumulative count for any day from January 1 through t
 
 ### Rating chart
 
-Horizontal bar chart with numeric 1-to-10 labels; the first row is labeled "1 out of 10" and the remaining rows use numbers only. Bars are color-coded across a 10-step palette running from deep red (1) through pastel salmon (5) to pastel blue (6) and deep navy (10), inspired by *The Economist's* political-spectrum gradient. An additional grey "Unrated" bar appears when applicable. Three filter toggles (All / New releases / Repertory) subset by production year, and a dedup toggle collapses rewatches to unique titles. Bar widths are anchored to the tallest bar across all films at the current dedup state, so switching between All / New / Rep doesn't rescale; only toggling dedup does. Bars animate between states on toggle.
+Horizontal bar chart with numeric 1-to-10 labels; the first row is labeled "1 out of 10" and the remaining rows use numbers only. Bars are color-coded across a 10-step palette running from deep red (1) through pastel salmon (5) to pastel blue (6) and deep navy (10), inspired by *The Economist's* political-spectrum gradient. An additional grey "Unrated" bar appears when applicable. Three text toggles (All / New releases / Repertory), with the active state shown by an underline and inactive states faded, subset by production year; a dedup switch collapses rewatches to unique titles. Bar widths are anchored to the tallest bar across all films at the current dedup state, so switching between All / New / Rep doesn't rescale; only toggling dedup does. Bars animate between states on toggle.
 
 ### Production decade chart
 
@@ -48,10 +48,10 @@ Two-column horizontal bar chart sorted by count, with a subtitle that says "Hove
 
 ### Screening calendar
 
-Monthly heatmap grid from January 1 through the current date in New York during the dashboard year, capped at December 31 once the year has ended. Rows cap at 4 months wide regardless of viewport, wrapping to fewer per row on narrower screens. Unlike the subtitle and cumulative chart, the calendar extends through today in New York during the active year regardless of whether a film has been logged, so the current day's tile is interactive even when empty. Two modes toggled by buttons:
+Monthly heatmap grid from January 1 through the current date in New York during the dashboard year, capped at December 31 once the year has ended. Rows cap at 4 months wide regardless of viewport, wrapping to fewer per row on narrower screens. Unlike the subtitle and cumulative chart, the calendar extends through today in New York during the active year regardless of whether a film has been logged, so the current day's tile is interactive even when empty. Two text modes are toggled with an underline/faded inactive treatment and an animated legend:
 
-- **Number of screenings**: tile color darkens with count across five discrete steps, from pale peach through red to deep crimson for 1–5+ films.
-- **Average rating**: tile color interpolates translucently across the same rating palette as the bar chart, with a softened 5-to-6 bridge to keep midrange averages legible. Days with only unrated screenings are grey.
+- **Number of screenings**: tile color darkens with count across five discrete steps, from pale peach through red to deep crimson for 1–5+ films. The legend shows five adjacent blocks labeled from "1 screening" to "5 or more".
+- **Average rating**: tile color interpolates translucently across the same rating palette as the bar chart, with a softened 5-to-6 bridge to keep midrange averages legible. Days with only unrated screenings are grey. The legend shows a continuous spectrum using the same interpolated rating colors, labeled from "Rated 1" to "Rated 10".
 
 Hovering a tile with screenings shows a tooltip with film titles and color-coded rating badges. Hovering an empty past tile shows "No screenings"; today's tile (when no film is logged yet) shows "Awaiting data" instead.
 
