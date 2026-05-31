@@ -157,6 +157,8 @@ h1 {
   flex: 0 0 0;
 }
 .stat-card {
+  --stat-bar-short: calc(4.4rem + 3px);
+  --stat-bar-long: calc(var(--stat-bar-short) + 1.4rem);
   padding: 8px 0 8px 20px;
   text-align: left;
   position: relative;
@@ -167,12 +169,12 @@ h1 {
   position: absolute;
   left: 0;
   top: 20px;
-  bottom: 12px;
   width: 9px;
+  height: var(--stat-bar-short);
   background: var(--text);
-  transition: bottom 0.45s cubic-bezier(0.22,1,0.36,1);
+  transition: height 0.45s cubic-bezier(0.22,1,0.36,1);
 }
-.stats-row.show-stat-comparisons .stat-card-compare-ready::before { bottom: 8px; }
+.stats-row.stat-comparisons-visible .stat-card-compare-ready::before { height: var(--stat-bar-long); }
 .stat-val {
   font-family: 'Economist Sans Headline', 'Economist Sans', sans-serif;
   font-size: 4rem;
@@ -198,12 +200,13 @@ h1 {
   overflow: hidden;
   transform: translateY(-3px);
   transition:
-    height 0.45s cubic-bezier(0.22,1,0.36,1),
-    opacity 0.35s ease,
-    transform 0.45s cubic-bezier(0.22,1,0.36,1);
+    opacity 0.5s ease,
+    transform 0.65s ease;
 }
-.stats-row.show-stat-comparisons .stat-compare {
+.stats-row.stat-comparisons-expanded .stat-compare {
   height: 1.1em;
+}
+.stats-row.stat-comparisons-visible .stat-compare {
   opacity: 1;
   transform: translateY(0);
 }
@@ -1372,8 +1375,84 @@ if (previousStats) {
   statsRowEl.classList.add('has-delta-toggle');
   statsCompareToggleWrap.classList.add('is-visible');
   statsCompareToggle.checked = false;
+  let statCardMoveCleanup = null;
+  let statComparisonCollapseTimer = null;
+  const statCardMoveDuration = 650;
+  const statComparisonCollapseDelay = 200;
+  const statCardMoveEasing = 'ease';
+  function clearStatComparisonCollapseTimer() {
+    if (!statComparisonCollapseTimer) return;
+    window.clearTimeout(statComparisonCollapseTimer);
+    statComparisonCollapseTimer = null;
+  }
+  function getStatComparisonLayoutEls() {
+    return [
+      ...statsRowEl.querySelectorAll('.stat-card'),
+      statsCompareToggleWrap,
+      ...document.querySelectorAll('.charts-grid, .section, .page-footnotes, footer')
+    ].filter(Boolean);
+  }
+  function animateStatCardLayoutChange(applyLayoutChange) {
+    if (statCardMoveCleanup) statCardMoveCleanup();
+    const layoutEls = getStatComparisonLayoutEls();
+    const firstRects = new Map(layoutEls.map(el => [el, el.getBoundingClientRect()]));
+    applyLayoutChange();
+    const lastRects = new Map(layoutEls.map(el => [el, el.getBoundingClientRect()]));
+    const movedEls = layoutEls.filter(el => {
+      const first = firstRects.get(el);
+      const last = lastRects.get(el);
+      return first && last && (first.left !== last.left || first.top !== last.top);
+    });
+    const originalWillChange = new Map(movedEls.map(el => [el, el.style.willChange]));
+    const animations = movedEls.map(el => {
+      const first = firstRects.get(el);
+      const last = lastRects.get(el);
+      el.style.willChange = 'transform';
+      return el.animate(
+        [
+          { transform: `translate(${first.left - last.left}px, ${first.top - last.top}px)` },
+          { transform: 'translate(0, 0)' }
+        ],
+        {
+          duration: statCardMoveDuration,
+          easing: statCardMoveEasing
+        }
+      );
+    });
+    if (!animations.length) return;
+    const cleanup = () => {
+      animations.forEach(animation => animation.cancel());
+      movedEls.forEach(el => { el.style.willChange = originalWillChange.get(el) || ''; });
+      statCardMoveCleanup = null;
+    };
+    statCardMoveCleanup = cleanup;
+    Promise.allSettled(animations.map(animation => animation.finished)).then(() => {
+      if (statCardMoveCleanup === cleanup) cleanup();
+    });
+  }
+  function setStatComparisonsVisible(show) {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      clearStatComparisonCollapseTimer();
+      statsRowEl.classList.toggle('stat-comparisons-expanded', show);
+      statsRowEl.classList.toggle('stat-comparisons-visible', show);
+      return;
+    }
+    clearStatComparisonCollapseTimer();
+    if (show) {
+      animateStatCardLayoutChange(() => statsRowEl.classList.add('stat-comparisons-expanded'));
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => statsRowEl.classList.add('stat-comparisons-visible'));
+      });
+      return;
+    }
+    statsRowEl.classList.remove('stat-comparisons-visible');
+    statComparisonCollapseTimer = window.setTimeout(() => {
+      statComparisonCollapseTimer = null;
+      animateStatCardLayoutChange(() => statsRowEl.classList.remove('stat-comparisons-expanded'));
+    }, statComparisonCollapseDelay);
+  }
   statsCompareToggle.addEventListener('change', () => {
-    statsRowEl.classList.toggle('show-stat-comparisons', statsCompareToggle.checked);
+    setStatComparisonsVisible(statsCompareToggle.checked);
   });
 }
 
