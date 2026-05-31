@@ -274,6 +274,20 @@ h1 {
   letter-spacing: -0.005em;
   text-transform: none;
 }
+.chart-label.with-subtitle { margin-bottom: 1px; }
+.chart-subtitle {
+  font-family: 'Economist Sans', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.2;
+  margin-bottom: 18px;
+}
+.chart-subtitle-hover { display: none; }
+@media (hover: hover) and (pointer: fine) {
+  .chart-subtitle-hover { display: inline; }
+  .chart-subtitle-click { display: none; }
+}
 .chart-num {
   margin-left: auto;
   display: inline-flex;
@@ -358,6 +372,7 @@ h1 {
   box-shadow: 2px 2px 0 rgba(0,0,0,0.15);
 }
 .bar-label:hover .venue-tip { display: block; }
+#venue-chart.venue-equal-track .bar-track { flex: 0 0 var(--venue-track-width); }
 .bar-track {
   flex: 1;
   height: 22px;
@@ -480,7 +495,7 @@ h1 {
     var(--seg-tooltip-border-fill, linear-gradient(var(--text), var(--text)) border-box);
   border: 3px solid transparent;
   color: var(--text);
-  padding: 4px 10px;
+  padding: 3px 8px;
   border-radius: 0;
   font-family: 'Economist Sans', sans-serif;
   font-weight: 400;
@@ -489,6 +504,11 @@ h1 {
   z-index: 10000;
   pointer-events: none;
   box-shadow: 2px 2px 0 rgba(0,0,0,0.15);
+}
+#cum-tooltip {
+  background: #fffdf5;
+  border: 1px solid var(--text);
+  padding: 3px 8px;
 }
 
 /* CALENDAR HEATMAP */
@@ -673,9 +693,10 @@ h1 {
 .series-venue {
   font-family: 'Economist Sans', sans-serif;
   font-size: 0.9rem;
-  background: var(--accent);
-  color: #fff;
-  padding: 1px 6px;
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  padding: 0 5px;
   border-radius: 0;
   margin-left: 6px;
   font-weight: 500;
@@ -683,7 +704,10 @@ h1 {
   position: relative;
   top: -0.5px;
 }
-.series-venue-other { background: var(--rating-unrated-color); }
+.series-venue-other {
+  border-color: var(--rating-unrated-color);
+  color: var(--rating-unrated-color);
+}
 .series-toggle {
   margin-top: 14px;
   font-family: 'Economist Sans', sans-serif;
@@ -1192,7 +1216,8 @@ footer img.footer-favicon {
       </div>
     </div>
     <div class="chart-card full animate delay-3">
-      <div class="chart-label">Screening venue<span class="chart-num">6</span></div>
+      <div class="chart-label with-subtitle">Screening venue<span class="chart-num">6</span></div>
+      <div class="chart-subtitle"><span class="chart-subtitle-hover">Hover</span><span class="chart-subtitle-click">Click</span> on label to see full venue name</div>
       <div id="venue-chart" class="venue-grid"></div>
     </div>
     <div class="chart-card full animate delay-4">
@@ -1735,6 +1760,38 @@ window.addEventListener('resize', () => {
 
 const BAR_ROW_GAP = 12;
 function syncBarLabelColumn(container) {
+  const venueCols = container.classList.contains('venue-grid')
+    ? [...container.querySelectorAll(':scope > .venue-col')]
+    : [];
+  const venueColsAreSideBySide = venueCols.length > 1 &&
+    Math.abs(venueCols[0].getBoundingClientRect().top - venueCols[1].getBoundingClientRect().top) < 1;
+
+  if (venueColsAreSideBySide) {
+    container.classList.remove('venue-equal-track');
+    container.style.removeProperty('--venue-track-width');
+    container.style.removeProperty('--bar-label-width');
+    container.style.removeProperty('--bar-axis-left');
+    venueCols.forEach(syncBarLabelScope);
+    const trackWidths = venueCols
+      .map(col => col.querySelector('.bar-track')?.getBoundingClientRect().width || 0)
+      .filter(Boolean);
+    if (trackWidths.length) {
+      container.style.setProperty('--venue-track-width', `${Math.floor(Math.min(...trackWidths))}px`);
+      container.classList.add('venue-equal-track');
+    }
+    return;
+  }
+
+  container.classList.remove('venue-equal-track');
+  container.style.removeProperty('--venue-track-width');
+  venueCols.forEach(col => {
+    col.style.removeProperty('--bar-label-width');
+    col.style.removeProperty('--bar-axis-left');
+  });
+  syncBarLabelScope(container);
+}
+
+function syncBarLabelScope(container) {
   const labels = [...container.querySelectorAll('.bar-label')];
   if (!labels.length) return;
   container.style.setProperty('--bar-label-width', 'auto');
@@ -1968,6 +2025,11 @@ document.getElementById('venue-chart').innerHTML =
   `<div class="venue-col">${venueCol(venueArr.slice(0, venueHalf))}</div>` +
   `<div class="venue-col">${venueCol(venueArr.slice(venueHalf))}</div>`;
 syncBarLabelColumn(document.getElementById('venue-chart'));
+let venueResizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(venueResizeTimer);
+  venueResizeTimer = setTimeout(() => syncBarLabelColumn(document.getElementById('venue-chart')), 120);
+});
 
 // ====== DECADE CHART ======
 function renderDecadeChart() {
