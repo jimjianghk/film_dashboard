@@ -992,6 +992,7 @@ footer img.footer-favicon {
 .year-menu-button span {
   display: block;
   flex-shrink: 0;
+  transition: color 0.18s ease;
 }
 .year-menu-button span:last-child {
   margin-right: 1.75px;
@@ -1010,12 +1011,36 @@ footer img.footer-favicon {
   right: -12px;
   z-index: 1;
   width: max-content;
-  display: none;
   padding: 4px 10px 6px;
   background: rgba(235, 233, 220, 0.9);
   border: none;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate3d(0, 0, 0);
+  transform-origin: top right;
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+  transition: opacity 0.27s ease;
 }
-.year-menu-panel.open { display: block; }
+.year-menu-panel.pre-open {
+  opacity: 0;
+  transform: translate3d(0, -16px, 0);
+  transition: none;
+}
+.year-menu-panel.open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate3d(0, 0, 0);
+  transition:
+    opacity 0.27s ease,
+    transform 0.33s cubic-bezier(0.22,1,0.36,1);
+}
+.year-menu-panel.closing {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate3d(0, 0, 0);
+  transition: opacity 0.27s ease;
+}
 .year-menu-panel a {
   position: relative;
   display: block;
@@ -1031,6 +1056,12 @@ footer img.footer-favicon {
 .year-menu-panel a:hover,
 .year-menu-panel a[aria-current="page"] {
   color: var(--accent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .year-menu-button span,
+  .year-menu-panel {
+    transition: none;
+  }
 }
 
 /* ANIMATIONS */
@@ -1078,7 +1109,7 @@ footer img.footer-favicon {
     <span>Choose</span>
     <span>year</span>
   </button>
-  <nav class="year-menu-panel" id="year-menu-panel" aria-label="Cinema log archive">
+  <nav class="year-menu-panel" id="year-menu-panel" aria-label="Cinema log archive" aria-hidden="true" inert>
     <a href="./" data-year="2026">2026</a>
     <a href="?2025" data-year="2025">2025</a>
     <a href="?2024" data-year="2024">2024</a>
@@ -1224,11 +1255,35 @@ const yearMenuPanel = document.getElementById('year-menu-panel');
 yearMenuPanel.innerHTML = [...dashboardYears].reverse()
   .map(year => `<a href="${yearMenuUrlForYear(year)}" data-year="${year}">${year}</a>`)
   .join('');
+let yearMenuCloseTimer;
 const setYearMenuOpen = open => {
+  clearTimeout(yearMenuCloseTimer);
   yearMenuButton.setAttribute('aria-expanded', String(open));
   yearMenuButton.setAttribute('aria-label', open ? 'Close year menu' : 'Open year menu');
-  yearMenuPanel.classList.toggle('open', open);
+  yearMenuPanel.setAttribute('aria-hidden', String(!open));
+  yearMenuPanel.toggleAttribute('inert', !open);
+  yearMenuPanel.querySelectorAll('a').forEach(link => {
+    if (open) link.removeAttribute('tabindex');
+    else link.setAttribute('tabindex', '-1');
+  });
+  if (open) {
+    yearMenuPanel.classList.remove('open', 'closing');
+    yearMenuPanel.classList.add('pre-open');
+    yearMenuPanel.offsetHeight;
+    yearMenuPanel.classList.remove('pre-open');
+    yearMenuPanel.classList.add('open');
+  } else if (yearMenuPanel.classList.contains('open')) {
+    yearMenuPanel.classList.remove('pre-open');
+    yearMenuPanel.classList.add('closing');
+    yearMenuPanel.classList.remove('open');
+    yearMenuCloseTimer = window.setTimeout(() => {
+      yearMenuPanel.classList.remove('closing');
+    }, 330);
+  } else {
+    yearMenuPanel.classList.remove('pre-open', 'closing');
+  }
 };
+setYearMenuOpen(false);
 yearMenuButton.addEventListener('click', e => {
   e.stopPropagation();
   setYearMenuOpen(yearMenuButton.getAttribute('aria-expanded') !== 'true');
