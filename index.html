@@ -953,6 +953,28 @@ th {
 }
 th:hover { color: var(--accent); }
 th .sort-arrow { margin-left: 1px; color: var(--accent); display: inline-block; vertical-align: middle; line-height: 0; position: relative; top: -1px; }
+.table-title-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+.table-title-sort {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+.table-rewatch-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  cursor: default;
+}
+.table-rewatch-filter .switch-label-text {
+  line-height: inherit;
+}
 td {
   padding: 9px 12px;
   border-bottom: 1px solid var(--border);
@@ -1127,11 +1149,12 @@ tbody tr:last-child td { border-bottom: none; }
 
 .switch-toggle { position: relative; display: inline-block; width: 20px; height: 12px; flex-shrink: 0; }
 .switch-toggle input { opacity: 0; width: 0; height: 0; }
-.switch-slider { position: absolute; cursor: pointer; inset: 0; background: transparent; border: 1px solid var(--text); border-radius: 0; transition: border-color 0.2s; }
-.switch-slider::before { content: ''; position: absolute; height: 8px; width: 8px; left: 1px; top: 1px; background: var(--text); transition: transform 0.2s, background 0.2s; }
-.switch-toggle input:checked + .switch-slider { border-color: var(--accent); }
+.switch-slider { position: absolute; cursor: pointer; inset: 0; background: transparent; border: 1px solid var(--text-dimmer); border-radius: 0; transition: border-color 0.2s; }
+.switch-slider::before { content: ''; position: absolute; height: 8px; width: 8px; left: 1px; top: 1px; background: var(--text-dimmer); transition: transform 0.2s, background 0.2s; }
+.switch-toggle input:checked + .switch-slider { border-color: var(--text); }
 .switch-toggle input:checked + .switch-slider::before { transform: translateX(8px); background: var(--accent); }
-.switch-label-text { font-family: 'Economist Sans', sans-serif; font-size: 1rem; line-height: 1.2; color: var(--text); letter-spacing: 0; text-transform: none; font-weight: 500; }
+.switch-label-text { font-family: 'Economist Sans', sans-serif; font-size: 1rem; line-height: 1.2; color: var(--text-dimmer); letter-spacing: 0; text-transform: none; font-weight: 500; transition: color 0.2s; }
+.switch-toggle:has(input:checked) + .switch-label-text { color: var(--text); }
 
 .filter-row-tr input.col-search {
   font-family: 'Economist Sans', sans-serif;
@@ -2890,38 +2913,15 @@ function normalizeTitleSearchText(text) {
     .toLowerCase();
 }
 
-function renderTable() {
-  document.querySelectorAll('body > .col-filter-menu').forEach(m => m.remove());
-  const arrow = dir => `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="7" viewBox="0 0 8 5"${dir === 'asc' ? ' style="transform:rotate(180deg)"' : ''}><path d="M0 0l4 5 4-5z" fill="currentColor"/></svg>`;
-  document.getElementById('table-head').innerHTML = '<tr>' + columns.map(c => {
-    return `<th data-col="${c.key}" style="width:${c.w}">${c.label}${currentSort.col===c.key ? `<span class="sort-arrow">${arrow(currentSort.dir)}</span>` : ''}</th>`;
-  }).join('') + '</tr>';
-
-  const filterRow = '<tr class="filter-row-tr">' + columns.map(c => {
-    if (c.key === 'title') {
-      const curVal = activeFilters._titleSearch || '';
-      return `<td><input type="text" class="col-search${curVal ? ' active' : ''}" data-filter-col="title" placeholder="Search\u2026" value="${curVal.replace(/"/g,'&quot;')}"></td>`;
-    }
-    const filterable = filterableKeys.includes(c.key);
-    if (!filterable) return '<td></td>';
-    const options = getFilterOptions(c.key);
-    const curVal = activeFilters[c.key] || '';
-    const noUp = c.key === 'year' ? ' no-uppercase' : '';
-    return `<td><div class="col-filter-wrap" data-filter-col="${c.key}">
-      <button type="button" class="col-filter${curVal ? ' active' : ''}${noUp}" aria-haspopup="listbox" aria-expanded="false">${curVal || 'All'}</button>
-      <ul class="col-filter-menu${c.key === 'series' ? ' wrap' : ''}" role="listbox" data-filter-col="${c.key}" hidden>
-        <li role="option" data-value=""${!curVal ? ' class="selected"' : ''}>All</li>
-        ${options.map(v => `<li role="option" data-value="${v.replace(/"/g,'&quot;')}"${v === curVal ? ' class="selected"' : ''}>${v}</li>`).join('')}
-      </ul>
-    </div></td>`;
-  }).join('') + '</tr>';
-
-  document.getElementById('table-head').innerHTML += filterRow;
-
+function getFilteredTableFilms() {
   let filtered = [...FILMS];
   for (const [key, val] of Object.entries(activeFilters)) {
     if (key === '_titleSearch') continue;
+    if (key === '_rewatchOnly') continue;
     if (val) filtered = filtered.filter(f => matchesFilter(f, key, val));
+  }
+  if (activeFilters._rewatchOnly) {
+    filtered = filtered.filter(f => f.rewatch);
   }
   if (activeFilters._titleSearch) {
     const q = normalizeTitleSearchText(activeFilters._titleSearch);
@@ -2945,6 +2945,11 @@ function renderTable() {
     return currentSort.dir === 'asc' ? a._idx - b._idx : b._idx - a._idx;
   });
 
+  return filtered;
+}
+
+function renderTableBody() {
+  const filtered = getFilteredTableFilms();
   document.getElementById('table-body').innerHTML = filtered.map(f => {
     const rClass = f.rating != null ? 'rating-' + f.rating : 'rating-unrated';
     const dateStr = new Date(f.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
@@ -2976,16 +2981,74 @@ function renderTable() {
     wrapEl.style.overscrollBehaviorY = needsScroll ? 'auto' : 'none';
     wrapEl.style.touchAction = needsScroll ? 'pan-x pan-y' : 'pan-x';
   }
+}
+
+function renderTable() {
+  document.querySelectorAll('body > .col-filter-menu').forEach(m => m.remove());
+  const arrow = dir => `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="7" viewBox="0 0 8 5"${dir === 'asc' ? ' style="transform:rotate(180deg)"' : ''}><path d="M0 0l4 5 4-5z" fill="currentColor"/></svg>`;
+  document.getElementById('table-head').innerHTML = '<tr>' + columns.map(c => {
+    const sortArrow = currentSort.col===c.key ? `<span class="sort-arrow">${arrow(currentSort.dir)}</span>` : '';
+    if (c.key === 'title') {
+      return `<th data-col="${c.key}" style="width:${c.w}">
+        <span class="table-title-header">
+          <span class="table-title-sort">${c.label}${sortArrow}</span>
+          <span class="table-rewatch-filter">
+            <label class="switch-toggle" title="Show rewatches only">
+              <input type="checkbox" id="table-rewatch-only" aria-label="Show rewatches only"${activeFilters._rewatchOnly ? ' checked' : ''}>
+              <span class="switch-slider"></span>
+            </label>
+            <span class="switch-label-text">Rewatches only</span>
+          </span>
+        </span>
+      </th>`;
+    }
+    return `<th data-col="${c.key}" style="width:${c.w}">${c.label}${sortArrow}</th>`;
+  }).join('') + '</tr>';
+
+  const filterRow = '<tr class="filter-row-tr">' + columns.map(c => {
+    if (c.key === 'title') {
+      const curVal = activeFilters._titleSearch || '';
+      return `<td><input type="text" class="col-search${curVal ? ' active' : ''}" data-filter-col="title" placeholder="Search\u2026" value="${curVal.replace(/"/g,'&quot;')}"></td>`;
+    }
+    const filterable = filterableKeys.includes(c.key);
+    if (!filterable) return '<td></td>';
+    const options = getFilterOptions(c.key);
+    const curVal = activeFilters[c.key] || '';
+    const noUp = c.key === 'year' ? ' no-uppercase' : '';
+    return `<td><div class="col-filter-wrap" data-filter-col="${c.key}">
+      <button type="button" class="col-filter${curVal ? ' active' : ''}${noUp}" aria-haspopup="listbox" aria-expanded="false">${curVal || 'All'}</button>
+      <ul class="col-filter-menu${c.key === 'series' ? ' wrap' : ''}" role="listbox" data-filter-col="${c.key}" hidden>
+        <li role="option" data-value=""${!curVal ? ' class="selected"' : ''}>All</li>
+        ${options.map(v => `<li role="option" data-value="${v.replace(/"/g,'&quot;')}"${v === curVal ? ' class="selected"' : ''}>${v}</li>`).join('')}
+      </ul>
+    </div></td>`;
+  }).join('') + '</tr>';
+
+  document.getElementById('table-head').innerHTML += filterRow;
+  renderTableBody();
 
   document.querySelectorAll('th').forEach(th => {
     th.addEventListener('click', e => {
       if (e.target.closest('.col-filter-wrap')) return;
+      if (e.target.closest('.table-rewatch-filter')) return;
       const col = th.dataset.col;
       if (currentSort.col === col) currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
       else { currentSort.col = col; currentSort.dir = 'asc'; }
       renderTable();
     });
   });
+
+  const rewatchOnlyWrap = document.querySelector('.table-rewatch-filter');
+  const rewatchOnlyToggle = document.getElementById('table-rewatch-only');
+  if (rewatchOnlyWrap) {
+    rewatchOnlyWrap.addEventListener('click', e => e.stopPropagation());
+  }
+  if (rewatchOnlyToggle) {
+    rewatchOnlyToggle.addEventListener('change', e => {
+      activeFilters._rewatchOnly = e.target.checked;
+      renderTableBody();
+    });
+  }
 
   document.querySelectorAll('.col-filter-wrap').forEach(wrap => {
     const btn = wrap.querySelector('.col-filter');

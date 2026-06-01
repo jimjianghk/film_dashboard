@@ -64,6 +64,7 @@ All named screening series ranked by count. Each row shows the series name follo
 Sortable, filterable table of every screening. Nine columns: date, title, year, runtime, rating, format, price, venue, and series. Features:
 
 - Click any header to sort (ascending/descending). Null ratings always sort to the bottom.
+- A "Rewatches only" switch in the Title header filters the table to rewatches.
 - Dropdown filters on date (by month), year (by decade), rating (1–10 plus N/A), format, venue, and series.
 - Free-text search on title with IME composition support for CJK input.
 - Rating badges are color-coded circles matching the bar chart palette, with text colors picked from within the same palette family for legible contrast. Unrated films show a grey badge with a horizontally narrowed em dash.
