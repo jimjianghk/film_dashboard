@@ -72,7 +72,11 @@ Sortable, filterable table of every screening. Nine columns: date, title, year, 
 
 ### Page footnotes
 
-A row of small notes between the log table and the footer carries the asterisk, dagger, and double dagger callouts referenced from the hero "Total spending" stat, the Format column (and the format chart's DCP row), and the Price column header. The notes sit inline, separated by a 25px gap.
+A row of small notes between the log table and the footer carries the asterisk, dagger, and double dagger callouts referenced from the hero "Total spending" stat, the Format column (and the format chart's DCP row), and the Price column header. The notes sit inline, separated by a 25px gap. An underlined "What counts as a screening?" link follows the callouts and opens the standalone definition page.
+
+### Screening definition page
+
+`definition.html` explains the counting rules behind the screening totals. It keeps the shared masthead and "Go back" navigation, then switches to a white article-style page with a red sans pre-title, serif headline and body copy, a thin divider rule below the headline, a drop cap, and small-cap treatments for the opening words and short abbreviations.
 
 ### Sparse mode
 
@@ -82,6 +86,7 @@ When the year has fewer than 5 logged films, the masthead and stats row render a
 
 - Cream paper background styled after *The Economist*
 - Economist Sans throughout (with Economist Sans Headline for the page title and hero stat values), signature red masthead, black section rules, tabular figures
+- Standalone definition page uses a white article-style layout with serif reading text, drop cap, small caps, and a thin grey headline divider
 - Rating tiles blend translucently with the paper-cream background
 - Fade-up entrance animations with staggered delays
 - Responsive at 1200 / 1000 / 900 / 800 / 600 / 500px breakpoints
