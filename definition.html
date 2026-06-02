@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>What counts as a screening? - Jim’s Films</title>
-<link rel="icon" href="favicon.ico?v=2" sizes="any">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=2">
-<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=2">
-<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2">
+<link rel="icon" href="assets/favicon.ico?v=2" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png?v=2">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png?v=2">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=2">
 <style>
 @font-face {
   font-family: 'Economist Sans';
@@ -115,6 +115,17 @@ h1 {
   letter-spacing: 0;
 }
 
+.definition-figure {
+  max-width: 600px;
+  margin: 1.5rem 0 0;
+}
+
+.definition-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 .article-divider {
   padding-top: 1.5rem;
   margin-bottom: 0.75rem;
@@ -185,13 +196,23 @@ h1 {
 <body>
 <div class="container">
   <header class="site-header">
-    <img class="header-masthead" src="masthead.png" alt="Jim's Films">
+    <img class="header-masthead" src="assets/masthead.png" alt="Jim's Films">
     <a class="back-link" href="index.html">Go back</a>
   </header>
 
   <main class="definition-content">
     <div class="pre-title">Definition</div>
     <h1>What counts as a screening?</h1>
+    <figure class="definition-figure">
+      <img
+        src="assets/illustration-1280.png"
+        srcset="assets/illustration-800.png 800w, assets/illustration-1280.png 1280w, assets/illustration-2000.png 2000w, assets/illustration-2560.png 2560w, assets/illustration.png 4000w"
+        sizes="(min-width: 664px) 600px, (max-width: 800px) calc(100vw - 32px), calc(100vw - 64px)"
+        width="4000"
+        height="3000"
+        alt="Abstract visualization of cinema log charts and calendar grids"
+        decoding="async">
+    </figure>
     <div class="article-divider" aria-hidden="true"></div>
     <p><span class="drop-cap">E</span><small>ach of the</small> following items counts as “one screening” in the data.</p>
     <p>1. A feature film (40 minutes or longer), including as part of a multi-film block (such as a double feature) with one single admission;</p>
