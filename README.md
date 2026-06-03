@@ -76,7 +76,7 @@ A row of small notes between the log table and the footer carries the asterisk, 
 
 ### Screening definition page
 
-`definition.html` explains the counting rules behind the screening totals. It keeps the shared masthead and "Go back" navigation, then switches to a white article-style page with a red sans pre-title, serif headline and body copy, a thin divider rule below the headline, a drop cap, and small-cap treatments for the opening words and short abbreviations.
+The `/definition` page explains the counting rules behind the screening totals. It keeps the shared masthead and "Go back" navigation, then switches to a white article-style page with a red sans pre-title, serif headline and body copy, a thin divider rule below the headline, a drop cap, and small-cap treatments for the opening words and short abbreviations.
 
 ### Sparse mode
 
