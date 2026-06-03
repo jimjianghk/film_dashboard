@@ -1499,6 +1499,11 @@ footer img.footer-favicon {
 </div>
 
 <script>
+if (window.location.pathname.endsWith('/index.html')) {
+  const cleanPath = window.location.pathname.slice(0, -'index.html'.length) || '/';
+  window.history.replaceState(null, '', `${cleanPath}${window.location.search}${window.location.hash}`);
+}
+
 const DATA_FILES_BY_YEAR = {
   '2026': 'data.json',
   '2025': 'data-2025.json',
