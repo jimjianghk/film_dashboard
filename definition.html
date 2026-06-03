@@ -99,7 +99,7 @@ a {
 }
 
 .definition-content {
-  max-width: none;
+  max-width: 43.75rem;
   padding: 28px 0 88px;
   font-family: 'Economist Serif', Georgia, serif;
   font-weight: 400;
@@ -191,6 +191,10 @@ h1 {
 }
 
 @media (min-width: 60rem) {
+  .definition-content {
+    margin-left: min(12.5rem, calc(100% - 43.75rem));
+  }
+
   h1 {
     font-size: 2.875rem;
     line-height: 3.25rem;
@@ -225,12 +229,12 @@ h1 {
         decoding="async">
     </figure>
     <div class="article-divider" aria-hidden="true"></div>
-    <p><span class="drop-cap">E</span><small>ach of the</small> following items counts as “one screening” in the data.</p>
+    <p><span class="drop-cap">T</span><small>he data</small> define “screenings” based on the type of work and the manner of admission. Each of the following items counts as one screening.</p>
     <p>1. A feature film (40 minutes or longer), including as part of a multi-film block (such as a double feature) with one single admission;</p>
     <p>2. A short film (shorter than 40 minutes) in a standalone screening with its own admission;</p>
     <p>3. A shorts program, ie a collection of short films with one single admission;</p>
-    <p>4. A single <small>TV</small> episode, or a multi-episode <small>TV</small> series block, with one single admission;</p>
-    <p>5. Attendance of part of a long film screened on a loop and/or as an installation.</p>
+    <p>4. A single episode or a multi-episode block of a <small>TV</small> series with one single admission;</p>
+    <p>5. Attendance at part of a long film screened on a loop and/or as an installation.</p>
     <p class="final-note">A short film screened alongside one or more feature films, with a single admission, does not count as a separate screening (or appear in the data). Neither does a short film screened as an installation.</p>
   </main>
 </div>
