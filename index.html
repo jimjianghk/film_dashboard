@@ -364,9 +364,7 @@ h1 {
 #decade-chart .bar-row::before,
 #venue-chart .bar-row::before,
 .format-row::before { left: calc(var(--bar-axis-left, 60px) - var(--bar-axis-width, 1.5px)); }
-.bar-row:hover .bar-fill { filter: brightness(1.15); }
-.hist-bar { transition: filter 0.15s, height 0.8s cubic-bezier(0.22,1,0.36,1); cursor: default; }
-.hist-bar:hover { filter: brightness(1.2); }
+.hist-bar { transition: height 0.8s cubic-bezier(0.22,1,0.36,1); cursor: default; }
 .bar-label {
   font-family: 'Economist Sans', sans-serif;
   font-size: 1rem;
@@ -473,14 +471,9 @@ h1 {
 .format-seg {
   height: 100%;
   cursor: default;
-  transition: filter 0.15s;
   min-width: 0;
   position: relative;
 }
-.format-seg:hover { filter: brightness(1.15); }
-.format-stacked.is-touch-interacting .format-seg:hover { filter: none; }
-.format-stacked.is-touch-interacting .format-seg.is-touch-active,
-.format-stacked.is-touch-interacting .format-seg.is-touch-active:hover { filter: brightness(1.15); }
 .format-seg.seg-standard { background: var(--accent); }
 .format-seg.seg-3d::after {
   content: '';
@@ -1454,7 +1447,7 @@ footer img.footer-favicon {
       <div id="format-chart"></div>
     </div>
     <div class="chart-card full animate delay-3">
-      <div class="chart-label" style="display:flex;align-items:center;gap:18px;">Runtime distribution
+      <div class="chart-label with-subtitle" style="display:flex;align-items:center;gap:18px;">Runtime distribution
         <span class="chart-dedup" style="display:flex;align-items:center;gap:6px;">
           <label class="switch-toggle" title="De-duplicate rewatches">
             <input type="checkbox" id="runtime-dedup">
@@ -1464,6 +1457,7 @@ footer img.footer-favicon {
         </span>
         <span class="chart-num">5</span>
       </div>
+      <div class="chart-subtitle">Minutes, each range includes the lower end</div>
       <div style="overflow-x:auto;padding:12px 18px 22px;">
         <div id="runtime-chart" style="display:flex;align-items:flex-end;gap:2px;height:160px;padding-top:12px;width:100%;"></div>
       </div>
