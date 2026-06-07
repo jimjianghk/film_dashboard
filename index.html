@@ -1871,8 +1871,8 @@ function renderCumulativeChart() {
   const chartEndDate = todayDate > yearEnd ? yearEnd : todayDate;
   const chartEndMonth = chartEndDate.getMonth();
   const daysInChartEndMonth = new Date(parseInt(dashYear), chartEndMonth + 1, 0).getDate();
-  const midpoint = Math.ceil(daysInChartEndMonth / 2);
-  const endMonth = chartEndDate.getDate() > midpoint ? Math.min(11, chartEndMonth + 1) : chartEndMonth;
+  const twoThirdsPoint = Math.ceil(daysInChartEndMonth * 2 / 3);
+  const endMonth = chartEndDate.getDate() > twoThirdsPoint ? Math.min(11, chartEndMonth + 1) : chartEndMonth;
   const endMonthLastDay = new Date(parseInt(dashYear), endMonth + 1, 0, 12, 0, 0);
   const endIdx = Math.min(daysInYear - 1, Math.round((endMonthLastDay - yearStart) / dayMs));
   let cum = 0;
