@@ -514,10 +514,8 @@ h1 {
 .seg-tooltip {
   position: fixed;
   display: none;
-  background:
-    linear-gradient(#fffdf5, #fffdf5) padding-box,
-    var(--seg-tooltip-border-fill, linear-gradient(var(--text), var(--text)) border-box);
-  border: 3px solid transparent;
+  background: #fffdf5;
+  border: 1px solid var(--text);
   color: var(--text);
   padding: 3px 8px;
   border-radius: 0;
@@ -529,10 +527,10 @@ h1 {
   pointer-events: none;
   box-shadow: 2px 2px 0 rgba(0,0,0,0.15);
 }
-#cum-tooltip {
-  background: #fffdf5;
-  border: 1px solid var(--text);
-  padding: 3px 8px;
+/* Format-segment color rides inside the tooltip as a legend-style swatch chip. */
+.seg-tooltip .legend-swatch {
+  margin-right: 7px;
+  vertical-align: -1px;
 }
 
 /* CALENDAR HEATMAP */
@@ -956,7 +954,10 @@ h1 {
 table {
   width: 100%;
   min-width: 950px;
-  border-collapse: collapse;
+  /* separate + zero spacing: collapsed borders rasterize unevenly under
+     pinch zoom (random thick lines) and misbehave with sticky headers */
+  border-collapse: separate;
+  border-spacing: 0;
   table-layout: fixed;
   font-size: 1rem;
 }
@@ -1150,24 +1151,17 @@ tbody tr:last-child td { border-bottom: none; }
   font-size: 0.9rem;
   box-shadow: 0 2px 6px rgba(0,0,0,0.08);
 }
-.col-filter-menu.wrap {
-  right: -14px;
-  width: auto;
-  min-width: 0;
-  max-width: none;
-}
+/* The menu overhangs the button 4px each side; with the borderless glass menu,
+   11px option padding = 4px overhang + the button's 1px border + 6px text
+   padding, so option text aligns with the filter text above. */
 .col-filter-menu li {
-  padding: 3px 10px;
+  padding: 3px 11px;
   cursor: pointer;
   color: var(--text-dim);
   line-height: 1.25;
   text-transform: none;
-  white-space: nowrap;
-}
-.col-filter-menu.wrap li {
   white-space: normal;
   overflow-wrap: anywhere;
-  line-height: 1.1;
 }
 .col-filter-menu li:hover {
   background: var(--text);
@@ -1326,6 +1320,147 @@ footer img.footer-favicon {
   .year-menu-panel {
     transition: none;
   }
+}
+
+/* LIQUID GLASS, floating overlay layer only (tooltips, menus, sticky table header).
+   Progressive ladder: browsers without backdrop-filter keep the flat solid design
+   above; this block adds frosted glass everywhere backdrop-filter works; Chromium
+   additionally gets SVG edge refraction attached inline from JS (url() filters in
+   backdrop-filter parse but silently fail in Safari/Firefox, so @supports cannot
+   gate that tier). prefers-reduced-transparency restores the solid look. */
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root {
+    --lg-tint: 255 254 250;   /* warm white: pure white reads gray over the cream page */
+    --lg-shadow: 92 80 56;    /* warm umber: pure black reads sooty over the cream page */
+  }
+  .tooltip,
+  .seg-tooltip,
+  .venue-tip,
+  .col-filter-menu,
+  .year-menu-panel {
+    background: rgb(var(--lg-tint) / 0.45);
+    -webkit-backdrop-filter: blur(10px) saturate(170%) brightness(1.02);
+    backdrop-filter: blur(10px) saturate(170%) brightness(1.02);
+    box-shadow:
+      0 8px 24px rgb(var(--lg-shadow) / 0.16),
+      inset 1.5px 1.5px 1px rgb(255 255 255 / 0.38),
+      inset -1px -1px 1px rgb(255 255 255 / 0.15);
+  }
+  .tooltip { border-radius: 18px; border-width: 0; }
+  /* left -7px + 11px padding keeps tip text flush with the 4px-inset label text */
+  .venue-tip { border-radius: 999px; border-width: 0; padding: 4px 11px; left: -7px; }
+  .seg-tooltip {
+    border-radius: 999px;
+    border-width: 0;
+    padding: 4px 12px;
+  }
+  /* Scrollable, so it cannot host the pseudo-element specular ring the
+     tooltips use; the shared inset specular shadows alone light its rim. */
+  .col-filter-menu {
+    border-width: 0;
+    border-radius: 12px;
+    padding: 4px 0;
+  }
+  /* Continuous-curvature corners where supported (Chromium): removes the
+     tangent kink where the corner arc meets the straight edge. */
+  @supports (corner-shape: squircle) {
+    .tooltip,
+    .seg-tooltip,
+    .venue-tip,
+    .col-filter-menu,
+    .year-menu-panel {
+      corner-shape: squircle;
+    }
+  }
+  .year-menu-panel {
+    border-radius: 18px;
+    background: rgb(var(--lg-tint) / 0.45);
+  }
+  /* Specular rim: a 1px gradient ring, masked so only the border ring paints.
+     This is the lit lip of the glass; it replaces flat borders on glass. */
+  .tooltip::before,
+  .seg-tooltip::before,
+  .venue-tip::before,
+  .year-menu-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg,
+      rgb(255 255 255 / 0.55),
+      rgb(255 255 255 / 0) 40%,
+      rgb(255 255 255 / 0) 60%,
+      rgb(255 255 255 / 0.22));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+    pointer-events: none;
+  }
+  /* Glass bezel: two thin curved glints hugging the inner rim (negative-spread
+     inset shadows). Kept crisp and sparse so they read as polished edge, not
+     fog; the refraction band underneath must stay visible. */
+  .tooltip::after,
+  .year-menu-panel::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow:
+      inset -10px -8px 0 -11px rgb(255 255 255 / 0.9),
+      inset 10px 8px 0 -11px rgb(255 255 255 / 0.5);
+    opacity: 0.4;
+    filter: blur(0.75px);
+    pointer-events: none;
+  }
+  /* Sticky table header becomes a glass bar over the scrolling rows; the tint
+     matches the page so it stays quiet until rows slide beneath it. One shared
+     pane carries the blur for both header rows: per-cell backdrop-filters
+     sample independently and draw a visible seam between the rows. The pane is
+     a zero-height sticky element so it pins exactly with the thead; JS keeps
+     its size in sync with the header. */
+  th,
+  .filter-row-tr td {
+    background: transparent;
+  }
+  .table-glass {
+    position: sticky;
+    top: 0;
+    height: 0;
+    z-index: 4;
+  }
+  .table-glass-pane {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: var(--table-glass-width, 100%);
+    height: var(--table-glass-height, 0px);
+    background: rgb(235 233 220 / 0.65);
+    -webkit-backdrop-filter: blur(8px) saturate(135%);
+    backdrop-filter: blur(8px) saturate(135%);
+    pointer-events: none;
+  }
+}
+@media (prefers-contrast: more) {
+  .tooltip, .seg-tooltip, .venue-tip, .col-filter-menu, .year-menu-panel {
+    background: rgb(255 254 250 / 0.92);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .tooltip, .seg-tooltip, .venue-tip, .col-filter-menu, .year-menu-panel,
+  th, .filter-row-tr td {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  .tooltip, .seg-tooltip, .venue-tip { background: #fffdf5; border-width: 1px; }
+  .col-filter-menu { background: var(--bg); border-width: 1px; border-color: var(--text); }
+  .year-menu-panel { background: rgba(235, 233, 220, 0.95); }
+  th, .filter-row-tr td { background: var(--bg); }
+  .table-glass-pane { display: none; }
+  .tooltip::before, .tooltip::after,
+  .seg-tooltip::before, .venue-tip::before,
+  .year-menu-panel::before, .year-menu-panel::after { content: none; }
 }
 
 /* ANIMATIONS */
@@ -1517,6 +1652,7 @@ footer img.footer-favicon {
   <div class="section animate delay-5">
     <div class="chart-label">Complete log<span class="chart-num">9</span></div>
     <div class="film-table-wrap">
+      <div class="table-glass" aria-hidden="true"><div class="table-glass-pane"></div></div>
       <table>
         <thead id="table-head"></thead>
         <tbody id="table-body"></tbody>
@@ -1598,6 +1734,190 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') setYearMenuOpen(false);
+});
+
+// ====== LIQUID GLASS, TIER 3: SVG EDGE REFRACTION ======
+// Only Chromium renders SVG filters inside backdrop-filter (Safari: WebKit bug
+// 245510; Firefox: open feature request). The value parses everywhere, so
+// @supports lies; engine detection is the established gate. Other engines keep
+// the CSS frosted-glass tier untouched.
+const liquidGlassRefraction = (() => {
+  const isChromium = navigator.userAgentData?.brands?.some(b => /Chromium/i.test(b.brand)) ?? false;
+  const enabled = isChromium &&
+    !window.matchMedia('(prefers-reduced-transparency: reduce)').matches &&
+    typeof CSS !== 'undefined' && CSS.supports('backdrop-filter', 'blur(1px)') &&
+    typeof ResizeObserver !== 'undefined' &&
+    typeof CanvasRenderingContext2D !== 'undefined' && 'roundRect' in CanvasRenderingContext2D.prototype;
+  if (!enabled) return { attach: () => {} };
+
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const defs = document.createElementNS(SVG_NS, 'svg');
+  defs.setAttribute('width', '0');
+  defs.setAttribute('height', '0');
+  defs.setAttribute('aria-hidden', 'true');
+  defs.style.position = 'absolute'; // must stay rendered: display:none kills the filters
+  document.body.appendChild(defs);
+  const instances = [];
+  let nextId = 0;
+
+  // Displacement map: R channel encodes X shift, G channel Y shift, neutral
+  // gray means none. A signed-distance-field lens for the element's rounded
+  // rect: displacement points along the outward edge normal with a convex
+  // falloff, so backdrop content visibly bows around a wide rim band while
+  // the center stays optically flat and text floats over legible backdrop.
+  function lensParams(w, h) {
+    const band = Math.max(12, Math.min(30, Math.min(w, h) * 0.34));
+    const maxShift = Math.max(14, Math.min(38, band * 1.2));
+    return { band, maxShift };
+  }
+  const mapCache = new Map();
+  function displacementMap(w, h, radius) {
+    const key = `${w}x${h}r${radius}`;
+    let url = mapCache.get(key);
+    if (url) return url;
+    const { band, maxShift } = lensParams(w, h);
+    const hw = w / 2, hh = h / 2;
+    const r = Math.min(radius, hw, hh);
+    const bx = hw - r, by = hh - r;
+    const sd = (px, py) => {
+      const qx = Math.abs(px - hw) - bx;
+      const qy = Math.abs(py - hh) - by;
+      return Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - r;
+    };
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    const img = ctx.createImageData(w, h);
+    const data = img.data;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const px = x + 0.5, py = y + 0.5;
+        const depth = -sd(px, py);
+        let dx = 0, dy = 0;
+        if (depth < band) {
+          const t = Math.max(0, 1 - depth / band);
+          const m = maxShift * t * t * (3 - 2 * t);
+          const gx = sd(px + 1, py) - sd(px - 1, py);
+          const gy = sd(px, py + 1) - sd(px, py - 1);
+          const len = Math.hypot(gx, gy) || 1;
+          dx = (gx / len) * m;
+          dy = (gy / len) * m;
+        }
+        const i = (y * w + x) * 4;
+        data[i] = Math.round(128 + (dx / maxShift) * 127);
+        data[i + 1] = Math.round(128 + (dy / maxShift) * 127);
+        data[i + 2] = 128;
+        data[i + 3] = 255;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+    url = canvas.toDataURL();
+    if (mapCache.size > 64) mapCache.delete(mapCache.keys().next().value);
+    mapCache.set(key, url);
+    return url;
+  }
+
+  const observer = new ResizeObserver(entries => {
+    for (const entry of entries) {
+      const inst = instances.find(i => i.el === entry.target);
+      if (!inst) continue;
+      const w = Math.round(entry.borderBoxSize?.[0]?.inlineSize ?? entry.target.offsetWidth);
+      const h = Math.round(entry.borderBoxSize?.[0]?.blockSize ?? entry.target.offsetHeight);
+      if (w < 24 || h < 16 || (w === inst.w && h === inst.h)) continue;
+      inst.w = w;
+      inst.h = h;
+      const radius = parseFloat(getComputedStyle(inst.el).borderTopLeftRadius) || 0;
+      inst.feImage.setAttribute('href', displacementMap(w, h, radius));
+      inst.feImage.setAttribute('width', w);
+      inst.feImage.setAttribute('height', h);
+      // Encoded shift spans 127/255 of the channel, so decode with 2x scale.
+      // The three channel passes diverge slightly: blue bends more than red,
+      // which paints the chromatic fringe along the rim.
+      const scale = lensParams(w, h).maxShift * 2;
+      inst.dispR.setAttribute('scale', (scale * 0.90).toFixed(1));
+      inst.dispG.setAttribute('scale', scale.toFixed(1));
+      inst.dispB.setAttribute('scale', (scale * 1.10).toFixed(1));
+      if (!inst.applied) {
+        inst.applied = true;
+        inst.el.style.backdropFilter = `url(#${inst.filterId}) blur(3px) saturate(170%)`;
+      }
+    }
+  });
+
+  function attach(el) {
+    if (!el || instances.some(i => i.el === el)) return;
+    // Re-rendered overlays (table filter menus) leave orphan filters behind.
+    for (let i = instances.length - 1; i >= 0; i--) {
+      if (!instances[i].el.isConnected) {
+        observer.unobserve(instances[i].el);
+        instances[i].filterEl.remove();
+        instances.splice(i, 1);
+      }
+    }
+    const filterId = `lg-refract-${nextId++}`;
+    const filterEl = document.createElementNS(SVG_NS, 'filter');
+    filterEl.setAttribute('id', filterId);
+    filterEl.setAttribute('color-interpolation-filters', 'sRGB');
+    filterEl.setAttribute('x', '0');
+    filterEl.setAttribute('y', '0');
+    filterEl.setAttribute('width', '100%');
+    filterEl.setAttribute('height', '100%');
+    const feImage = document.createElementNS(SVG_NS, 'feImage');
+    feImage.setAttribute('x', '0');
+    feImage.setAttribute('y', '0');
+    feImage.setAttribute('preserveAspectRatio', 'none');
+    feImage.setAttribute('result', 'map');
+    filterEl.appendChild(feImage);
+    // Three displacement passes at slightly different strengths, recombined
+    // channel-by-channel (screen of disjoint channels is additive), produce
+    // the prismatic fringe real glass shows at its rim.
+    const makeDisp = result => {
+      const disp = document.createElementNS(SVG_NS, 'feDisplacementMap');
+      disp.setAttribute('in', 'SourceGraphic');
+      disp.setAttribute('in2', 'map');
+      disp.setAttribute('xChannelSelector', 'R');
+      disp.setAttribute('yChannelSelector', 'G');
+      disp.setAttribute('result', result);
+      filterEl.appendChild(disp);
+      return disp;
+    };
+    const dispR = makeDisp('dr');
+    const dispG = makeDisp('dg');
+    const dispB = makeDisp('db');
+    const channelMatrix = {
+      r: '1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0',
+      g: '0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0',
+      b: '0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0',
+    };
+    [['dr', channelMatrix.r, 'cr'], ['dg', channelMatrix.g, 'cg'], ['db', channelMatrix.b, 'cb']].forEach(([input, values, result]) => {
+      const cm = document.createElementNS(SVG_NS, 'feColorMatrix');
+      cm.setAttribute('in', input);
+      cm.setAttribute('type', 'matrix');
+      cm.setAttribute('values', values);
+      cm.setAttribute('result', result);
+      filterEl.appendChild(cm);
+    });
+    const blendRG = document.createElementNS(SVG_NS, 'feBlend');
+    blendRG.setAttribute('in', 'cr');
+    blendRG.setAttribute('in2', 'cg');
+    blendRG.setAttribute('mode', 'screen');
+    blendRG.setAttribute('result', 'crg');
+    filterEl.appendChild(blendRG);
+    const blendRGB = document.createElementNS(SVG_NS, 'feBlend');
+    blendRGB.setAttribute('in', 'crg');
+    blendRGB.setAttribute('in2', 'cb');
+    blendRGB.setAttribute('mode', 'screen');
+    filterEl.appendChild(blendRGB);
+    defs.appendChild(filterEl);
+    instances.push({ el, filterEl, feImage, dispR, dispG, dispB, filterId, w: 0, h: 0, applied: false });
+    observer.observe(el);
+  }
+
+  return { attach };
+})();
+['tooltip', 'seg-tooltip', 'cum-tooltip', 'year-menu-panel'].forEach(id => {
+  liquidGlassRefraction.attach(document.getElementById(id));
 });
 
 const currentDataPromise = fetch(dataFile, { cache: 'no-store' }).then(r => r.json());
@@ -2074,8 +2394,14 @@ function syncBarLabelColumn(container) {
 function syncBarLabelScope(container) {
   const labels = [...container.querySelectorAll('.bar-label')];
   if (!labels.length) return;
+  // An open venue tip (tap-and-hold on touch) is an absolutely positioned
+  // child of the label and would inflate scrollWidth, shifting the axis to
+  // fit the full venue name. Hide tips for the synchronous measurement.
+  const tips = [...container.querySelectorAll('.venue-tip')];
+  tips.forEach(tip => { tip.style.display = 'none'; });
   container.style.setProperty('--bar-label-width', 'auto');
   const labelWidth = Math.max(...labels.map(label => Math.ceil(label.scrollWidth)));
+  tips.forEach(tip => { tip.style.display = ''; });
   container.style.setProperty('--bar-label-width', `${labelWidth}px`);
   container.style.setProperty('--bar-axis-left', `${labelWidth + BAR_ROW_GAP}px`);
 }
@@ -2353,6 +2679,7 @@ if (document.fonts && document.fonts.ready) {
     syncBarLabelColumn(document.getElementById('venue-chart'));
     syncBarLabelColumn(document.getElementById('format-chart'));
     applyFormatSegmentWidths();
+    syncTableGlass();
   });
 }
 
@@ -2573,17 +2900,6 @@ function formatSegmentBaseColor(seg) {
   const color = getComputedStyle(seg).backgroundColor;
   return color && color !== 'rgba(0, 0, 0, 0)' ? color : 'var(--accent)';
 }
-function applySegTooltipStyle(seg) {
-  const color = formatSegmentBaseColor(seg);
-  if (seg.classList.contains('seg-3d')) {
-    segTooltip.style.setProperty(
-      '--seg-tooltip-border-fill',
-      `repeating-linear-gradient(-45deg, transparent 0 2px, rgba(0,0,0,0.5) 2px 4px) border-box, linear-gradient(${color}, ${color}) border-box`
-    );
-  } else {
-    segTooltip.style.setProperty('--seg-tooltip-border-fill', `linear-gradient(${color}, ${color}) border-box`);
-  }
-}
 function setActiveTouchFormatSeg(seg) {
   if (activeTouchFormatSeg === seg) return;
   activeTouchFormatSeg?.classList.remove('is-touch-active');
@@ -2609,8 +2925,8 @@ function positionSegTooltip(seg, cursorX) {
 function showSegTooltip(seg, cursorX) {
   const label = seg.dataset.label;
   const count = Number(seg.dataset.count);
-  segTooltip.textContent = `${label} · ${count}`;
-  applySegTooltipStyle(seg);
+  const swatch = `<span class="legend-swatch${seg.classList.contains('seg-3d') ? ' swatch-3d' : ''}" style="background:${formatSegmentBaseColor(seg)}"></span>`;
+  segTooltip.innerHTML = `${swatch}${label} · ${count}`;
   segTooltip.style.display = 'block';
   const r = seg.getBoundingClientRect();
   if (cursorX == null) cursorX = r.left + r.width / 2;
@@ -2855,7 +3171,7 @@ document.querySelectorAll('.heatmap-cell').forEach(cell => {
     tooltip.style.borderColor = films.length === 0 ? 'var(--border-strong)' : 'var(--accent)';
     tooltip.style.display = 'block';
     const r = cell.getBoundingClientRect();
-    let left = r.left;
+    let left = r.left - 4;
     const ttWidth = tooltip.offsetWidth;
     if (left + ttWidth > window.innerWidth - 8) left = window.innerWidth - ttWidth - 8;
     if (left < 8) left = 8;
@@ -3026,6 +3342,16 @@ function renderTableBody() {
   }
 }
 
+function syncTableGlass() {
+  const wrap = document.querySelector('.film-table-wrap');
+  const pane = wrap?.querySelector('.table-glass-pane');
+  const head = document.getElementById('table-head');
+  const tableEl = wrap?.querySelector('table');
+  if (!pane || !head || !tableEl) return;
+  pane.style.setProperty('--table-glass-width', tableEl.offsetWidth + 'px');
+  pane.style.setProperty('--table-glass-height', head.offsetHeight + 'px');
+}
+
 function renderTable() {
   document.querySelectorAll('body > .col-filter-menu').forEach(m => m.remove());
   const arrow = dir => `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="7" viewBox="0 0 8 5"${dir === 'asc' ? ' style="transform:rotate(180deg)"' : ''}><path d="M0 0l4 5 4-5z" fill="currentColor"/></svg>`;
@@ -3060,7 +3386,7 @@ function renderTable() {
     const noUp = c.key === 'year' ? ' no-uppercase' : '';
     return `<td><div class="col-filter-wrap" data-filter-col="${c.key}">
       <button type="button" class="col-filter${curVal ? ' active' : ''}${noUp}" aria-haspopup="listbox" aria-expanded="false">${curVal || 'All'}</button>
-      <ul class="col-filter-menu${c.key === 'series' ? ' wrap' : ''}" role="listbox" data-filter-col="${c.key}" hidden>
+      <ul class="col-filter-menu" role="listbox" data-filter-col="${c.key}" hidden>
         <li role="option" data-value=""${!curVal ? ' class="selected"' : ''}>All</li>
         ${options.map(v => `<li role="option" data-value="${v.replace(/"/g,'&quot;')}"${v === curVal ? ' class="selected"' : ''}>${v}</li>`).join('')}
       </ul>
@@ -3104,17 +3430,23 @@ function renderTable() {
         btn.setAttribute('aria-expanded', 'true');
         if (menu.parentElement !== document.body) document.body.appendChild(menu);
         menu.hidden = false;
+        liquidGlassRefraction.attach(menu);
         const r = btn.getBoundingClientRect();
-        const pageY = r.bottom + window.scrollY;
-        const pageX = r.left + window.scrollX;
-        menu.style.position = 'absolute';
-        menu.style.top = (pageY + 2) + 'px';
-        menu.style.left = pageX + 'px';
-        menu.style.minWidth = r.width + 'px';
-        if (menu.classList.contains('wrap')) {
-          const tdr = btn.closest('td').getBoundingClientRect();
-          const pageRight = tdr.right + window.scrollX;
-          menu.style.width = (pageRight - pageX) + 'px';
+        const menuOutset = 4; // menu overhangs the button; li padding re-aligns the text
+        const menuLeft = r.left - menuOutset;
+        // Fixed positioning: the menu keeps its natural width and any part
+        // that exceeds the viewport clips harmlessly instead of widening the
+        // document. Series alone is capped at the table's right edge.
+        menu.style.position = 'fixed';
+        menu.style.top = (r.bottom + 2) + 'px';
+        menu.style.left = menuLeft + 'px';
+        menu.style.width = 'max-content';
+        menu.style.minWidth = (r.width + 2 * menuOutset) + 'px';
+        if (menu.dataset.filterCol === 'series') {
+          const wrapRect = btn.closest('.film-table-wrap').getBoundingClientRect();
+          menu.style.maxWidth = Math.max(60, wrapRect.right - menuLeft) + 'px';
+        } else {
+          menu.style.maxWidth = '';
         }
         const available = window.innerHeight - r.bottom - 12;
         menu.style.maxHeight = Math.max(120, Math.min(260, available)) + 'px';
@@ -3148,6 +3480,8 @@ function renderTable() {
       if (inp) { inp.focus(); inp.selectionStart = inp.selectionEnd = inp.value.length; }
     });
   }
+
+  syncTableGlass();
 }
 
 function closeAllColFilters() {
@@ -3158,6 +3492,14 @@ function closeAllColFilters() {
 }
 document.addEventListener('click', closeAllColFilters);
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllColFilters(); });
+// Open menus are position: fixed, so page scroll would detach them from
+// their buttons; close instead (the table wrap already does the same).
+window.addEventListener('scroll', closeAllColFilters, { passive: true });
+let tableGlassResizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(tableGlassResizeTimer);
+  tableGlassResizeTimer = setTimeout(syncTableGlass, 120);
+});
 document.querySelectorAll('.film-table-wrap').forEach(el => {
   el.addEventListener('scroll', closeAllColFilters);
 });
