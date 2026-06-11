@@ -1372,13 +1372,18 @@ footer img.footer-favicon {
       corner-shape: squircle;
     }
   }
-  /* More opaque and brighter than the other glass: the gray year links must
-     stay legible when the panel floats over the big black headline. */
   .year-menu-panel {
     border-radius: 18px;
-    background: rgb(var(--lg-tint) / 0.72);
-    -webkit-backdrop-filter: blur(14px) saturate(150%) brightness(1.1);
-    backdrop-filter: blur(14px) saturate(150%) brightness(1.1);
+    background: rgb(var(--lg-tint) / 0.45);
+  }
+  /* On touch devices the panel overlaps the big black headline, so it goes
+     more opaque and brighter to keep the gray year links legible. */
+  @media (hover: none), (pointer: coarse) {
+    .year-menu-panel {
+      background: rgb(var(--lg-tint) / 0.72);
+      -webkit-backdrop-filter: blur(14px) saturate(150%) brightness(1.1);
+      backdrop-filter: blur(14px) saturate(150%) brightness(1.1);
+    }
   }
   /* Specular rim: a 1px gradient ring, masked so only the border ring paints.
      This is the lit lip of the glass; it replaces flat borders on glass. */
