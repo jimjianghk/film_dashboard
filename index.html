@@ -1348,7 +1348,12 @@ footer img.footer-favicon {
   }
   .tooltip { border-radius: 18px; border-width: 0; }
   /* left -7px + 11px padding keeps tip text flush with the 4px-inset label text */
-  .venue-tip { border-radius: 999px; border-width: 0; padding: 4px 11px; left: -7px; }
+  .venue-tip {
+    border-radius: 999px;
+    border-width: 0;
+    padding: 4px 11px;
+    left: -7px;
+  }
   .seg-tooltip {
     border-radius: 999px;
     border-width: 0;
@@ -1361,17 +1366,9 @@ footer img.footer-favicon {
     border-radius: 12px;
     padding: 4px 0;
   }
-  /* Continuous-curvature corners where supported (Chromium): removes the
-     tangent kink where the corner arc meets the straight edge. */
-  @supports (corner-shape: squircle) {
-    .tooltip,
-    .seg-tooltip,
-    .venue-tip,
-    .col-filter-menu,
-    .year-menu-panel {
-      corner-shape: squircle;
-    }
-  }
+  /* No corner-shape: squircle here: the Chromium displacement maps model
+     circular-arc corners, and a squircle clip would draw a second, mismatched
+     corner outline on top of the refraction band. */
   .year-menu-panel {
     border-radius: 18px;
     background: rgb(var(--lg-tint) / 0.45);
@@ -1750,6 +1747,16 @@ document.addEventListener('keydown', e => {
 // 245510; Firefox: open feature request). The value parses everywhere, so
 // @supports lies; engine detection is the established gate. Other engines keep
 // the CSS frosted-glass tier untouched.
+// Completed entrance animations keep filling forwards, which Chromium treats
+// as an active opacity animation on the sections and silently breaks
+// backdrop-filter for everything inside them (table header pane, venue tips).
+// Remove the classes once done; the end state equals the default style.
+document.addEventListener('animationend', e => {
+  if (e.animationName === 'fadeUp' && e.target.classList?.contains('animate')) {
+    e.target.classList.remove('animate', 'delay-1', 'delay-2', 'delay-3', 'delay-4', 'delay-5');
+  }
+});
+
 const liquidGlassRefraction = (() => {
   const isChromium = navigator.userAgentData?.brands?.some(b => /Chromium/i.test(b.brand)) ?? false;
   const enabled = isChromium &&
