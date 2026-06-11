@@ -1372,9 +1372,13 @@ footer img.footer-favicon {
       corner-shape: squircle;
     }
   }
+  /* More opaque and brighter than the other glass: the gray year links must
+     stay legible when the panel floats over the big black headline. */
   .year-menu-panel {
     border-radius: 18px;
-    background: rgb(var(--lg-tint) / 0.45);
+    background: rgb(var(--lg-tint) / 0.72);
+    -webkit-backdrop-filter: blur(14px) saturate(150%) brightness(1.1);
+    backdrop-filter: blur(14px) saturate(150%) brightness(1.1);
   }
   /* Specular rim: a 1px gradient ring, masked so only the border ring paints.
      This is the lit lip of the glass; it replaces flat borders on glass. */
@@ -2609,7 +2613,7 @@ const venueArr = Object.entries(venueCounts).sort((a,b) => {
 const maxVenue = venueArr[0][1];
 const venueHalf = Math.ceil(venueArr.length / 2);
 const venueFullNames = {
-  METRO:'Metrograph', MOMA:'Museum of Modern Art', LINC:'Film at Lincoln Center',
+  METRO:'Metrograph', MOMA:'Museum of Modern Art', FLC:'Film at Lincoln Center',
   AMC68:'AMC Lincoln Square', IFC:'IFC Center', AMC42:'AMC Empire', PARIS:'Paris Theater',
   FORUM:'Film Forum', BAM:'Brooklyn Academy of Music', MOMI:'Museum of the Moving Image',
   QUAD:'Quad Cinema', JAPSO:'Japan Society', ROXY:'Roxy Cinema',
