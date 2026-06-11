@@ -19,6 +19,15 @@
 <meta name="twitter:title" content="Jim’s 2026 Cinema Log">
 <meta name="twitter:description" content="A year of moviegoing in New York City.">
 <meta name="twitter:image" content="https://jimsfilms.nyc/assets/masthead_large.png">
+<script>
+(() => {
+  const nyMonth = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    month: 'numeric'
+  }).format(new Date());
+  document.documentElement.classList.toggle('is-pride-month', Number(nyMonth) === 6);
+})();
+</script>
 <style>
 @font-face {
   font-family: 'Economist Sans';
@@ -103,16 +112,37 @@ header {
   position: relative;
   text-align: left;
 }
+.header-masthead-lockup {
+  --header-pride-extension-width: 20px;
+  display: inline-flex;
+  align-items: stretch;
+  margin-bottom: 10px;
+}
 .header-masthead {
   display: block;
+  flex: 0 0 auto;
   width: 150px;
-  max-width: 100%;
   height: auto;
-  margin-bottom: 10px;
   user-select: none;
   -webkit-user-select: none;
   -webkit-user-drag: none;
   pointer-events: none;
+}
+.header-pride-stripes {
+  display: none;
+  align-self: stretch;
+  flex: 0 0 var(--header-pride-extension-width);
+  background: linear-gradient(
+    90deg,
+    rgb(250 163 53) 0 20%,
+    rgb(250 225 53) 20% 40%,
+    rgb(55 145 66) 40% 60%,
+    rgb(55 103 247) 60% 80%,
+    rgb(138 54 150) 80% 100%
+  );
+}
+.is-pride-month .header-pride-stripes {
+  display: block;
 }
 .header-label {
   display: none;
@@ -1524,7 +1554,10 @@ footer img.footer-favicon {
 
 <div class="container">
   <header>
-    <img class="header-masthead" src="assets/masthead.png" alt="Jim's Films">
+    <div class="header-masthead-lockup">
+      <img class="header-masthead" src="assets/masthead.png" alt="Jim's Films">
+      <span class="header-pride-stripes" aria-hidden="true"></span>
+    </div>
     <div class="header-label">Cinema Log</div>
     <h1>2026 in cinema</h1>
     <div class="header-divider"><span class="header-diamond"></span></div>
