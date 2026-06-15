@@ -6,11 +6,11 @@ Data is sourced from a personal spreadsheet on Dropbox and synced automatically 
 
 ## Dashboard
 
-The default page loads `data.json`, an object with `films` (array of film objects with date, title, year, runtime, rating (1–10 or null), rewatch flag, format, price, venue, and series) and `membershipFees` (sum of column Q from the spreadsheet, added to total spending in the hero stats). Archive views use the same `index.html` route with a year query and load frozen year-specific snapshots using the same JSON shape; for example, `?2025` loads `data-2025.json`.
+The dashboard is driven by the film log and membership-fee total exported from the source spreadsheet. Archive views load frozen snapshots for past years while keeping the current dashboard design, so the same stats, charts, filters, and New releases / Repertory logic remain available across years.
 
 ### Archive views
 
-Past years are data archives, not design archives: all years use the current `index.html` renderer. A year menu in the top-right corner links between every available year. The dashboard year is inferred from the first film date in the loaded data, so archive views keep the same chart, calendar, stats, and New releases / Repertory logic while capping time-based chart, calendar, and stat views at December 31 of the archived year.
+Past years are data archives, not design archives. A year menu in the top-right corner links between every available year. The dashboard year is inferred from the loaded film data, so archive views keep current-year behavior while capping time-based chart, calendar, and stat views at December 31 of the archived year.
 
 ### Masthead
 
@@ -20,7 +20,7 @@ During June, a slim five-stripe pride accent in a softened rainbow palette exten
 
 ### Stats row
 
-Six summary cards: total screenings, days at the cinema (distinct screening dates over days elapsed, denominator counts the current New York date only if a film is logged today, matching the cumulative chart's marker-line rule; the slash between numerator and denominator is rendered at weight 900 and horizontally squeezed to 75% width), average rating (excluding unrated films; rewatches collapse to unique titles before averaging, matching the rating chart's dedup logic), total runtime in hours, total spending (per-screening prices plus membership fees, marked with an asterisk that ties to the page footnotes), and unique NYC venues visited (excluding the `OTHER` catch-all). Values are set in sans Headline (condensed display cut) with a thick black accent bar to the left of each stat. When a previous-year archive exists, an off-by-default toggle below the cards reveals comparisons against the same point of the prior year and extends the black stat bars to the comparison line. The comparison text fades in and out, the bars animate between short and extended states, and wrapped stat rows plus following page content move to their new positions. Comparisons normalize Feb. 29 to Feb. 28; increases use signature red, while flat or lower values use the same gray as the stat label. The spending comparison includes membership fees, but prorates the previous year's membership fees evenly by day through the comparison date. In a single row the cards size to content and gaps distribute evenly across the viewport (including a matching trailing gap after the last card); at narrower breakpoints the row wraps to three, then two columns, with a slightly wider right column on narrow mobile screens to keep the days-at-cinema value on one line.
+Six summary cards cover total screenings, days at the cinema, average rating, total runtime, total spending, and unique NYC venues visited. Days at the cinema counts distinct screening dates against elapsed days using the same data-day rule as the cumulative chart. Average rating excludes unrated films and collapses rewatches to unique titles before averaging, matching the rating chart's dedup logic. Total spending combines per-screening prices with membership fees and ties to the page footnotes; unique venues exclude the `OTHER` catch-all. When a previous-year archive exists, an off-by-default toggle reveals same-date comparisons. Comparisons normalize Feb. 29 to Feb. 28; increases use signature red, flat or lower values use subdued gray, and spending comparisons prorate the previous year's membership fees through the comparison date. The row uses an editorial stat treatment and adapts from one line to wrapped layouts on smaller screens.
 
 ### Cumulative screenings
 
@@ -38,11 +38,11 @@ Horizontal bar chart grouping films by the decade they were produced. Has its ow
 
 ### Screening format chart
 
-Horizontal stacked bar chart with one row per base projection format (DCP / 35mm / 70mm / 16mm). Within each bar, Standard segments render first, followed by premium tiers (IMAX, Dolby Cinema, AMC Prime, VistaVision) ordered by count; 3D variants render as a dark diagonal-stripe overlay within their tier's segment. Standard segments use the accent red, while premium colors are assigned by usage rank from the sequence `#efa489`, `#6290bf`, `#293f84`, `#7e7f71`: base formats are scanned from highest total to lowest, then premium tiers within each base are ranked by count, with Dolby before IMAX before Prime before VistaVision for ties. Segment and row widths use a shared chart-wide count scale, so the same count renders at the same width anywhere in the chart and larger counts are always wider than smaller counts. Counts with a natural width below 3px receive a phased visibility boost that fades out by 10 screenings; large segments absorb any overflow. Hovering any segment shows the subcategory name and count in a tooltip, led by a legend-style square swatch in the segment color; 3D swatches reuse the same diagonal stripe overlay as the chart segment. On touch devices, tapping or dragging along a bar updates the tooltip as the finger crosses subcategories, and it remains visible until the user taps elsewhere. A legend below the bars lists every premium tier present with its total, sorted by count.
+Horizontal stacked bar chart with one row per base projection format (DCP / 35mm / 70mm / 16mm). Within each bar, Standard segments render first, followed by premium tiers ordered by count; 3D variants render as a diagonal-stripe overlay within their tier's segment. Premium colors are assigned by usage rank, with deterministic tie-breaking so colors stay consistent as the data changes. Segment and row widths use a shared chart-wide count scale, so the same count renders at the same width anywhere in the chart and larger counts are always wider than smaller counts. Very small segments receive a temporary visibility boost while larger segments absorb the adjustment. Hovering any segment shows the subcategory name and count in a tooltip with a matching swatch; 3D swatches reuse the same stripe treatment as the chart segment. On touch devices, tapping or dragging along a bar updates the tooltip as the finger crosses subcategories, and it remains visible until the user taps elsewhere. A legend below the bars lists every premium tier present with its total, sorted by count.
 
 ### Runtime distribution
 
-Vertical histogram with 5-minute bins. Has its own dedup toggle; bin structure stays fixed across views while heights rescale to the tallest bin in the current view and animate between states. The chart always fills the available viewport width; once bars hit their min-width it becomes horizontally scrollable rather than dropping labels. Inter-bar gaps scale proportionally with bar width (~1/12 ratio) down to a 2px floor. A horizontal axis line runs beneath the bars with downward tick marks at every bin boundary. When an outlier bin is separated from the main mass by 4+ consecutive empty bins, those empty bins collapse into a gap sized at ~2× bar width. Three dots sit inline with the x-axis labels, the start of the elided range is labeled at the gap's left edge, and the axis line breaks into two segments (mass and outlier) each with a short extension past its endpoints.
+Vertical histogram with 5-minute bins. Has its own dedup toggle; bin structure stays fixed across views while heights rescale to the tallest bin in the current view and animate between states. The chart fills the available viewport width until the bars need more room, then becomes horizontally scrollable rather than dropping labels. Bar spacing scales with the available room so the histogram stays readable across viewport sizes. A horizontal axis line runs beneath the bars with downward tick marks at every bin boundary. When an outlier bin is separated from the main mass by 4+ consecutive empty bins, those empty bins collapse into an elided gap. Three dots sit inline with the x-axis labels, the start of the elided range is labeled at the gap's left edge, and the axis line breaks into separate mass and outlier segments.
 
 ### Screening venue chart
 
@@ -67,7 +67,7 @@ Sortable, filterable table of every screening. Nine columns: date, title, year, 
 
 - Click any header to sort (ascending/descending). Null ratings always sort to the bottom.
 - A "Rewatches only" switch in the Title header filters the table to rewatches.
-- Dropdown filters on date (by month), year (by decade), rating (1–10 plus N/A), format, venue, and series. Menus overhang their button by 4px per side while keeping option text aligned with the button text, open at natural width (the series menu caps at the table's right edge; viewport overflow clips rather than widening the page), and close when the page or table scrolls.
+- Dropdown filters on date (by month), year (by decade), rating (1–10 plus N/A), format, venue, and series. Menus align visually with their trigger, size to their options, avoid widening the page, and close when the page or table scrolls.
 - Free-text search on title with IME composition support for CJK input.
 - When the table overflows horizontally, edge fades and an opacity-rippling `>>>` cue indicate additional columns; both fade away after the user scrolls horizontally past a small threshold.
 - Rating badges are color-coded circles matching the bar chart palette, with text colors picked from within the same palette family for legible contrast. Unrated films show a grey badge with a horizontally narrowed em dash.
@@ -91,42 +91,12 @@ When the year has fewer than 5 logged films, the masthead and stats row render a
 - Sans font throughout (with Headline for the page title and hero stat values), signature red masthead, black section rules, tabular figures
 - Standalone definition page uses a white article-style layout with serif reading text, drop cap, small caps, and a thin grey headline divider
 - Rating tiles blend translucently with the paper-cream background
-- Liquid glass floating layer: chart tooltips, venue name tips, the log table's filter menus, the year menu panel, and the sticky log table header render as Apple-style translucent glass (warm white tint, backdrop blur and saturation, a masked 1px specular gradient ring, thin curved edge glints, soft warm-umber shadows; one-line tooltips are capsules)
-- Chromium browsers add true edge refraction on top: each glass element gets a runtime-generated SVG displacement map (a signed-distance-field lens that keeps the center optically flat and bends the backdrop outward across a rim band), applied via `backdrop-filter: url()` with three slightly diverging passes recombined per color channel for a prismatic fringe; this tier is gated by engine detection because Safari and Firefox parse but silently ignore SVG filters in `backdrop-filter`
-- Glass degrades gracefully: browsers without backdrop-filter keep the original flat solid design, and `prefers-reduced-transparency` or `prefers-contrast` restore solid, high-contrast surfaces
+- Liquid glass floating layer: chart tooltips, venue name tips, the log table's filter menus, the year menu panel, and the sticky log table header render as translucent glass with soft highlights, subtle depth, and capsule-style one-line tooltips
+- Browsers with advanced backdrop support add a restrained refractive edge treatment; other browsers keep the flatter solid design
+- Reduced-transparency and high-contrast preferences restore solid, high-contrast surfaces
 - Fade-up entrance animations with staggered delays
 - Responsive at 1200 / 1000 / 900 / 800 / 600 / 500px breakpoints
 
-## Data pipeline
+## Data
 
-A GitHub Actions workflow (`.github/workflows/update-data.yml`) runs every 10 minutes, triggered externally by cron-job.org via `workflow_dispatch` (GitHub's own scheduled triggers drift by 5 to 30 minutes on free-tier repos):
-
-1. Downloads `Cinema.xlsx` from Dropbox using OAuth2 refresh token flow
-2. Parses the spreadsheet's sheet `"26"` with the `xlsx` library
-3. Transforms rows into JSON (Excel serial dates → ISO dates, column mapping)
-4. Commits `data.json` if it changed
-
-### Secrets required
-
-| Secret | Purpose |
-|---|---|
-| `DROPBOX_APP_KEY` | Dropbox OAuth2 app key |
-| `DROPBOX_APP_SECRET` | Dropbox OAuth2 app secret |
-| `DROPBOX_REFRESH_TOKEN` | Long-lived refresh token (offline access) |
-
-These are stored as repository secrets in GitHub.
-
-### Running locally
-
-```bash
-export DROPBOX_APP_KEY=...
-export DROPBOX_APP_SECRET=...
-export DROPBOX_REFRESH_TOKEN=...
-node scripts/fetch-and-parse.mjs
-```
-
-To preview the dashboard, serve the repo root with any static server:
-
-```bash
-python3 -m http.server 8000
-```
+The film log is maintained in a personal spreadsheet and exported automatically for the dashboard. Each sync refreshes the current-year data used by the live page, while archived years remain frozen snapshots. Membership fees are tracked separately from per-screening prices, then folded into the total-spending stat and year-over-year comparison logic.
