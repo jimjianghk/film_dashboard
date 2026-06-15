@@ -984,6 +984,83 @@ h1 {
 }
 
 /* FILM TABLE */
+.film-table-shell {
+  position: relative;
+}
+.film-table-shell::before,
+.film-table-shell::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+  z-index: 6;
+}
+.film-table-shell::before {
+  left: 0;
+  background: linear-gradient(90deg, var(--bg) 0%, rgba(235, 233, 220, 0) 100%);
+}
+.film-table-shell::after {
+  right: 0;
+  background: linear-gradient(270deg, var(--bg) 0%, rgba(235, 233, 220, 0) 100%);
+}
+.film-table-shell.scroll-x-left::before,
+.film-table-shell.scroll-x-right::after {
+  opacity: 1;
+}
+.film-table-shell.scroll-x-dismissed::before,
+.film-table-shell.scroll-x-dismissed::after {
+  opacity: 0;
+}
+.table-scroll-cue {
+  position: absolute;
+  top: 30px;
+  right: -13px;
+  line-height: 1;
+  color: var(--text);
+  opacity: 0;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  transition: opacity 0.45s ease;
+  pointer-events: none;
+  z-index: 7;
+}
+.table-scroll-cue span {
+  display: inline-flex;
+  width: 5px;
+  height: 15px;
+  opacity: 0.32;
+}
+.table-scroll-cue svg {
+  display: block;
+  width: 6px;
+  height: 15px;
+  overflow: visible;
+}
+.film-table-shell.scroll-x-right:not(.scroll-x-dismissed) .table-scroll-cue {
+  opacity: 1;
+}
+.film-table-shell.scroll-x-right:not(.scroll-x-dismissed) .table-scroll-cue span {
+  animation: tableScrollCue 1.25s ease-in-out infinite;
+}
+.film-table-shell.scroll-x-right:not(.scroll-x-dismissed) .table-scroll-cue span:nth-child(2) {
+  animation-delay: 0.16s;
+}
+.film-table-shell.scroll-x-right:not(.scroll-x-dismissed) .table-scroll-cue span:nth-child(3) {
+  animation-delay: 0.32s;
+}
+@keyframes tableScrollCue {
+  0%, 70%, 100% {
+    opacity: 0.25;
+  }
+  25% {
+    opacity: 0.95;
+  }
+}
 .film-table-wrap {
   overflow-x: auto;
   max-height: 640px;
@@ -1553,6 +1630,15 @@ footer img.footer-favicon {
   .sparse-note { font-size: 2rem; }
   .year-menu { top: 54px; }
 }
+@media (prefers-reduced-motion: reduce) {
+  .film-table-shell::before,
+  .film-table-shell::after,
+  .table-scroll-cue,
+  .table-scroll-cue span {
+    transition: none !important;
+    animation: none !important;
+  }
+}
 </style>
 </head>
 <body>
@@ -1715,12 +1801,19 @@ footer img.footer-favicon {
 
   <div class="section animate delay-5">
     <div class="chart-label">Complete log<span class="chart-num">9</span></div>
-    <div class="film-table-wrap">
-      <div class="table-glass" aria-hidden="true"><div class="table-glass-pane"></div></div>
-      <table>
-        <thead id="table-head"></thead>
-        <tbody id="table-body"></tbody>
-      </table>
+    <div class="film-table-shell">
+      <div class="film-table-wrap">
+        <div class="table-glass" aria-hidden="true"><div class="table-glass-pane"></div></div>
+        <table>
+          <thead id="table-head"></thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+      <div class="table-scroll-cue" aria-hidden="true">
+        <span><svg viewBox="0 0 6 15"><polyline points="1 1 5 7.5 1 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter"/></svg></span>
+        <span><svg viewBox="0 0 6 15"><polyline points="1 1 5 7.5 1 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter"/></svg></span>
+        <span><svg viewBox="0 0 6 15"><polyline points="1 1 5 7.5 1 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter"/></svg></span>
+      </div>
     </div>
   </div>
 
@@ -3295,13 +3388,13 @@ const activeFilters = {};
 const filterableKeys = ['date', 'year', 'rating', 'format', 'venue', 'series'];
 const columns = [
   { key:'date', label:'Date', w:'7.75%' },
-  { key:'title', label:'Title', w:'23.75%' },
+  { key:'title', label:'Title', w:'23.5%' },
   { key:'year', label:'Year', w:'7.5%' },
   { key:'runtime', label:'Length', w:'6.25%' },
   { key:'rating', label:'Rating', w:'7.5%' },
   { key:'format', label:'Format†', w:'10%' },
   { key:'price', label:'Price‡', w:'7%' },
-  { key:'venue', label:'Venue', w:'7.5%' },
+  { key:'venue', label:'Venue', w:'7.75%' },
   { key:'series', label:'Series', w:'22.75%' }
 ];
 
@@ -3424,6 +3517,23 @@ function syncTableGlass() {
   if (!pane || !head || !tableEl) return;
   pane.style.setProperty('--table-glass-width', tableEl.offsetWidth + 'px');
   pane.style.setProperty('--table-glass-height', head.offsetHeight + 'px');
+}
+
+const TABLE_SCROLL_CUE_DISMISS_PX = 32;
+function updateTableScrollIndicators() {
+  document.querySelectorAll('.film-table-shell').forEach(shell => {
+    const wrap = shell.querySelector('.film-table-wrap');
+    if (!wrap) return;
+    const maxScrollLeft = Math.max(0, wrap.scrollWidth - wrap.clientWidth);
+    const canScrollX = maxScrollLeft > 1;
+    const atStart = wrap.scrollLeft <= 1;
+    const atEnd = wrap.scrollLeft >= maxScrollLeft - 1;
+
+    shell.classList.toggle('scroll-x-overflow', canScrollX);
+    shell.classList.toggle('scroll-x-left', canScrollX && !atStart);
+    shell.classList.toggle('scroll-x-right', canScrollX && !atEnd);
+    if (!canScrollX) shell.classList.remove('scroll-x-dismissed');
+  });
 }
 
 function renderTable() {
@@ -3556,6 +3666,7 @@ function renderTable() {
   }
 
   syncTableGlass();
+  requestAnimationFrame(updateTableScrollIndicators);
 }
 
 function closeAllColFilters() {
@@ -3572,10 +3683,17 @@ window.addEventListener('scroll', closeAllColFilters, { passive: true });
 let tableGlassResizeTimer;
 window.addEventListener('resize', () => {
   clearTimeout(tableGlassResizeTimer);
-  tableGlassResizeTimer = setTimeout(syncTableGlass, 120);
+  tableGlassResizeTimer = setTimeout(() => {
+    syncTableGlass();
+    updateTableScrollIndicators();
+  }, 120);
 });
 document.querySelectorAll('.film-table-wrap').forEach(el => {
-  el.addEventListener('scroll', closeAllColFilters);
+  el.addEventListener('scroll', () => {
+    closeAllColFilters();
+    if (el.scrollLeft >= TABLE_SCROLL_CUE_DISMISS_PX) el.closest('.film-table-shell')?.classList.add('scroll-x-dismissed');
+    updateTableScrollIndicators();
+  });
 });
 
 renderTable();
