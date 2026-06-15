@@ -1472,9 +1472,18 @@ footer img.footer-favicon {
      sample independently and draw a visible seam between the rows. The pane is
      a zero-height sticky element so it pins exactly with the thead; JS keeps
      its size in sync with the header. */
+  /* Transparent so the shared pane behind shows through; position+z-index
+     keeps each header cell above that pane. Safari composites the
+     backdrop-filter pane above header content that isn't layer-promoted (the
+     filter dropdowns survive because each sits in a positioned
+     .col-filter-wrap, but the plain th label cells would be painted over).
+     Chrome/mobile already order it via thead's z-index, so this is a no-op
+     there. */
   th,
   .filter-row-tr td {
     background: transparent;
+    position: relative;
+    z-index: 1;
   }
   .table-glass {
     position: sticky;
