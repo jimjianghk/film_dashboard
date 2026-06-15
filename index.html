@@ -1017,16 +1017,24 @@ h1 {
 }
 .table-scroll-cue {
   position: absolute;
-  top: 30px;
-  right: -13px;
+  top: 0;
+  right: -26px;
+  /* hit target spans the full sticky header (label + filter rows): top:0 plus
+     height from --cue-hit-height (set in JS from the thead height). padding-top
+     pins the chevrons at their original 30px/-13px spot; horizontal padding
+     widens the click target. */
+  height: var(--cue-hit-height, 64px);
+  padding: 30px 13px 0 10px;
   line-height: 1;
   color: var(--text);
   opacity: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 3px;
   transition: opacity 0.45s ease;
   pointer-events: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
   z-index: 7;
 }
 .table-scroll-cue span {
@@ -1043,6 +1051,7 @@ h1 {
 }
 .film-table-shell.scroll-x-right:not(.scroll-x-dismissed) .table-scroll-cue {
   opacity: 1;
+  pointer-events: auto;
 }
 .film-table-shell.scroll-x-right:not(.scroll-x-dismissed) .table-scroll-cue span {
   animation: tableScrollCue 1.25s ease-in-out infinite;
@@ -3517,6 +3526,7 @@ function syncTableGlass() {
   if (!pane || !head || !tableEl) return;
   pane.style.setProperty('--table-glass-width', tableEl.offsetWidth + 'px');
   pane.style.setProperty('--table-glass-height', head.offsetHeight + 'px');
+  wrap.closest('.film-table-shell')?.style.setProperty('--cue-hit-height', head.offsetHeight + 'px');
 }
 
 const TABLE_SCROLL_CUE_DISMISS_PX = 32;
@@ -3693,6 +3703,19 @@ document.querySelectorAll('.film-table-wrap').forEach(el => {
     closeAllColFilters();
     if (el.scrollLeft >= TABLE_SCROLL_CUE_DISMISS_PX) el.closest('.film-table-shell')?.classList.add('scroll-x-dismissed');
     updateTableScrollIndicators();
+  });
+});
+
+// Clicking the cue nudges the table right (~50% of the viewport); crossing the
+// dismiss threshold mid-scroll fades the cue out via the scroll listener above.
+document.querySelectorAll('.table-scroll-cue').forEach(cue => {
+  cue.addEventListener('click', () => {
+    const wrap = cue.closest('.film-table-shell')?.querySelector('.film-table-wrap');
+    if (!wrap) return;
+    const maxScrollLeft = Math.max(0, wrap.scrollWidth - wrap.clientWidth);
+    const step = Math.max(TABLE_SCROLL_CUE_DISMISS_PX + 1, Math.round(wrap.clientWidth * 0.5));
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    wrap.scrollTo({ left: Math.min(maxScrollLeft, wrap.scrollLeft + step), behavior: prefersReduced ? 'auto' : 'smooth' });
   });
 });
 

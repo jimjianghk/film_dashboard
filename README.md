@@ -69,7 +69,7 @@ Sortable, filterable table of every screening. Nine columns: date, title, year, 
 - A "Rewatches only" switch in the Title header filters the table to rewatches.
 - Dropdown filters on date (by month), year (by decade), rating (1–10 plus N/A), format, venue, and series. Menus align visually with their trigger, size to their options, avoid widening the page, and close when the page or table scrolls.
 - Free-text search on title with IME composition support for CJK input.
-- When the table overflows horizontally, edge fades and an opacity-rippling `>>>` cue indicate additional columns; both fade away after the user scrolls horizontally past a small threshold.
+- When the table overflows horizontally, edge fades and an opacity-rippling `>>>` cue indicate additional columns; clicking the cue advances the table to the right, and both fade away after the user scrolls horizontally past a small threshold.
 - Rating badges are color-coded circles matching the bar chart palette, with text colors picked from within the same palette family for legible contrast. Unrated films show a grey badge with a horizontally narrowed em dash.
 - The Format column header carries a dagger that ties to the page footnotes (DCP includes other digital), and the Price column header carries a double dagger (per-row prices exclude membership fees).
 
