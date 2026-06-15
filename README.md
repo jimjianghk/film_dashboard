@@ -75,11 +75,11 @@ Sortable, filterable table of every screening. Nine columns: date, title, year, 
 
 ### Page footnotes
 
-A row of small notes between the log table and the footer carries the asterisk, dagger, and double dagger callouts referenced from the hero "Total spending" stat, the Format column (and the format chart's DCP row), and the Price column header. The notes sit inline, separated by a 25px gap. An underlined "What counts as a screening?" link follows the callouts and opens the standalone definition page.
+A row of small notes between the log table and the footer carries the asterisk, dagger, and double dagger callouts referenced from the hero "Total spending" stat, the Format column (and the format chart's DCP row), and the Price column header. The notes sit inline, separated by a 25px gap.
 
 ### Screening definition page
 
-The `/definition` page explains the counting rules behind the screening totals. It keeps the shared masthead and "Go back" navigation, then switches to a white article-style page with a red sans pre-title, serif headline and body copy, a thin divider rule below the headline, a drop cap, and small-cap treatments for the opening words and short abbreviations.
+The `/definition` page explains the counting rules behind the screening totals. It is reached from a dotted-underline "What's a screening?" link (with a circular info icon) that sits beside the year-on-year comparison toggle below the stats row. The page keeps the shared masthead and "Go back" navigation, then switches to a white article-style page with a red sans pre-title, serif headline and body copy, a thin divider rule below the headline, a drop cap, and small-cap treatments for the opening words and short abbreviations.
 
 ### Sparse mode
 
