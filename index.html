@@ -340,6 +340,7 @@ h1 {
 .chart-card.full { flex-basis: 100%; }
 .switch-label-text { white-space: nowrap; }
 .chart-label {
+  --chart-num-size: 24px;
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
@@ -370,9 +371,9 @@ h1 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 29px;
-  height: 29px;
-  padding: 0 8px;
+  min-width: var(--chart-num-size);
+  height: var(--chart-num-size);
+  padding: 0 6px;
   border: 1.5px solid var(--text);
   transform: translateZ(0);
   backface-visibility: hidden;
@@ -840,7 +841,7 @@ h1 {
   .calendar-header {
     row-gap: 4px;
   }
-  .rating-header > span:first-child { flex: 1 0 calc(100% - 41px); min-width: 0; }
+  .rating-header > span:first-child { flex: 1 0 calc(100% - var(--chart-num-size) - 12px); min-width: 0; }
   .rating-header .chart-num { order: 1; margin-left: 0; }
   .rating-filter-toggle { order: 2; }
   .rating-dedup-toggle { order: 3; margin-left: 6px; }
