@@ -276,7 +276,7 @@ h1 {
   display: inline-flex;
   align-items: center;
   gap: 0.18rem;
-  margin-left: 20px;
+  margin-left: 14px;
   color: var(--text-dimmer);
   font-family: 'Economist Sans', sans-serif;
   font-size: 1rem;
@@ -1631,6 +1631,10 @@ footer img.footer-favicon {
   .container { padding: 0 16px; }
   .venue-grid { grid-template-columns: 1fr; }
   .year-menu { right: 24px; }
+  /* The 16px mobile gutter can't absorb the cue's -26px overhang, so its hit box
+     spilled 10px past the screen edge. Pull the anchor in and trim the right
+     padding by the same amount: the chevrons stay put, the page stops scrolling. */
+  .table-scroll-cue { right: -15px; padding-right: 2px; }
 }
 @media (max-width: 500px) {
   .stats-row { display: grid; grid-template-columns: 0.9fr 1.1fr; column-gap: 0; row-gap: 0; }
