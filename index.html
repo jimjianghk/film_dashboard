@@ -856,6 +856,8 @@ h1 {
   }
 }
 .calendar-header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.calendar-subtitle { flex: 0 0 100%; order: 5; margin: -7px 0 0; }
+@media (max-width: 499px) { .calendar-subtitle { order: 1; margin-bottom: 10px; } }
 @media (min-width: 500px) {
   .rating-filter-toggle,
   .calendar-header .cal-toggle-wrap {
@@ -863,11 +865,13 @@ h1 {
   }
   .calendar-header .cal-toggle-wrap { order: 1; }
   .calendar-header .chart-num { order: 2; }
-  .calendar-legend { order: 3; }
+  .calendar-legend { order: 4; }
+  .calendar-subtitle { order: 3; }
   .calendar-header { flex-wrap: wrap; }
 }
 @media (min-width: 800px) {
   .calendar-header .chart-num { order: 3; }
+  .calendar-subtitle { order: 5; }
   .calendar-legend {
     order: 2;
     flex: 0 0 var(--calendar-legend-width);
@@ -1705,7 +1709,8 @@ footer img.footer-favicon {
 
   <div class="charts-grid">
     <div class="chart-card full animate delay-2">
-      <div class="chart-label">Cumulative screenings<span class="chart-num">1</span></div>
+      <div class="chart-label with-subtitle">Cumulative screenings<span class="chart-num">1</span></div>
+      <div class="chart-subtitle"><span class="chart-subtitle-hover">Hover</span><span class="chart-subtitle-click">Tap</span> on chart for total screenings as of any date</div>
       <div id="cumulative-chart"></div>
     </div>
     <div class="chart-card animate delay-2">
@@ -1741,7 +1746,8 @@ footer img.footer-favicon {
       <div id="decade-chart"></div>
     </div>
     <div class="chart-card full animate delay-3">
-      <div class="chart-label">Screening format<span class="chart-num">4</span></div>
+      <div class="chart-label with-subtitle">Screening format<span class="chart-num">4</span></div>
+      <div class="chart-subtitle"><span class="chart-subtitle-hover">Hover</span><span class="chart-subtitle-click">Tap</span> on bars for format breakdown</div>
       <div id="format-chart"></div>
     </div>
     <div class="chart-card full animate delay-3">
@@ -1762,12 +1768,13 @@ footer img.footer-favicon {
     </div>
     <div class="chart-card full animate delay-3">
       <div class="chart-label with-subtitle">Screening venue<span class="chart-num">6</span></div>
-      <div class="chart-subtitle"><span class="chart-subtitle-hover">Hover</span><span class="chart-subtitle-click">Tap</span> on label to see full venue name</div>
+      <div class="chart-subtitle"><span class="chart-subtitle-hover">Hover</span><span class="chart-subtitle-click">Tap</span> on labels for full venue names</div>
       <div id="venue-chart" class="venue-grid"></div>
     </div>
     <div class="chart-card full animate delay-4">
       <div class="chart-label calendar-header">
         <span>Screening calendar</span>
+        <div class="chart-subtitle calendar-subtitle"><span class="chart-subtitle-hover">Hover</span><span class="chart-subtitle-click">Tap</span> on dates for lists of screenings</div>
         <span class="cal-toggle-wrap">
           <button class="cal-toggle active" id="cal-toggle-screenings"># of screenings</button>
           <button class="cal-toggle" id="cal-toggle-rating">Avg rating</button>
