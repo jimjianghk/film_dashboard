@@ -80,6 +80,7 @@
   --rating-10: 31 46 122;
   --rating-unrated: 126 127 113;
   --rating-unrated-color: rgb(var(--rating-unrated));
+  --rating-unrated-text: #ECEAE2;
 }
 
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -652,6 +653,7 @@ h1 {
 .heatmap-cell.watched-5 { background: #9c1d23; color: #fff; }
 .heatmap-cell.rating-colored { color: var(--text); }
 .heatmap-cell.rating-colored-dark { color: #fff; }
+.heatmap-cell.rating-colored-unrated { color: var(--rating-unrated-text); }
 
 .calendar-legend {
   --calendar-legend-width: 240px;
@@ -1186,7 +1188,7 @@ tbody tr:last-child td { border-bottom: none; }
 .rating-badge.rating-8  { background: rgb(var(--rating-8));  color: #DEE8F8; }
 .rating-badge.rating-9  { background: rgb(var(--rating-9));  color: #D5E1F2; }
 .rating-badge.rating-10 { background: rgb(var(--rating-10)); color: #C9D7E8; }
-.rating-badge.rating-unrated { background: rgb(var(--rating-unrated)); color: #ECEAE2; }
+.rating-badge.rating-unrated { background: rgb(var(--rating-unrated)); color: var(--rating-unrated-text); }
 .rating-badge .em-narrow { display: inline-block; transform: scaleX(0.8); }
 .rewatch-badge {
   display: inline-block;
@@ -3298,13 +3300,13 @@ function applyCalMode() {
     const films = JSON.parse(cell.dataset.films || '[]');
     if (calMode === 'screenings') {
       cell.style.background = '';
-      cell.classList.remove('rating-colored', 'rating-colored-dark');
+      cell.classList.remove('rating-colored', 'rating-colored-dark', 'rating-colored-unrated');
       const cls = films.length >= 5 ? 'watched-5' : films.length === 4 ? 'watched-4' : films.length === 3 ? 'watched-3' : films.length === 2 ? 'watched-2' : films.length === 1 ? 'watched-1' : '';
       cell.classList.remove('watched-1','watched-2','watched-3','watched-4','watched-5');
       if (cls) cell.classList.add(cls);
     } else {
       cell.classList.remove('watched-1','watched-2','watched-3','watched-4','watched-5');
-      cell.classList.remove('rating-colored-dark');
+      cell.classList.remove('rating-colored-dark', 'rating-colored-unrated');
       const rated = ratings.filter(r => r != null);
       if (rated.length > 0) {
         const avg = rated.reduce((a,b) => a+b, 0) / rated.length;
@@ -3314,7 +3316,7 @@ function applyCalMode() {
         if (avg <= 3 || avg >= 8) cell.classList.add('rating-colored-dark');
       } else if (ratings.length > 0) {
         cell.style.background = `rgba(${unratedColor.join(',')},0.75)`;
-        cell.classList.add('rating-colored');
+        cell.classList.add('rating-colored', 'rating-colored-unrated');
       } else {
         cell.style.background = '';
         cell.classList.remove('rating-colored');
