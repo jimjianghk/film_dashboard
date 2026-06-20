@@ -44,6 +44,13 @@ if (window.location.pathname.endsWith('/definition/') || window.location.pathnam
   font-style: normal;
   font-display: swap;
 }
+@font-face {
+  font-family: 'Economist Serif';
+  src: url('fonts/serif-italic.woff2') format('woff2');
+  font-weight: 300 900;
+  font-style: italic;
+  font-display: swap;
+}
 :root {
   --bg: #fff;
   --text: #0d0d0d;
@@ -168,6 +175,27 @@ h1 {
   line-height: 1.75rem;
 }
 
+.screening-rules {
+  margin: 0.875rem 0 0;
+  padding-left: 2rem;
+  list-style-position: outside;
+}
+
+.screening-rules li {
+  margin-bottom: 0.875rem;
+  padding-left: 0;
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+}
+
+.screening-rules li:last-child {
+  margin-bottom: 0;
+}
+
+.screening-rules p {
+  margin-top: 0;
+}
+
 .definition-content .drop-cap {
   float: left;
   font-feature-settings: 'ss08' 1;
@@ -190,7 +218,7 @@ h1 {
 }
 
 .definition-content .final-note {
-  margin-top: 1.75rem;
+  margin-top: 0.875rem;
 }
 
 @media (max-width: 800px) {
@@ -249,12 +277,14 @@ h1 {
         decoding="async">
     </figure>
     <div class="article-divider" aria-hidden="true"></div>
-    <p><span class="drop-cap">T</span><small>he data</small> define “screenings” based on the type of work and the manner of admission. Each of the following items counts as one screening.</p>
-    <p>1. A feature film (40 minutes or longer), including as part of a multi-film block (such as a double feature) with one single admission;</p>
-    <p>2. A short film (shorter than 40 minutes) in a standalone screening with its own admission;</p>
-    <p>3. A shorts program, ie a collection of short films with one single admission;</p>
-    <p>4. A single episode or a multi-episode block of a <small>TV</small> series with one single admission;</p>
-    <p>5. Attendance at part of a long film screened on a loop and/or as an installation.</p>
+    <p><span class="drop-cap">T</span><small>he data</small> define “screenings” based on the type of work and the manner of admission. A feature film (40 minutes or longer) with its own admission naturally counts as a screening. So does each of the following items:</p>
+    <ol class="screening-rules">
+      <li>A feature film as part of a multi-film block (such as a double feature) with one single admission.<p><em>Example: “Moi, un noir” (1958) and “Breathless” (1960) screened at <small>M</small>o<small>MA</small> in November 2025 as a double feature with a single admission, but count as two screenings.</em></p></li>
+      <li>A short film (shorter than 40 minutes) in a standalone screening with its own admission.<p><em>Example: “Psykho III: the Musical” (1985, 24min) screened at <small>M</small>o<small>MA</small> in October 2025 by itself with a single admission, and counts as a screening.</em></p></li>
+      <li>A shorts program, ie a collection of short films with one single admission.</li>
+      <li>A single episode or a multi-episode block of a <small>TV</small> series with one single admission.<p><em>Example: “Twin Peaks” (Season 1, 1990) screened at <small>IFC</small> Center in December 2025 in single- and multi-episode blocks. Each block, such as “Twin Peaks” (Season 1, Episode 1) and “Twin Peaks” (Season 1, Episodes 2 &amp; 3), counts as one screening.</em></p></li>
+      <li>Attendance at part of a very long film screened on a loop and/or as an installation.<p><em>Example: “The Clock” (2010) is a 24-hour film that screened at <small>M</small>o<small>MA</small> 24/7 from November 2024 to May 2025. Each visit to see part of it, such as “The Clock” (10:31–14:08), counts as a screening.</em></p></li>
+    </ol>
     <p class="final-note">A short film screened alongside one or more feature films, with a single admission, does not count as a separate screening (or appear in the data). Neither does a short film screened as an installation.</p>
   </main>
 </div>

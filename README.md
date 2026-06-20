@@ -79,7 +79,7 @@ A row of small notes between the log table and the footer carries the asterisk, 
 
 ### Screening definition page
 
-The `/definition` page explains the counting rules behind the screening totals. It is reached from a dotted-underline "What's a screening?" link (with a circular info icon) that sits beside the year-on-year comparison toggle below the stats row. The page keeps the shared masthead and "Go back" navigation, then switches to a white article-style page with a red sans pre-title, serif headline and body copy, a thin divider rule below the headline, a drop cap, and small-cap treatments for the opening words and short abbreviations.
+The `/definition` page explains the counting rules behind the screening totals. It is reached from a dotted-underline "What's a screening?" link (with a circular info icon) that sits beside the year-on-year comparison toggle below the stats row. The page keeps the shared masthead and "Go back" navigation, then switches to a white article-style page with a red sans pre-title, serif headline and body copy, a thin divider rule below the headline, a drop cap, and small-cap treatments for the opening words and short abbreviations. The counting rules are laid out as a numbered list, most items carrying an italic worked example (double features, standalone shorts, TV blocks, loop or installation visits), with a closing note on what does not count.
 
 ### Sparse mode
 
