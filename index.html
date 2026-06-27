@@ -2960,7 +2960,7 @@ let nextPremiumColorIndex = 0;
   });
 
 function segLabel(b, p, threeD) {
-  if (p === STANDARD_FORMAT_KEY) return threeD ? 'Standard 3D' : 'Standard ' + b;
+  if (p === STANDARD_FORMAT_KEY) return threeD ? 'Standard DCP 3D' : 'Standard ' + b;
   if (p === 'IMAX' && b === '70mm') return 'IMAX 70mm' + (threeD ? ' 3D' : '');
   return PREMIUM_LABEL[p] + (threeD ? ' 3D' : '');
 }
@@ -2989,7 +2989,10 @@ const rowsHtml = bases.map(b => {
     const plain = data.segs[p] || 0;
     const threeD = data.segs[p + '|3D'] || 0;
     if (plain > 0) {
-      out.push(`<div class="format-seg${className}" style="flex:${plain};${colorStyle}" data-label="${segLabel(b, p, false)}" data-count="${plain}"></div>`);
+      const plainLabel = (threeD > 0 && p !== STANDARD_FORMAT_KEY)
+        ? segLabel(b, p, false) + ' 2D'
+        : segLabel(b, p, false);
+      out.push(`<div class="format-seg${className}" style="flex:${plain};${colorStyle}" data-label="${plainLabel}" data-count="${plain}"></div>`);
     }
     if (threeD > 0) {
       out.push(`<div class="format-seg${className} seg-3d" style="flex:${threeD};${colorStyle}" data-label="${segLabel(b, p, true)}" data-count="${threeD}"></div>`);
