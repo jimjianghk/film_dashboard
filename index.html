@@ -194,9 +194,8 @@ h1 {
   justify-content: space-between;
   column-gap: 24px;
   row-gap: 0;
-  margin: 0 0 48px;
+  margin: 0 0 14px;
 }
-.stats-row.has-delta-toggle { margin-bottom: 14px; }
 .stats-row::after {
   content: '';
   width: 0;
@@ -267,12 +266,14 @@ h1 {
 }
 .stat-compare-badge.is-muted { color: var(--text-dim); }
 .stats-compare-toggle {
-  display: none;
+  display: flex;
   align-items: center;
   gap: 6px;
   margin: 0 0 60px;
 }
-.stats-compare-toggle.is-visible { display: flex; }
+.stats-compare-toggle:not(.is-visible) .switch-toggle,
+.stats-compare-toggle:not(.is-visible) .switch-label-text { display: none; }
+.stats-compare-toggle:not(.is-visible) .screening-definition-link { margin-left: 0; }
 .screening-definition-link {
   display: inline-flex;
   align-items: center;
@@ -2259,7 +2260,6 @@ statsRowEl.innerHTML = [
   { val: uniqueVenues, label: uniqueVenues === 1 ? 'NYC venue visited' : 'NYC venues visited', compare: statComparisons.uniqueVenues }
 ].map(s => `<div class="stat-card${s.compare ? ' stat-card-compare-ready' : ''}"><div class="stat-val">${s.val}</div><div class="stat-label">${s.label}</div>${s.compare ? `<div class="stat-compare"><span class="stat-compare-badge${s.compare.isIncrease ? '' : ' is-muted'}">${s.compare.text}</span></div>` : ''}</div>`).join('');
 if (previousStats) {
-  statsRowEl.classList.add('has-delta-toggle');
   statsCompareToggleWrap.classList.add('is-visible');
   statsCompareToggle.checked = false;
   let statCardMoveCleanup = null;
