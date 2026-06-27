@@ -926,6 +926,7 @@ h1 {
   letter-spacing: 0;
   color: var(--text);
 }
+.tooltip-empty { display: inline-flex; align-items: center; min-height: 24px; }
 .tooltip-films { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; }
 .tooltip-film { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; }
 .tooltip-film-name { min-width: 0; white-space: nowrap; }
@@ -3417,7 +3418,7 @@ document.querySelectorAll('.heatmap-cell').forEach(cell => {
     const films = JSON.parse(cell.dataset.films || '[]');
     const ratings = JSON.parse(cell.dataset.ratings || '[]');
     if (films.length === 0) {
-      document.getElementById('tt-title').innerHTML = '<span style="color:var(--text-dim)">' + (date === todayStr ? 'Awaiting data' : 'No screenings') + '</span>';
+      document.getElementById('tt-title').innerHTML = '<span class="tooltip-empty" style="color:var(--text-dim)">' + (date === todayStr ? 'Awaiting data' : 'No screenings') + '</span>';
       document.getElementById('tt-meta').textContent = new Date(date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
     } else {
       document.getElementById('tt-title').innerHTML = `<span class="tooltip-films">${films.map((f,i) => {
