@@ -896,7 +896,8 @@ h1 {
 /* TOOLTIP */
 /* Tooltip variant of .rating-badge: only overrides what differs from the base. */
 .rating-badge.tt-rating-badge {
-  margin-left: 6px;
+  flex: 0 0 auto;
+  margin-left: 0;
   vertical-align: 0;
 }
 .tooltip {
@@ -906,7 +907,9 @@ h1 {
   padding: 10px 14px;
   border-radius: 0;
   font-size: 1rem;
-  max-width: none;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: calc(100vw - 16px);
   white-space: nowrap;
   pointer-events: none;
   z-index: 10000;
@@ -918,10 +921,20 @@ h1 {
   font-family: 'Economist Sans', sans-serif;
   font-weight: 500;
   font-size: 1rem;
-  line-height: 25px;
+  line-height: 1.15;
   margin-bottom: 4px;
   letter-spacing: 0;
   color: var(--text);
+}
+.tooltip-films { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; }
+.tooltip-film { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; }
+.tooltip-film-name { min-width: 0; white-space: nowrap; }
+.tooltip.is-constrained .tooltip-films { gap: 6px; }
+.tooltip.is-constrained .tooltip-film-name {
+  max-width: calc(100vw - 76px);
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+  white-space: normal;
 }
 .tooltip-meta {
   color: var(--text-dim);
@@ -3339,6 +3352,52 @@ document.getElementById('cal-toggle-rating').addEventListener('click', () => {
 });
 
 const tooltip = document.getElementById('tooltip');
+function escapeTooltipText(text) {
+  return String(text).replace(/[&<>]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]));
+}
+function constrainCalendarTooltip() {
+  tooltip.classList.remove('is-constrained');
+  const names = Array.from(tooltip.querySelectorAll('.tooltip-film-name'));
+  names.forEach(name => { name.style.maxWidth = ''; name.style.width = ''; });
+  const fullWidths = new Map(names.map(name => [name, name.scrollWidth]));
+
+  const tooltipStyle = getComputedStyle(tooltip);
+  const padX = parseFloat(tooltipStyle.paddingLeft) + parseFloat(tooltipStyle.paddingRight);
+  const borderX = parseFloat(tooltipStyle.borderLeftWidth) + parseFloat(tooltipStyle.borderRightWidth);
+  const maxContentWidth = window.innerWidth - 16 - padX - borderX;
+  const constrainedNames = [];
+
+  tooltip.querySelectorAll('.tooltip-film').forEach(row => {
+    const name = row.querySelector('.tooltip-film-name');
+    const badge = row.querySelector('.tt-rating-badge');
+    if (!name || !badge) return;
+
+    const gap = parseFloat(getComputedStyle(row).columnGap) || 0;
+    const maxNameWidth = Math.max(80, maxContentWidth - badge.offsetWidth - gap);
+    const fullWidth = fullWidths.get(name);
+    if (fullWidth <= maxNameWidth) return;
+
+    const lineCount = Math.ceil(fullWidth / maxNameWidth);
+    name.style.maxWidth = Math.ceil(Math.min(maxNameWidth, fullWidth / lineCount * 1.08)) + 'px';
+    constrainedNames.push(name);
+  });
+
+  if (!constrainedNames.length) return;
+  tooltip.classList.add('is-constrained');
+
+  // The wrapped name keeps its full max-width box, which is wider than the
+  // actual text, so the vertically-centered badge floats far to its right.
+  // Narrow each name to the width of its widest line (max-width still caps it,
+  // so wrapping never changes) so the badge keeps the same small gap as a
+  // single-line title.
+  constrainedNames.forEach(name => {
+    const range = document.createRange();
+    range.selectNodeContents(name);
+    let widest = 0;
+    for (const rect of range.getClientRects()) widest = Math.max(widest, rect.width);
+    if (widest) name.style.width = Math.ceil(widest) + 'px';
+  });
+}
 function ttRatingBadge(rating) {
   if (rating == null) return `<span class="rating-badge tt-rating-badge rating-unrated"><span class="em-narrow">—</span></span>`;
   return `<span class="rating-badge tt-rating-badge rating-${rating}">${rating}</span>`;
@@ -3358,14 +3417,15 @@ document.querySelectorAll('.heatmap-cell').forEach(cell => {
       document.getElementById('tt-title').innerHTML = '<span style="color:var(--text-dim)">' + (date === todayStr ? 'Awaiting data' : 'No screenings') + '</span>';
       document.getElementById('tt-meta').textContent = new Date(date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
     } else {
-      document.getElementById('tt-title').innerHTML = films.map((f,i) => {
-        const safe = f.replace(/</g,'&lt;');
-        return safe + ttRatingBadge(ratings[i]);
-      }).join('<br>');
+      document.getElementById('tt-title').innerHTML = `<span class="tooltip-films">${films.map((f,i) => {
+        const safe = escapeTooltipText(f);
+        return `<span class="tooltip-film"><span class="tooltip-film-name">${safe}</span>${ttRatingBadge(ratings[i])}</span>`;
+      }).join('')}</span>`;
       document.getElementById('tt-meta').textContent = new Date(date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
     }
     tooltip.style.borderColor = films.length === 0 ? 'var(--border-strong)' : 'var(--accent)';
     tooltip.style.display = 'block';
+    constrainCalendarTooltip();
     const r = cell.getBoundingClientRect();
     let left = r.left - 4;
     const ttWidth = tooltip.offsetWidth;
