@@ -28,10 +28,10 @@ jobs:
 
       - name: Commit if changed
         run: |
-          git diff --quiet data.json && exit 0
+          git diff --quiet data/data.json && exit 0
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          FILM_COUNT=$(node -e "console.log(JSON.parse(require('fs').readFileSync('data.json')).films.length)")
-          git add data.json
+          FILM_COUNT=$(node -e "console.log(JSON.parse(require('fs').readFileSync('data/data.json')).films.length)")
+          git add data/data.json
           git commit -m "Update film data: ${FILM_COUNT} films"
           git push
