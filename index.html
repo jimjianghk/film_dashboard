@@ -652,6 +652,8 @@ h1 {
 .heatmap-cell.watched-3 { background: #dc5a3e; color: #fff; }
 .heatmap-cell.watched-4 { background: #d8232a; color: #fff; }
 .heatmap-cell.watched-5 { background: #9c1d23; color: #fff; }
+.heatmap-cell.runtime-colored { color: var(--text); }
+.heatmap-cell.runtime-colored-dark { color: #fff; }
 .heatmap-cell.rating-colored { color: var(--text); }
 .heatmap-cell.rating-colored-dark { color: #fff; }
 .heatmap-cell.rating-colored-unrated { color: var(--rating-unrated-text); }
@@ -701,6 +703,9 @@ h1 {
 .calendar-legend-block:nth-child(3) { background: #dc5a3e; }
 .calendar-legend-block:nth-child(4) { background: #d8232a; }
 .calendar-legend-block:nth-child(5) { background: #9c1d23; }
+.calendar-legend-runtime-scale {
+  opacity: 0;
+}
 .calendar-legend-rating-scale {
   background: var(--calendar-rating-gradient);
   opacity: 0;
@@ -730,6 +735,11 @@ h1 {
 .calendar-legend-labels span:last-child { margin-right: -0.04em; }
 .calendar-legend-screenings-labels span:first-child { color: #b98c7f; }
 .calendar-legend-screenings-labels span:last-child { color: #9c1d23; }
+.calendar-legend-runtime-labels {
+  opacity: 0;
+}
+.calendar-legend-runtime-labels span:first-child { color: #b98c7f; }
+.calendar-legend-runtime-labels span:last-child { color: #9c1d23; }
 .calendar-legend-rating-labels {
   opacity: 0;
 }
@@ -763,14 +773,22 @@ h1 {
   text-align: center;
   width: 48px;
 }
-.calendar-header.calendar-rating-mode .calendar-legend-screenings-scale {
+.calendar-header.calendar-rating-mode .calendar-legend-screenings-scale,
+.calendar-header.calendar-runtime-mode .calendar-legend-screenings-scale {
   opacity: 0;
+}
+.calendar-header.calendar-runtime-mode .calendar-legend-runtime-scale {
+  opacity: 1;
 }
 .calendar-header.calendar-rating-mode .calendar-legend-rating-scale {
   opacity: 1;
 }
-.calendar-header.calendar-rating-mode .calendar-legend-screenings-labels {
+.calendar-header.calendar-rating-mode .calendar-legend-screenings-labels,
+.calendar-header.calendar-runtime-mode .calendar-legend-screenings-labels {
   opacity: 0;
+}
+.calendar-header.calendar-runtime-mode .calendar-legend-runtime-labels {
+  opacity: 1;
 }
 .calendar-header.calendar-rating-mode .calendar-legend-rating-labels {
   opacity: 1;
@@ -873,7 +891,7 @@ h1 {
   .calendar-subtitle { order: 3; }
   .calendar-header { flex-wrap: wrap; }
 }
-@media (min-width: 800px) {
+@media (min-width: 900px) {
   .calendar-header .chart-num { order: 3; }
   .calendar-subtitle { order: 5; }
   .calendar-legend {
@@ -881,8 +899,13 @@ h1 {
     flex: 0 0 var(--calendar-legend-width);
     align-items: flex-start;
     justify-content: flex-start;
-    margin: 0 0 0 16px;
-    transform: translateY(10px);
+    /* Trim the legend's margin-box by 2px top/bottom so it never exceeds the
+       title's 30px line height; otherwise the taller legend inflates the
+       shared flex line and the centered title drifts down a couple px when the
+       legend joins this row at the breakpoint. translateY compensates the 2px
+       so the legend itself stays put visually. */
+    margin: -2px 0 -2px 16px;
+    transform: translateY(12px);
   }
   .calendar-header.calendar-has-unrated-days .calendar-legend {
     flex-basis: calc(var(--calendar-legend-width) + var(--calendar-legend-unrated-gap) + var(--calendar-legend-unrated-width));
@@ -1798,6 +1821,7 @@ footer img.footer-favicon {
         <div class="chart-subtitle calendar-subtitle"><span class="chart-subtitle-hover">Hover</span><span class="chart-subtitle-click">Tap</span> on dates for lists of screenings</div>
         <span class="cal-toggle-wrap">
           <button class="cal-toggle active" id="cal-toggle-screenings"># of screenings</button>
+          <button class="cal-toggle" id="cal-toggle-runtime">Total runtime</button>
           <button class="cal-toggle" id="cal-toggle-rating">Avg rating</button>
         </span>
         <span class="chart-num">7</span>
@@ -1811,12 +1835,17 @@ footer img.footer-favicon {
                 <span class="calendar-legend-block"></span>
                 <span class="calendar-legend-block"></span>
               </span>
+              <span class="calendar-legend-scale calendar-legend-runtime-scale"></span>
               <span class="calendar-legend-scale calendar-legend-rating-scale"></span>
             </span>
             <span class="calendar-legend-label-wrap">
               <span class="calendar-legend-labels calendar-legend-screenings-labels">
                 <span>1 screening</span>
                 <span>5 or more</span>
+              </span>
+              <span class="calendar-legend-labels calendar-legend-runtime-labels">
+                <span class="calendar-legend-runtime-min"></span>
+                <span class="calendar-legend-runtime-max"></span>
               </span>
               <span class="calendar-legend-labels calendar-legend-rating-labels">
                 <span>Rated 1</span>
@@ -3248,7 +3277,8 @@ months.forEach(m => {
     } else {
       if (films.length > 0 && films.every(f => f.rating == null)) hasUnratedCalendarDay = true;
       const cls = films.length >= 5 ? 'watched-5' : films.length === 4 ? 'watched-4' : films.length === 3 ? 'watched-3' : films.length === 2 ? 'watched-2' : films.length === 1 ? 'watched-1' : '';
-      html += `<div class="heatmap-cell ${cls}" data-date="${ds}" data-films='${JSON.stringify(films.map(f=>f.title)).replace(/'/g,"&#39;")}' data-ratings='${JSON.stringify(films.map(f=>f.rating)).replace(/'/g,"&#39;")}'>${d}</div>`;
+      const dayRuntime = films.reduce((sum,f) => sum + (f.runtime || 0), 0);
+      html += `<div class="heatmap-cell ${cls}" data-date="${ds}" data-runtime="${dayRuntime}" data-films='${JSON.stringify(films.map(f=>f.title)).replace(/'/g,"&#39;")}' data-ratings='${JSON.stringify(films.map(f=>f.rating)).replace(/'/g,"&#39;")}'>${d}</div>`;
     }
   }
   html += '</div>';
@@ -3293,9 +3323,46 @@ function avgRatingColor(avg) {
   if (lo === 5 && hi === 6) return fiveSixBridgeColor(t);
   return ratingColors[lo].map((v,i) => Math.round(lerp(v, ratingColors[hi][i], t)));
 }
+// Total daily runtime reuses the # of screenings palette, but interpolated
+// into a continuous spectrum. The domain is fixed so the color-to-runtime
+// mapping stays consistent across years: 1h or shorter gets the lightest
+// color, 7h or longer the darkest, and anything outside clamps to the ends.
+// (Daily totals across all years span ~24 to ~510 minutes.)
+const runtimePalette = [
+  [240, 196, 180], // #f0c4b4
+  [230, 143, 121], // #e68f79
+  [220, 90, 62],   // #dc5a3e
+  [216, 35, 42],   // #d8232a
+  [156, 29, 35],   // #9c1d23
+];
+const RUNTIME_MIN = 60;
+const RUNTIME_MAX = 420;
+function runtimeColor(total) {
+  const t = Math.max(0, Math.min(1, (total - RUNTIME_MIN) / (RUNTIME_MAX - RUNTIME_MIN)));
+  const seg = t * (runtimePalette.length - 1);
+  const lo = Math.floor(seg), hi = Math.min(lo + 1, runtimePalette.length - 1);
+  const f = seg - lo;
+  return runtimePalette[lo].map((v, i) => Math.round(lerp(v, runtimePalette[hi][i], f)));
+}
+
 const calendarHeader = document.querySelector('.calendar-header');
 const calendarRatingLegendScale = document.querySelector('.calendar-legend-rating-scale');
 const rgbaString = (rgb, alpha) => `rgba(${rgb.join(',')},${alpha})`;
+const calendarRuntimeLegendScale = document.querySelector('.calendar-legend-runtime-scale');
+if (calendarRuntimeLegendScale) {
+  const runtimeStops = [];
+  const stopCount = 36;
+  for (let i = 0; i <= stopCount; i++) {
+    const pct = (i / stopCount) * 100;
+    const total = RUNTIME_MIN + (RUNTIME_MAX - RUNTIME_MIN) * i / stopCount;
+    runtimeStops.push(`rgb(${runtimeColor(total).join(',')}) ${pct}%`);
+  }
+  calendarRuntimeLegendScale.style.background = `linear-gradient(to right, ${runtimeStops.join(',')})`;
+  const minLabel = document.querySelector('.calendar-legend-runtime-min');
+  const maxLabel = document.querySelector('.calendar-legend-runtime-max');
+  if (minLabel) minLabel.textContent = '1h or shorter';
+  if (maxLabel) maxLabel.textContent = '7h or longer';
+}
 if (calendarRatingLegendScale) {
   const ratingStops = [];
   const stopCount = 36;
@@ -3308,6 +3375,7 @@ if (calendarRatingLegendScale) {
 }
 let calMode = 'screenings';
 function syncCalendarLegend() {
+  calendarHeader.classList.toggle('calendar-runtime-mode', calMode === 'runtime');
   calendarHeader.classList.toggle('calendar-rating-mode', calMode === 'rating');
   calendarHeader.classList.toggle('calendar-has-unrated-days', hasUnratedCalendarDay);
 }
@@ -3317,11 +3385,26 @@ function applyCalMode() {
     const films = JSON.parse(cell.dataset.films || '[]');
     if (calMode === 'screenings') {
       cell.style.background = '';
-      cell.classList.remove('rating-colored', 'rating-colored-dark', 'rating-colored-unrated');
+      cell.classList.remove('rating-colored', 'rating-colored-dark', 'rating-colored-unrated', 'runtime-colored', 'runtime-colored-dark');
       const cls = films.length >= 5 ? 'watched-5' : films.length === 4 ? 'watched-4' : films.length === 3 ? 'watched-3' : films.length === 2 ? 'watched-2' : films.length === 1 ? 'watched-1' : '';
       cell.classList.remove('watched-1','watched-2','watched-3','watched-4','watched-5');
       if (cls) cell.classList.add(cls);
+    } else if (calMode === 'runtime') {
+      cell.classList.remove('watched-1','watched-2','watched-3','watched-4','watched-5');
+      cell.classList.remove('rating-colored', 'rating-colored-dark', 'rating-colored-unrated');
+      if (films.length > 0) {
+        const total = Number(cell.dataset.runtime || 0);
+        const [r,g,b] = runtimeColor(total);
+        cell.style.background = `rgb(${r},${g},${b})`;
+        cell.classList.add('runtime-colored');
+        const t = (total - RUNTIME_MIN) / (RUNTIME_MAX - RUNTIME_MIN);
+        cell.classList.toggle('runtime-colored-dark', t >= 0.5);
+      } else {
+        cell.style.background = '';
+        cell.classList.remove('runtime-colored', 'runtime-colored-dark');
+      }
     } else {
+      cell.classList.remove('runtime-colored', 'runtime-colored-dark');
       cell.classList.remove('watched-1','watched-2','watched-3','watched-4','watched-5');
       cell.classList.remove('rating-colored-dark', 'rating-colored-unrated');
       const rated = ratings.filter(r => r != null);
@@ -3342,18 +3425,19 @@ function applyCalMode() {
   });
   syncCalendarLegend();
 }
-document.getElementById('cal-toggle-screenings').addEventListener('click', () => {
-  calMode = 'screenings';
-  document.getElementById('cal-toggle-screenings').classList.add('active');
-  document.getElementById('cal-toggle-rating').classList.remove('active');
+const calToggles = {
+  screenings: document.getElementById('cal-toggle-screenings'),
+  runtime: document.getElementById('cal-toggle-runtime'),
+  rating: document.getElementById('cal-toggle-rating'),
+};
+function setCalMode(mode) {
+  calMode = mode;
+  Object.entries(calToggles).forEach(([m, btn]) => btn.classList.toggle('active', m === mode));
   applyCalMode();
-});
-document.getElementById('cal-toggle-rating').addEventListener('click', () => {
-  calMode = 'rating';
-  document.getElementById('cal-toggle-rating').classList.add('active');
-  document.getElementById('cal-toggle-screenings').classList.remove('active');
-  applyCalMode();
-});
+}
+calToggles.screenings.addEventListener('click', () => setCalMode('screenings'));
+calToggles.runtime.addEventListener('click', () => setCalMode('runtime'));
+calToggles.rating.addEventListener('click', () => setCalMode('rating'));
 
 const tooltip = document.getElementById('tooltip');
 function escapeTooltipText(text) {
