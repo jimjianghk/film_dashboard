@@ -1915,6 +1915,19 @@ let DATA_FILES_BY_YEAR = {
 };
 let DEFAULT_DASHBOARD_YEAR = '2026';
 const yearMenuUrlForYear = year => year === DEFAULT_DASHBOARD_YEAR ? './' : `?${year}`;
+const setDashboardYearShell = year => {
+  document.title = `Jim’s ${year} Cinema Log`;
+  document.querySelector('meta[property="og:title"]')?.setAttribute('content', `Jim’s ${year} Cinema Log`);
+  document.querySelector('meta[name="twitter:title"]')?.setAttribute('content', `Jim’s ${year} Cinema Log`);
+  document.querySelector('meta[property="og:url"]')?.setAttribute('content', year === DEFAULT_DASHBOARD_YEAR ? 'https://jimsfilms.nyc/' : `https://jimsfilms.nyc/?${year}`);
+  document.querySelector('h1').textContent = `${year} in cinema`;
+};
+const setCurrentYearMenuItem = year => {
+  document.querySelectorAll('.year-menu-panel a').forEach(a => {
+    if (a.dataset.year === year) a.setAttribute('aria-current', 'page');
+    else a.removeAttribute('aria-current');
+  });
+};
 const normalizeDashboardManifest = manifest => {
   const years = manifest?.years && typeof manifest.years === 'object' ? manifest.years : null;
   if (!years) throw new Error('Invalid dashboard manifest');
@@ -1932,13 +1945,14 @@ function getRequestedDashboardYear() {
   const requestedYear = paramYear || bareYear;
   return DATA_FILES_BY_YEAR[requestedYear] ? requestedYear : DEFAULT_DASHBOARD_YEAR;
 }
-let requestedDashboardYear = DEFAULT_DASHBOARD_YEAR;
+let requestedDashboardYear = getRequestedDashboardYear();
 let dataFile = DATA_FILES_BY_YEAR[requestedDashboardYear];
 let dashboardYears = Object.keys(DATA_FILES_BY_YEAR).sort((a, b) => Number(a) - Number(b));
 let earliestDashboardYear = dashboardYears[0];
 let previousDashboardYear = dashboardYears[dashboardYears.indexOf(requestedDashboardYear) - 1];
 const yearMenuButton = document.getElementById('year-menu-button');
 const yearMenuPanel = document.getElementById('year-menu-panel');
+setDashboardYearShell(requestedDashboardYear);
 const dashboardConfigPromise = fetch('data/manifest.json', { cache: 'no-store' })
   .then(r => {
     if (!r.ok) throw new Error(`Dashboard manifest request failed: ${r.status}`);
@@ -1960,6 +1974,8 @@ const dashboardConfigPromise = fetch('data/manifest.json', { cache: 'no-store' }
     yearMenuPanel.innerHTML = [...dashboardYears].reverse()
       .map(year => `<a href="${yearMenuUrlForYear(year)}" data-year="${year}">${year}</a>`)
       .join('');
+    setDashboardYearShell(requestedDashboardYear);
+    setCurrentYearMenuItem(requestedDashboardYear);
   });
 let yearMenuCloseTimer;
 const setYearMenuOpen = open => {
@@ -2215,15 +2231,8 @@ const lastDate = filmDatesForRange[filmDatesForRange.length - 1];
 const fmtDate = ds => new Date(ds+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
 const dashYear = firstDate.slice(0,4);
 const isCurrentDashboardYear = dashYear === DEFAULT_DASHBOARD_YEAR;
-document.title = `Jim’s ${dashYear} Cinema Log`;
-document.querySelector('meta[property="og:title"]')?.setAttribute('content', `Jim’s ${dashYear} Cinema Log`);
-document.querySelector('meta[name="twitter:title"]')?.setAttribute('content', `Jim’s ${dashYear} Cinema Log`);
-document.querySelector('meta[property="og:url"]')?.setAttribute('content', dashYear === DEFAULT_DASHBOARD_YEAR ? 'https://jimsfilms.nyc/' : `https://jimsfilms.nyc/?${dashYear}`);
-document.querySelector('h1').textContent = `${dashYear} in cinema`;
-document.querySelectorAll('.year-menu-panel a').forEach(a => {
-  if (a.dataset.year === dashYear) a.setAttribute('aria-current', 'page');
-  else a.removeAttribute('aria-current');
-});
+setDashboardYearShell(dashYear);
+setCurrentYearMenuItem(dashYear);
 const getTodayStrInNewYork = () => {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/New_York',
