@@ -1,4 +1,4 @@
-# Jim's 2026 Cinema Log
+# Jim's Cinema Log
 
 A single-page dashboard that visualizes a year of filmgoing in New York City. Built with vanilla HTML, CSS, and JavaScript, with no frameworks or charting libraries.
 
@@ -6,15 +6,15 @@ Data is sourced from a personal spreadsheet on Dropbox and synced by a manually 
 
 ## Dashboard
 
-The dashboard is driven by the film log and membership-fee total exported from the source spreadsheet. Archive views load frozen snapshots for past years while keeping the current dashboard design, so the same stats, charts, filters, and New releases / Repertory logic remain available across years.
+The dashboard is driven by the film log and membership-fee total exported from the source spreadsheet. Year-specific data files are listed in `data/manifest.json`; archive views load frozen snapshots for past years while keeping the current dashboard design, so the same stats, charts, filters, and New releases / Repertory logic remain available across years.
 
 ### Archive views
 
-Past years are data archives, not design archives. A year menu in the top-right corner links between every available year. The dashboard year is inferred from the loaded film data, so archive views keep current-year behavior while capping time-based chart, calendar, and stat views at December 31 of the archived year.
+Past years are data archives, not design archives. A year menu in the top-right corner links between every year listed in the data manifest. The dashboard year is inferred from the loaded film data, so archive views keep current-year behavior while capping time-based chart, calendar, and stat views at December 31 of the archived year.
 
 ### Masthead
 
-Red *The Economist*-style masthead above an uppercase Headline font title ("2026 in cinema"), tucked tight against an oversized light-weight Headline font subtitle ("{first screening date}–{end date} · New York City"). Current-year end dates follow the same data-day rule as the cumulative chart's marker line: today in New York if a film is logged today, otherwise yesterday. Archive end dates use the last screening date in the archive.
+Red *The Economist*-style masthead above an uppercase Headline font title ("{year} in cinema"), tucked tight against an oversized light-weight Headline font subtitle ("{first screening date}–{end date} · New York City"). Current-year end dates follow the same data-day rule as the cumulative chart's marker line: today in New York if a film is logged today, otherwise yesterday. Archive end dates use the last screening date in the archive.
 
 During June, a slim five-stripe pride accent in a softened rainbow palette extends from the right edge of the masthead without shrinking the logo. The accent is gated on the browser's real current month in New York time, independent of the dashboard year or its data. On page load the stripes drop into place one at a time, left to right, using the same easing as the page's entrance animations; the cascade is disabled for users who prefer reduced motion.
 
@@ -100,4 +100,4 @@ When the year has fewer than 5 logged films, the masthead and stats row render a
 
 ## Data
 
-The film log is maintained in a personal spreadsheet and exported by a GitHub Actions workflow that can be run manually or triggered on a schedule from cron-job.org. Each sync refreshes the current-year data used by the live page, while archived years remain frozen snapshots. Membership fees are tracked separately from per-screening prices, then folded into the total-spending stat and year-over-year comparison logic.
+The film log is maintained in a personal spreadsheet and exported by a GitHub Actions workflow that can be run manually or triggered on a schedule from cron-job.org. Each sync checks the current year in New York time, looks for that two-digit spreadsheet sheet, and falls back to the previous year until the new sheet has at least one dated film row. The updater writes `data/data-<year>.json` directly and refreshes `data/manifest.json`, so the previous year remains the archive as soon as the new year takes over. Membership fees are tracked separately from per-screening prices, then folded into the total-spending stat and year-over-year comparison logic.

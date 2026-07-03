@@ -1,9 +1,32 @@
-import { writeFileSync } from 'fs';
+import { readdirSync, writeFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const OUTPUT = resolve(__dirname, '..', 'data', 'data.json');
+const DATA_DIR = resolve(__dirname, '..', 'data');
+const MANIFEST_OUTPUT = resolve(DATA_DIR, 'manifest.json');
+
+const getCurrentYearInNewYork = () => Number(new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/New_York',
+  year: 'numeric',
+}).format(new Date()));
+
+const sheetNameForYear = year => String(year % 100).padStart(2, '0');
+
+const getExistingDataYears = () => readdirSync(DATA_DIR)
+  .flatMap(file => {
+    const match = file.match(/^data-(\d{4})\.json$/);
+    return match ? [match[1]] : [];
+  });
+
+const buildManifest = activeYear => {
+  const years = [...new Set([...getExistingDataYears(), String(activeYear)])]
+    .sort((a, b) => Number(a) - Number(b));
+  return {
+    defaultYear: String(activeYear),
+    years: Object.fromEntries(years.map(year => [year, `data/data-${year}.json`])),
+  };
+};
 
 const { DROPBOX_APP_KEY, DROPBOX_APP_SECRET, DROPBOX_REFRESH_TOKEN } = process.env;
 if (!DROPBOX_APP_KEY || !DROPBOX_APP_SECRET || !DROPBOX_REFRESH_TOKEN) {
@@ -42,15 +65,23 @@ if (!dlRes.ok) {
 }
 const xlsxBuffer = Buffer.from(await dlRes.arrayBuffer());
 
-// 3. Parse sheet "26"
+// 3. Parse the current New York year, falling back until the new sheet exists.
 const XLSX = (await import('xlsx')).default;
 const workbook = XLSX.read(xlsxBuffer, { type: 'buffer' });
-const sheet = workbook.Sheets['26'];
-if (!sheet) {
-  console.error('Sheet "26" not found. Available:', workbook.SheetNames);
+const getRowsForYear = year => {
+  const sheet = workbook.Sheets[sheetNameForYear(year)];
+  return sheet ? XLSX.utils.sheet_to_json(sheet, { header: 1 }) : null;
+};
+const hasFilmRows = rows => rows?.some(r => r && typeof r[0] === 'number' && r[1]);
+const currentYear = getCurrentYearInNewYork();
+const activeYear = [currentYear, currentYear - 1].find(year => hasFilmRows(getRowsForYear(year)));
+if (!activeYear) {
+  const expectedSheets = [currentYear, currentYear - 1].map(sheetNameForYear).join('" or "');
+  console.error(`Sheet "${expectedSheets}" not found with film rows. Available:`, workbook.SheetNames);
   process.exit(1);
 }
-const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+const rows = getRowsForYear(activeYear);
+const activeSheetName = sheetNameForYear(activeYear);
 const excelEpochMs = Date.UTC(1899, 11, 30);
 const excelSerialDateToDateString = serial => new Date(excelEpochMs + serial * 86400000).toISOString().slice(0, 10);
 
@@ -59,7 +90,7 @@ const films = [];
 let membershipFees = 0;
 for (const r of rows) {
   if (r && typeof r[16] === 'number') membershipFees += r[16];
-  if (!r || !r[1]) continue;
+  if (!r || typeof r[0] !== 'number' || !r[1]) continue;
 
   films.push({
     date: excelSerialDateToDateString(r[0]),
@@ -77,6 +108,8 @@ for (const r of rows) {
 
 films.sort((a, b) => a.date.localeCompare(b.date));
 
-// 5. Write data.json
-writeFileSync(OUTPUT, JSON.stringify({ films, membershipFees }));
-console.log(`Wrote ${films.length} films and $${membershipFees} membership fees to data.json`);
+// 5. Write year-specific data and the site manifest.
+const output = resolve(DATA_DIR, `data-${activeYear}.json`);
+writeFileSync(output, JSON.stringify({ films, membershipFees }));
+writeFileSync(MANIFEST_OUTPUT, `${JSON.stringify(buildManifest(activeYear), null, 2)}\n`);
+console.log(`Wrote ${films.length} films and $${membershipFees} membership fees from sheet "${activeSheetName}" to data-${activeYear}.json`);

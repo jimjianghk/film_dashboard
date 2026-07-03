@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; font-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'; frame-src 'none'; worker-src 'none'; script-src 'self' 'unsafe-inline'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'">
-<title>Jim’s 2026 Cinema Log</title>
+<title>Jim’s Cinema Log</title>
 <link rel="icon" href="assets/favicon.ico?v=2" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png?v=2">
 <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png?v=2">
@@ -14,13 +14,13 @@
 <link rel="preload" href="fonts/sans-headline.woff2" as="font" type="font/woff2" crossorigin>
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://jimsfilms.nyc/">
-<meta property="og:title" content="Jim’s 2026 Cinema Log">
+<meta property="og:title" content="Jim’s Cinema Log">
 <meta property="og:description" content="A year of moviegoing in New York City.">
 <meta property="og:image" content="https://jimsfilms.nyc/assets/masthead_large.png">
 <meta property="og:image:width" content="1717">
 <meta property="og:image:height" content="902">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Jim’s 2026 Cinema Log">
+<meta name="twitter:title" content="Jim’s Cinema Log">
 <meta name="twitter:description" content="A year of moviegoing in New York City.">
 <meta name="twitter:image" content="https://jimsfilms.nyc/assets/masthead_large.png">
 <script>
@@ -1721,10 +1721,6 @@ footer img.footer-favicon {
     <span>year</span>
   </button>
   <nav class="year-menu-panel" id="year-menu-panel" aria-label="Cinema log archive" aria-hidden="true" inert>
-    <a href="./" data-year="2026">2026</a>
-    <a href="?2025" data-year="2025">2025</a>
-    <a href="?2024" data-year="2024">2024</a>
-    <a href="?2023" data-year="2023">2023</a>
   </nav>
 </div>
 
@@ -1735,7 +1731,7 @@ footer img.footer-favicon {
       <span class="header-pride-stripes" aria-hidden="true"><span class="header-pride-stripe"></span><span class="header-pride-stripe"></span><span class="header-pride-stripe"></span><span class="header-pride-stripe"></span><span class="header-pride-stripe"></span></span>
     </div>
     <div class="header-label">Cinema Log</div>
-    <h1>2026 in cinema</h1>
+    <h1>Cinema Log</h1>
     <div class="header-divider"><span class="header-diamond"></span></div>
     <div class="header-date" id="date-range"></div>
   </header>
@@ -1902,14 +1898,33 @@ if (window.location.pathname.endsWith('/index.html')) {
   window.history.replaceState(null, '', `${cleanPath}${window.location.search}${window.location.hash}`);
 }
 
-const DATA_FILES_BY_YEAR = {
-  '2026': 'data/data.json',
+const FALLBACK_DASHBOARD_MANIFEST = {
+  defaultYear: '2026',
+  years: {
+    '2023': 'data/data-2023.json',
+    '2024': 'data/data-2024.json',
+    '2025': 'data/data-2025.json',
+    '2026': 'data/data-2026.json',
+  },
+};
+let DATA_FILES_BY_YEAR = {
+  '2026': 'data/data-2026.json',
   '2025': 'data/data-2025.json',
   '2024': 'data/data-2024.json',
   '2023': 'data/data-2023.json',
 };
-const DEFAULT_DASHBOARD_YEAR = '2026';
+let DEFAULT_DASHBOARD_YEAR = '2026';
 const yearMenuUrlForYear = year => year === DEFAULT_DASHBOARD_YEAR ? './' : `?${year}`;
+const normalizeDashboardManifest = manifest => {
+  const years = manifest?.years && typeof manifest.years === 'object' ? manifest.years : null;
+  if (!years) throw new Error('Invalid dashboard manifest');
+  const normalizedYears = Object.fromEntries(Object.entries(years)
+    .filter(([year, file]) => /^\d{4}$/.test(year) && typeof file === 'string'));
+  const sortedYears = Object.keys(normalizedYears).sort((a, b) => Number(a) - Number(b));
+  if (!sortedYears.length) throw new Error('Dashboard manifest has no years');
+  const defaultYear = normalizedYears[manifest.defaultYear] ? String(manifest.defaultYear) : sortedYears[sortedYears.length - 1];
+  return { defaultYear, years: normalizedYears };
+};
 function getRequestedDashboardYear() {
   const params = new URLSearchParams(window.location.search);
   const paramYear = params.get('year') || params.get('y');
@@ -1917,16 +1932,35 @@ function getRequestedDashboardYear() {
   const requestedYear = paramYear || bareYear;
   return DATA_FILES_BY_YEAR[requestedYear] ? requestedYear : DEFAULT_DASHBOARD_YEAR;
 }
-const requestedDashboardYear = getRequestedDashboardYear();
-const dataFile = DATA_FILES_BY_YEAR[requestedDashboardYear];
-const dashboardYears = Object.keys(DATA_FILES_BY_YEAR).sort((a, b) => Number(a) - Number(b));
-const earliestDashboardYear = dashboardYears[0];
-const previousDashboardYear = dashboardYears[dashboardYears.indexOf(requestedDashboardYear) - 1];
+let requestedDashboardYear = DEFAULT_DASHBOARD_YEAR;
+let dataFile = DATA_FILES_BY_YEAR[requestedDashboardYear];
+let dashboardYears = Object.keys(DATA_FILES_BY_YEAR).sort((a, b) => Number(a) - Number(b));
+let earliestDashboardYear = dashboardYears[0];
+let previousDashboardYear = dashboardYears[dashboardYears.indexOf(requestedDashboardYear) - 1];
 const yearMenuButton = document.getElementById('year-menu-button');
 const yearMenuPanel = document.getElementById('year-menu-panel');
-yearMenuPanel.innerHTML = [...dashboardYears].reverse()
-  .map(year => `<a href="${yearMenuUrlForYear(year)}" data-year="${year}">${year}</a>`)
-  .join('');
+const dashboardConfigPromise = fetch('data/manifest.json', { cache: 'no-store' })
+  .then(r => {
+    if (!r.ok) throw new Error(`Dashboard manifest request failed: ${r.status}`);
+    return r.json();
+  })
+  .then(normalizeDashboardManifest)
+  .catch(error => {
+    console.warn('Using fallback dashboard manifest:', error);
+    return FALLBACK_DASHBOARD_MANIFEST;
+  })
+  .then(manifest => {
+    DATA_FILES_BY_YEAR = manifest.years;
+    DEFAULT_DASHBOARD_YEAR = manifest.defaultYear;
+    requestedDashboardYear = getRequestedDashboardYear();
+    dataFile = DATA_FILES_BY_YEAR[requestedDashboardYear];
+    dashboardYears = Object.keys(DATA_FILES_BY_YEAR).sort((a, b) => Number(a) - Number(b));
+    earliestDashboardYear = dashboardYears[0];
+    previousDashboardYear = dashboardYears[dashboardYears.indexOf(requestedDashboardYear) - 1];
+    yearMenuPanel.innerHTML = [...dashboardYears].reverse()
+      .map(year => `<a href="${yearMenuUrlForYear(year)}" data-year="${year}">${year}</a>`)
+      .join('');
+  });
 let yearMenuCloseTimer;
 const setYearMenuOpen = open => {
   clearTimeout(yearMenuCloseTimer);
@@ -2161,14 +2195,17 @@ const liquidGlassRefraction = (() => {
   liquidGlassRefraction.attach(document.getElementById(id));
 });
 
-const currentDataPromise = fetch(dataFile, { cache: 'no-store' }).then(r => r.json());
-const previousDataPromise = previousDashboardYear
-  ? fetch(DATA_FILES_BY_YEAR[previousDashboardYear], { cache: 'no-store' })
-      .then(r => r.ok ? r.json() : null)
-      .catch(() => null)
-  : Promise.resolve(null);
+const dashboardDataPromise = dashboardConfigPromise.then(() => {
+  const currentDataPromise = fetch(dataFile, { cache: 'no-store' }).then(r => r.json());
+  const previousDataPromise = previousDashboardYear
+    ? fetch(DATA_FILES_BY_YEAR[previousDashboardYear], { cache: 'no-store' })
+        .then(r => r.ok ? r.json() : null)
+        .catch(() => null)
+    : Promise.resolve(null);
+  return Promise.all([currentDataPromise, previousDataPromise]);
+});
 
-Promise.all([currentDataPromise, previousDataPromise])
+dashboardDataPromise
   .then(([{ films: FILMS, membershipFees: MEMBERSHIP_FEES = 0 }, previousYearData]) => {
 
 // ====== DATE RANGE HEADER ======

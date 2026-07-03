@@ -28,10 +28,14 @@ jobs:
 
       - name: Commit if changed
         run: |
-          git diff --quiet data/data.json && exit 0
+          if [ -z "$(git status --porcelain -- data)" ]; then
+            exit 0
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          FILM_COUNT=$(node -e "console.log(JSON.parse(require('fs').readFileSync('data/data.json')).films.length)")
-          git add data/data.json
-          git commit -m "Update film data: ${FILM_COUNT} films"
+          DEFAULT_YEAR=$(node -e "const fs=require('fs'); const m=JSON.parse(fs.readFileSync('data/manifest.json')); console.log(m.defaultYear)")
+          DATA_FILE=$(node -e "const fs=require('fs'); const m=JSON.parse(fs.readFileSync('data/manifest.json')); console.log(m.years[m.defaultYear])")
+          FILM_COUNT=$(node -e "const fs=require('fs'); const m=JSON.parse(fs.readFileSync('data/manifest.json')); const d=JSON.parse(fs.readFileSync(m.years[m.defaultYear])); console.log(d.films.length)")
+          git add data
+          git commit -m "Update ${DEFAULT_YEAR} film data" -m "Refresh ${DATA_FILE} from the source spreadsheet and update the dashboard data manifest. This keeps archived year files stable while the default year follows the latest available sheet." -m "Film count: ${FILM_COUNT}"
           git push
