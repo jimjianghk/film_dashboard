@@ -1359,7 +1359,7 @@ tbody tr:last-child td { border-bottom: none; }
 .switch-slider::before { content: ''; position: absolute; height: 8px; width: 8px; left: 1px; top: 1px; background: var(--text-dimmer); transition: transform 0.2s, background 0.2s; }
 .switch-toggle input:checked + .switch-slider { border-color: var(--text); }
 .switch-toggle input:checked + .switch-slider::before { transform: translateX(8px); background: var(--accent); }
-.switch-label-text { font-family: 'Dashboard Sans', sans-serif; font-size: 1rem; line-height: 1.2; color: var(--text-dimmer); letter-spacing: 0; text-transform: none; font-weight: 500; transition: color 0.2s; }
+.switch-label-text { font-family: 'Dashboard Sans', sans-serif; font-size: 1rem; line-height: 1.2; color: var(--text-dimmer); letter-spacing: 0; text-transform: none; font-weight: 500; transition: color 0.2s; cursor: pointer; }
 .switch-toggle:has(input:checked) + .switch-label-text { color: var(--text); }
 
 .filter-row-tr input.col-search {
@@ -1774,7 +1774,7 @@ footer img.footer-favicon {
             <input type="checkbox" id="rating-dedup">
             <span class="switch-slider"></span>
           </label>
-          <span class="switch-label-text">Unique titles</span>
+          <label class="switch-label-text" for="rating-dedup">Unique titles</label>
         </span>
         <span class="chart-num">2</span>
       </div>
@@ -1787,7 +1787,7 @@ footer img.footer-favicon {
             <input type="checkbox" id="decade-dedup">
             <span class="switch-slider"></span>
           </label>
-          <span class="switch-label-text">Unique titles</span>
+          <label class="switch-label-text" for="decade-dedup">Unique titles</label>
         </span>
         <span class="chart-num">3</span>
       </div>
@@ -1805,7 +1805,7 @@ footer img.footer-favicon {
             <input type="checkbox" id="runtime-dedup">
             <span class="switch-slider"></span>
           </label>
-          <span class="switch-label-text" id="runtime-dedup-label">Unique titles</span>
+          <label class="switch-label-text" id="runtime-dedup-label" for="runtime-dedup">Unique titles</label>
         </span>
         <span class="chart-num">5</span>
       </div>
