@@ -3,11 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; font-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'; frame-src 'none'; worker-src 'none'; script-src 'self' 'sha256-YeXLOHDXpVnkj0LMamHu5lVNfUwJZAIt++1kNreUPh0=' 'sha256-XIGUQJWz7LBfArBs6vKPSKk8TnYE6Z7rfYPzaMHf/Wc='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'">
 <title>Jim’s 2026 Cinema Log</title>
 <link rel="icon" href="assets/favicon.ico?v=2" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png?v=2">
 <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png?v=2">
+<link rel="icon" type="image/png" sizes="512x512" href="assets/favicon-512.png?v=2">
 <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=2">
+<link rel="preload" href="fonts/sans-roman.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/sans-headline.woff2" as="font" type="font/woff2" crossorigin>
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://jimsfilms.nyc/">
 <meta property="og:title" content="Jim’s 2026 Cinema Log">
@@ -2168,8 +2172,9 @@ Promise.all([currentDataPromise, previousDataPromise])
   .then(([{ films: FILMS, membershipFees: MEMBERSHIP_FEES = 0 }, previousYearData]) => {
 
 // ====== DATE RANGE HEADER ======
-const firstDate = FILMS[0].date;
-const lastDate = FILMS[FILMS.length - 1].date;
+const filmDatesForRange = FILMS.map(f => f.date).sort();
+const firstDate = filmDatesForRange[0];
+const lastDate = filmDatesForRange[filmDatesForRange.length - 1];
 const fmtDate = ds => new Date(ds+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
 const dashYear = firstDate.slice(0,4);
 const isCurrentDashboardYear = dashYear === DEFAULT_DASHBOARD_YEAR;
@@ -2214,7 +2219,6 @@ document.getElementById('date-range').innerHTML = `${fmtDate(firstDate)}–${fmt
 // ====== STATS ======
 const normalizeYearPoint = ds => ds.slice(5,10) === '02-29' ? '02-28' : ds.slice(5,10);
 const isOnOrBeforeYearPoint = (dateStr, cutoffDateStr) => normalizeYearPoint(dateStr) <= normalizeYearPoint(cutoffDateStr);
-const dateKeyForYearPoint = ds => ds.slice(5,10) === '02-29' ? `${ds.slice(0,5)}02-28` : ds;
 function countDaysThroughYearPoint(year, cutoffDateStr) {
   const yearStart = new Date(year + '-01-01T12:00:00');
   const yearEnd = new Date(year + '-12-31T12:00:00');
@@ -2233,7 +2237,7 @@ function getHeroStats(films, membershipFees = 0) {
   const ticketSpent = films.reduce((s,f) => s+f.price, 0);
   return {
     totalFilms: films.length,
-    daysAtCinema: new Set(films.map(f => dateKeyForYearPoint(f.date))).size,
+    daysAtCinema: new Set(films.map(f => f.date)).size,
     avgRating: rated.length ? rated.reduce((s,f) => s+f.rating, 0) / rated.length : null,
     totalRuntimeHours: totalRuntime / 60,
     totalSpent: ticketSpent + membershipFees,
@@ -2857,12 +2861,14 @@ const venueFullNames = {
   WHITBY:'Whitby Hotel', BEACON:'Beacon Theatre',
   SKIR:'NYU Skirball Center', OTHER:'Non-NYC or non-standard venues'
 };
-const venueCol = arr => arr.map(([v,c]) =>
-  `<div class="bar-row venue-has-tip">
-    <div class="bar-label">${v}${venueFullNames[v] ? `<span class="venue-tip">${venueFullNames[v]}</span>` : ''}</div>
+const venueCol = arr => arr.map(([v,c]) => {
+  const venueTip = venueFullNames[v] ? `<span class="venue-tip">${escapeHtml(venueFullNames[v])}</span>` : '';
+  return `<div class="bar-row venue-has-tip">
+    <div class="bar-label">${escapeHtml(v)}${venueTip}</div>
     <div class="bar-track"><div class="bar-fill venue-bar${v === 'OTHER' ? ' venue-bar-other' : ''}" style="width:${(c/maxVenue)*100}%"></div></div>
     <div class="bar-count">${c}</div>
-  </div>`).join('');
+  </div>`;
+}).join('');
 document.getElementById('venue-chart').innerHTML =
   `<div class="venue-col">${venueCol(venueArr.slice(0, venueHalf))}</div>` +
   `<div class="venue-col">${venueCol(venueArr.slice(venueHalf))}</div>`;
@@ -3022,15 +3028,15 @@ const rowsHtml = bases.map(b => {
       const plainLabel = (threeD > 0 && p !== STANDARD_FORMAT_KEY)
         ? segLabel(b, p, false) + ' 2D'
         : segLabel(b, p, false);
-      out.push(`<div class="format-seg${className}" style="flex:${plain};${colorStyle}" data-label="${plainLabel}" data-count="${plain}"></div>`);
+      out.push(`<div class="format-seg${className}" style="flex:${plain};${colorStyle}" data-label="${escapeHtml(plainLabel)}" data-count="${plain}"></div>`);
     }
     if (threeD > 0) {
-      out.push(`<div class="format-seg${className} seg-3d" style="flex:${threeD};${colorStyle}" data-label="${segLabel(b, p, true)}" data-count="${threeD}"></div>`);
+      out.push(`<div class="format-seg${className} seg-3d" style="flex:${threeD};${colorStyle}" data-label="${escapeHtml(segLabel(b, p, true))}" data-count="${threeD}"></div>`);
     }
     return out;
   }).join('');
   return `<div class="format-row">
-    <div class="bar-label">${b === 'DCP' ? 'DCP†' : b}</div>
+    <div class="bar-label">${escapeHtml(b === 'DCP' ? 'DCP†' : b)}</div>
     <div class="format-bar-outer"><div class="format-bar-track" style="width:${trackPct}%;min-width:${trackMinWidth}px;">${segs}</div></div>
     <div class="bar-count">${data.total}</div>
   </div>`;
@@ -3052,7 +3058,7 @@ const legendHtml = `<div class="format-legend">
     const swatch = item.key === '3d'
       ? '<span class="legend-swatch swatch-3d"></span>'
       : `<span class="legend-swatch" style="background:${item.color}"></span>`;
-    return `<span class="legend-chip">${swatch}${item.label} <span class="legend-count">${item.count}</span></span>`;
+    return `<span class="legend-chip">${swatch}${escapeHtml(item.label)} <span class="legend-count">${item.count}</span></span>`;
   }).join('')}
 </div>`;
 
@@ -3168,7 +3174,7 @@ function showSegTooltip(seg, cursorX) {
   const label = seg.dataset.label;
   const count = Number(seg.dataset.count);
   const swatch = `<span class="legend-swatch${seg.classList.contains('seg-3d') ? ' swatch-3d' : ''}" style="background:${formatSegmentBaseColor(seg)}"></span>`;
-  segTooltip.innerHTML = `${swatch}${label} · ${count}`;
+  segTooltip.innerHTML = `${swatch}${escapeHtml(label)} · ${count}`;
   segTooltip.style.display = 'block';
   const r = seg.getBoundingClientRect();
   if (cursorX == null) cursorX = r.left + r.width / 2;
@@ -3278,7 +3284,9 @@ months.forEach(m => {
       if (films.length > 0 && films.every(f => f.rating == null)) hasUnratedCalendarDay = true;
       const cls = films.length >= 5 ? 'watched-5' : films.length === 4 ? 'watched-4' : films.length === 3 ? 'watched-3' : films.length === 2 ? 'watched-2' : films.length === 1 ? 'watched-1' : '';
       const dayRuntime = films.reduce((sum,f) => sum + (f.runtime || 0), 0);
-      html += `<div class="heatmap-cell ${cls}" data-date="${ds}" data-runtime="${dayRuntime}" data-films='${JSON.stringify(films.map(f=>f.title)).replace(/'/g,"&#39;")}' data-ratings='${JSON.stringify(films.map(f=>f.rating)).replace(/'/g,"&#39;")}'>${d}</div>`;
+      const filmTitlesJson = escapeHtml(JSON.stringify(films.map(f => String(f.title))));
+      const filmRatingsJson = escapeHtml(JSON.stringify(films.map(f => f.rating)));
+      html += `<div class="heatmap-cell ${cls}" data-date="${ds}" data-runtime="${dayRuntime}" data-films='${filmTitlesJson}' data-ratings='${filmRatingsJson}'>${d}</div>`;
     }
   }
   html += '</div>';
@@ -3440,8 +3448,14 @@ calToggles.runtime.addEventListener('click', () => setCalMode('runtime'));
 calToggles.rating.addEventListener('click', () => setCalMode('rating'));
 
 const tooltip = document.getElementById('tooltip');
-function escapeTooltipText(text) {
-  return String(text).replace(/[&<>]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]));
+function escapeHtml(text) {
+  return String(text).replace(/[&<>"']/g, ch => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[ch]));
 }
 function constrainCalendarTooltip() {
   tooltip.classList.remove('is-constrained');
@@ -3488,7 +3502,7 @@ function constrainCalendarTooltip() {
 }
 function ttRatingBadge(rating) {
   if (rating == null) return `<span class="rating-badge tt-rating-badge rating-unrated"><span class="em-narrow">—</span></span>`;
-  return `<span class="rating-badge tt-rating-badge rating-${rating}">${rating}</span>`;
+  return `<span class="rating-badge tt-rating-badge ${escapeHtml('rating-' + rating)}">${escapeHtml(rating)}</span>`;
 }
 document.querySelectorAll('.heatmap-cell').forEach(cell => {
   cell.addEventListener('touchstart', e => {
@@ -3506,7 +3520,7 @@ document.querySelectorAll('.heatmap-cell').forEach(cell => {
       document.getElementById('tt-meta').textContent = new Date(date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
     } else {
       document.getElementById('tt-title').innerHTML = `<span class="tooltip-films">${films.map((f,i) => {
-        const safe = escapeTooltipText(f);
+        const safe = escapeHtml(f);
         return `<span class="tooltip-film"><span class="tooltip-film-name">${safe}</span>${ttRatingBadge(ratings[i])}</span>`;
       }).join('')}</span>`;
       document.getElementById('tt-meta').textContent = new Date(date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
@@ -3544,7 +3558,7 @@ FILMS.forEach(f => {
 const seriesArr = Object.entries(seriesCounts).sort((a,b) => b[1]-a[1]);
 document.getElementById('series-list').innerHTML = seriesArr.map(([s,c]) =>
   `<div class="series-row">
-    <span class="series-name">${s}${Object.entries(seriesVenues[s]).sort((a,b) => b[1]-a[1]).map(e => `<span class="series-venue${e[0] === 'OTHER' ? ' series-venue-other' : ''}">${e[0]}</span>`).join('')}</span>
+    <span class="series-name">${escapeHtml(s)}${Object.entries(seriesVenues[s]).sort((a,b) => b[1]-a[1]).map(e => `<span class="series-venue${e[0] === 'OTHER' ? ' series-venue-other' : ''}">${escapeHtml(e[0])}</span>`).join('')}</span>
     <span class="series-count">${c}</span>
   </div>`
 ).join('');
@@ -3661,19 +3675,20 @@ function renderTableBody() {
       <td><span style="font-family:'Economist Sans',sans-serif;font-size:1rem;color:var(--text-dim)">${dateStr}</span></td>
       <td style="line-height:1.3">${(() => {
         const badge = '<span class="rewatch-badge" title="Rewatch" aria-label="Rewatch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.5-6.3L21 8"/><polyline points="21 3 21 8 16 8"/><path d="M21 12a9 9 0 0 1-15.5 6.3L3 16"/><polyline points="3 21 3 16 8 16"/></svg></span>';
-        if (!f.rewatch) return `<span class="title-cell">${f.title}</span>`;
-        const i = f.title.lastIndexOf(' ');
-        const head = i >= 0 ? f.title.slice(0, i + 1) : '';
-        const tail = i >= 0 ? f.title.slice(i + 1) : f.title;
+        const title = String(f.title);
+        if (!f.rewatch) return `<span class="title-cell">${escapeHtml(title)}</span>`;
+        const i = title.lastIndexOf(' ');
+        const head = i >= 0 ? escapeHtml(title.slice(0, i + 1)) : '';
+        const tail = i >= 0 ? escapeHtml(title.slice(i + 1)) : escapeHtml(title);
         return `<span class="title-cell">${head}<span class="title-tail-nowrap">${tail}${badge}</span></span>`;
       })()}</td>
-      <td style="font-family:'Economist Sans',sans-serif;font-size:1rem;color:var(--text-dim)">${f.year}</td>
-      <td style="font-family:'Economist Sans',sans-serif;font-size:1rem;color:var(--text-dim)">${f.runtime}</td>
-      <td><span class="rating-badge ${rClass}">${f.rating != null ? f.rating : '<span class="em-narrow">—</span>'}</span></td>
-      <td><span class="format-tag">${f.format}</span></td>
+      <td style="font-family:'Economist Sans',sans-serif;font-size:1rem;color:var(--text-dim)">${escapeHtml(f.year)}</td>
+      <td style="font-family:'Economist Sans',sans-serif;font-size:1rem;color:var(--text-dim)">${escapeHtml(f.runtime)}</td>
+      <td><span class="rating-badge ${escapeHtml(rClass)}">${f.rating != null ? escapeHtml(f.rating) : '<span class="em-narrow">—</span>'}</span></td>
+      <td><span class="format-tag">${escapeHtml(f.format)}</span></td>
       <td><span class="price-cell">${priceStr}</span></td>
-      <td style="font-family:'Economist Sans',sans-serif;font-size:1rem;color:var(--text-dim)">${f.venue}</td>
-      <td style="font-family:'Economist Sans',sans-serif;font-size:1rem;color:var(--text-dim);line-height:1.3">${f.series||'\u2014'}</td>
+      <td style="font-family:'Economist Sans',sans-serif;font-size:1rem;color:var(--text-dim)">${escapeHtml(f.venue)}</td>
+      <td style="font-family:'Economist Sans',sans-serif;font-size:1rem;color:var(--text-dim);line-height:1.3">${f.series ? escapeHtml(f.series) : '\u2014'}</td>
     </tr>`;
   }).join('');
 
@@ -3739,7 +3754,7 @@ function renderTable() {
   const filterRow = '<tr class="filter-row-tr">' + columns.map(c => {
     if (c.key === 'title') {
       const curVal = activeFilters._titleSearch || '';
-      return `<td><input type="text" class="col-search${curVal ? ' active' : ''}" data-filter-col="title" placeholder="Search\u2026" value="${curVal.replace(/"/g,'&quot;')}"></td>`;
+      return `<td><input type="text" class="col-search${curVal ? ' active' : ''}" data-filter-col="title" placeholder="Search\u2026" value="${escapeHtml(curVal)}"></td>`;
     }
     const filterable = filterableKeys.includes(c.key);
     if (!filterable) return '<td></td>';
@@ -3747,10 +3762,10 @@ function renderTable() {
     const curVal = activeFilters[c.key] || '';
     const noUp = c.key === 'year' ? ' no-uppercase' : '';
     return `<td><div class="col-filter-wrap" data-filter-col="${c.key}">
-      <button type="button" class="col-filter${curVal ? ' active' : ''}${noUp}" aria-haspopup="listbox" aria-expanded="false">${curVal || 'All'}</button>
+      <button type="button" class="col-filter${curVal ? ' active' : ''}${noUp}" aria-haspopup="listbox" aria-expanded="false">${escapeHtml(curVal || 'All')}</button>
       <ul class="col-filter-menu" role="listbox" data-filter-col="${c.key}" hidden>
         <li role="option" data-value=""${!curVal ? ' class="selected"' : ''}>All</li>
-        ${options.map(v => `<li role="option" data-value="${v.replace(/"/g,'&quot;')}"${v === curVal ? ' class="selected"' : ''}>${v}</li>`).join('')}
+        ${options.map(v => `<li role="option" data-value="${escapeHtml(v)}"${v === curVal ? ' class="selected"' : ''}>${escapeHtml(v)}</li>`).join('')}
       </ul>
     </div></td>`;
   }).join('') + '</tr>';

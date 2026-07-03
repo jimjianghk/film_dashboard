@@ -17,14 +17,14 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        run: npm install xlsx
+        run: npm ci
 
       - name: Fetch and parse spreadsheet
         env:
           DROPBOX_APP_KEY: ${{ secrets.DROPBOX_APP_KEY }}
           DROPBOX_APP_SECRET: ${{ secrets.DROPBOX_APP_SECRET }}
           DROPBOX_REFRESH_TOKEN: ${{ secrets.DROPBOX_REFRESH_TOKEN }}
-        run: node scripts/fetch-and-parse.mjs
+        run: npm run update-data
 
       - name: Commit if changed
         run: |

@@ -2,7 +2,7 @@
 
 A single-page dashboard that visualizes a year of filmgoing in New York City. Built with vanilla HTML, CSS, and JavaScript, with no frameworks or charting libraries.
 
-Data is sourced from a personal spreadsheet on Dropbox and synced automatically via GitHub Actions.
+Data is sourced from a personal spreadsheet on Dropbox and synced by a manually dispatchable GitHub Actions workflow, with cron-job.org triggering the regular runs.
 
 ## Dashboard
 
@@ -100,4 +100,4 @@ When the year has fewer than 5 logged films, the masthead and stats row render a
 
 ## Data
 
-The film log is maintained in a personal spreadsheet and exported automatically for the dashboard. Each sync refreshes the current-year data used by the live page, while archived years remain frozen snapshots. Membership fees are tracked separately from per-screening prices, then folded into the total-spending stat and year-over-year comparison logic.
+The film log is maintained in a personal spreadsheet and exported by a GitHub Actions workflow that can be run manually or triggered on a schedule from cron-job.org. Each sync refreshes the current-year data used by the live page, while archived years remain frozen snapshots. Membership fees are tracked separately from per-screening prices, then folded into the total-spending stat and year-over-year comparison logic.

@@ -1,0 +1,10 @@
+{
+  "name": "film-dashboard",
+  "private": true,
+  "scripts": {
+    "update-data": "node scripts/fetch-and-parse.mjs"
+  },
+  "dependencies": {
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  }
+}

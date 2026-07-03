@@ -51,6 +51,8 @@ if (!sheet) {
   process.exit(1);
 }
 const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+const excelEpochMs = Date.UTC(1899, 11, 30);
+const excelSerialDateToDateString = serial => new Date(excelEpochMs + serial * 86400000).toISOString().slice(0, 10);
 
 // 4. Transform rows
 const films = [];
@@ -59,16 +61,9 @@ for (const r of rows) {
   if (r && typeof r[16] === 'number') membershipFees += r[16];
   if (!r || !r[1]) continue;
 
-  // Excel serial date → YYYY-MM-DD
-  const excelEpoch = new Date(1899, 11, 30);
-  const date = new Date(excelEpoch.getTime() + r[0] * 86400000);
-  const yyyy = date.getFullYear();
-  const mm = String(date.getMonth() + 1).padStart(2, '0');
-  const dd = String(date.getDate()).padStart(2, '0');
-
   films.push({
-    date: `${yyyy}-${mm}-${dd}`,
-    title: r[1],
+    date: excelSerialDateToDateString(r[0]),
+    title: String(r[1]),
     year: r[2],
     runtime: r[3],
     rating: r[4] ?? null,
@@ -79,6 +74,8 @@ for (const r of rows) {
     series: r[9] || null,
   });
 }
+
+films.sort((a, b) => a.date.localeCompare(b.date));
 
 // 5. Write data.json
 writeFileSync(OUTPUT, JSON.stringify({ films, membershipFees }));
