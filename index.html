@@ -3676,6 +3676,12 @@ function normalizeTitleSearchText(text) {
     .toLowerCase();
 }
 
+function normalizeTableTitleSortText(text) {
+  return String(text)
+    .toLowerCase()
+    .replace(/^[^\p{L}\p{N}]+/u, '');
+}
+
 function getFilteredTableFilms() {
   let filtered = [...FILMS];
   for (const [key, val] of Object.entries(activeFilters)) {
@@ -3701,6 +3707,10 @@ function getFilteredTableFilms() {
     }
     if (va == null) va = '';
     if (vb == null) vb = '';
+    if (currentSort.col === 'title') {
+      va = normalizeTableTitleSortText(va);
+      vb = normalizeTableTitleSortText(vb);
+    }
     if (typeof va === 'string') va = va.toLowerCase();
     if (typeof vb === 'string') vb = vb.toLowerCase();
     if (va < vb) return currentSort.dir === 'asc' ? -1 : 1;
