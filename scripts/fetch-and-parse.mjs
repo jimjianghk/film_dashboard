@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = resolve(__dirname, '..', 'data');
 const MANIFEST_OUTPUT = resolve(DATA_DIR, 'manifest.json');
+const MANIFEST_JS_OUTPUT = resolve(DATA_DIR, 'manifest.js');
 
 const getCurrentYearInNewYork = () => Number(new Intl.DateTimeFormat('en-US', {
   timeZone: 'America/New_York',
@@ -110,6 +111,8 @@ films.sort((a, b) => a.date.localeCompare(b.date));
 
 // 5. Write year-specific data and the site manifest.
 const output = resolve(DATA_DIR, `data-${activeYear}.json`);
+const manifest = buildManifest(activeYear);
 writeFileSync(output, JSON.stringify({ films, membershipFees }));
-writeFileSync(MANIFEST_OUTPUT, `${JSON.stringify(buildManifest(activeYear), null, 2)}\n`);
+writeFileSync(MANIFEST_OUTPUT, `${JSON.stringify(manifest, null, 2)}\n`);
+writeFileSync(MANIFEST_JS_OUTPUT, `window.DASHBOARD_MANIFEST = ${JSON.stringify(manifest)};\n`);
 console.log(`Wrote ${films.length} films and $${membershipFees} membership fees from sheet "${activeSheetName}" to data-${activeYear}.json`);

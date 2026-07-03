@@ -1892,34 +1892,35 @@ footer img.footer-favicon {
   <footer><img class="footer-favicon" src="assets/favicon-192.png" alt=""></footer>
 </div>
 
+<script src="data/manifest.js"></script>
 <script>
 if (window.location.pathname.endsWith('/index.html')) {
   const cleanPath = window.location.pathname.slice(0, -'index.html'.length) || '/';
   window.history.replaceState(null, '', `${cleanPath}${window.location.search}${window.location.hash}`);
 }
 
-const FALLBACK_DASHBOARD_MANIFEST = {
-  defaultYear: '2026',
-  years: {
-    '2023': 'data/data-2023.json',
-    '2024': 'data/data-2024.json',
-    '2025': 'data/data-2025.json',
-    '2026': 'data/data-2026.json',
-  },
+const DASHBOARD_START_YEAR = 2023;
+let DATA_FILES_BY_YEAR = {};
+let DEFAULT_DASHBOARD_YEAR = null;
+const getCurrentYearInNewYork = () => Number(new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/New_York',
+  year: 'numeric',
+}).format(new Date()));
+const dataFileForYear = year => `data/data-${year}.json`;
+const getUrlDashboardYear = () => {
+  const params = new URLSearchParams(window.location.search);
+  const paramYear = params.get('year') || params.get('y');
+  const bareYear = window.location.search.match(/^\?(\d{4})$/)?.[1];
+  const requestedYear = paramYear || bareYear;
+  return /^\d{4}$/.test(requestedYear || '') ? requestedYear : null;
 };
-let DATA_FILES_BY_YEAR = {
-  '2026': 'data/data-2026.json',
-  '2025': 'data/data-2025.json',
-  '2024': 'data/data-2024.json',
-  '2023': 'data/data-2023.json',
-};
-let DEFAULT_DASHBOARD_YEAR = '2026';
 const yearMenuUrlForYear = year => year === DEFAULT_DASHBOARD_YEAR ? './' : `?${year}`;
 const setDashboardYearShell = year => {
+  const isDefaultYear = DEFAULT_DASHBOARD_YEAR ? year === DEFAULT_DASHBOARD_YEAR : !getUrlDashboardYear();
   document.title = `Jim’s ${year} Cinema Log`;
   document.querySelector('meta[property="og:title"]')?.setAttribute('content', `Jim’s ${year} Cinema Log`);
   document.querySelector('meta[name="twitter:title"]')?.setAttribute('content', `Jim’s ${year} Cinema Log`);
-  document.querySelector('meta[property="og:url"]')?.setAttribute('content', year === DEFAULT_DASHBOARD_YEAR ? 'https://jimsfilms.nyc/' : `https://jimsfilms.nyc/?${year}`);
+  document.querySelector('meta[property="og:url"]')?.setAttribute('content', isDefaultYear ? 'https://jimsfilms.nyc/' : `https://jimsfilms.nyc/?${year}`);
   document.querySelector('h1').textContent = `${year} in cinema`;
 };
 const setCurrentYearMenuItem = year => {
@@ -1938,21 +1939,65 @@ const normalizeDashboardManifest = manifest => {
   const defaultYear = normalizedYears[manifest.defaultYear] ? String(manifest.defaultYear) : sortedYears[sortedYears.length - 1];
   return { defaultYear, years: normalizedYears };
 };
+const getInitialDashboardYear = () => {
+  const manifestYear = window.DASHBOARD_MANIFEST?.defaultYear;
+  return getUrlDashboardYear() || (/^\d{4}$/.test(manifestYear || '') ? manifestYear : String(getCurrentYearInNewYork()));
+};
 function getRequestedDashboardYear() {
-  const params = new URLSearchParams(window.location.search);
-  const paramYear = params.get('year') || params.get('y');
-  const bareYear = window.location.search.match(/^\?(\d{4})$/)?.[1];
-  const requestedYear = paramYear || bareYear;
+  const requestedYear = getUrlDashboardYear();
   return DATA_FILES_BY_YEAR[requestedYear] ? requestedYear : DEFAULT_DASHBOARD_YEAR;
 }
-let requestedDashboardYear = getRequestedDashboardYear();
-let dataFile = DATA_FILES_BY_YEAR[requestedDashboardYear];
-let dashboardYears = Object.keys(DATA_FILES_BY_YEAR).sort((a, b) => Number(a) - Number(b));
-let earliestDashboardYear = dashboardYears[0];
-let previousDashboardYear = dashboardYears[dashboardYears.indexOf(requestedDashboardYear) - 1];
+let requestedDashboardYear = null;
+let dataFile = null;
+let dashboardYears = [];
+let earliestDashboardYear = null;
+let previousDashboardYear = null;
 const yearMenuButton = document.getElementById('year-menu-button');
 const yearMenuPanel = document.getElementById('year-menu-panel');
-setDashboardYearShell(requestedDashboardYear);
+const applyDashboardManifest = manifest => {
+  DATA_FILES_BY_YEAR = manifest.years;
+  DEFAULT_DASHBOARD_YEAR = manifest.defaultYear;
+  requestedDashboardYear = getRequestedDashboardYear();
+  dataFile = DATA_FILES_BY_YEAR[requestedDashboardYear];
+  dashboardYears = Object.keys(DATA_FILES_BY_YEAR).sort((a, b) => Number(a) - Number(b));
+  earliestDashboardYear = dashboardYears[0];
+  previousDashboardYear = dashboardYears[dashboardYears.indexOf(requestedDashboardYear) - 1];
+  yearMenuPanel.innerHTML = [...dashboardYears].reverse()
+    .map(year => `<a href="${yearMenuUrlForYear(year)}" data-year="${year}">${year}</a>`)
+    .join('');
+  setDashboardYearShell(requestedDashboardYear);
+  setCurrentYearMenuItem(requestedDashboardYear);
+};
+const getScriptDashboardManifest = () => {
+  try {
+    return window.DASHBOARD_MANIFEST ? normalizeDashboardManifest(window.DASHBOARD_MANIFEST) : null;
+  } catch (error) {
+    console.warn('Ignoring invalid script dashboard manifest:', error);
+    return null;
+  }
+};
+const fetchJsonIfAvailable = file => fetch(file, { cache: 'no-store' })
+  .then(r => r.ok ? r.json() : null)
+  .catch(() => null);
+const buildFallbackDashboardManifest = async () => {
+  const requestedYear = getUrlDashboardYear();
+  const currentYear = getCurrentYearInNewYork();
+  const maxYear = Math.max(currentYear, Number(requestedYear) || currentYear);
+  const years = [];
+  for (let year = DASHBOARD_START_YEAR; year <= maxYear; year += 1) {
+    const data = await fetchJsonIfAvailable(dataFileForYear(year));
+    if (Array.isArray(data?.films)) years.push(String(year));
+  }
+  if (!years.length) throw new Error('No dashboard data files available');
+  const defaultYear = [String(currentYear), String(currentYear - 1)].find(year => years.includes(year)) || years[years.length - 1];
+  return {
+    defaultYear,
+    years: Object.fromEntries(years.map(year => [year, dataFileForYear(year)])),
+  };
+};
+const scriptDashboardManifest = getScriptDashboardManifest();
+if (scriptDashboardManifest) applyDashboardManifest(scriptDashboardManifest);
+else setDashboardYearShell(getInitialDashboardYear());
 const dashboardConfigPromise = fetch('data/manifest.json', { cache: 'no-store' })
   .then(r => {
     if (!r.ok) throw new Error(`Dashboard manifest request failed: ${r.status}`);
@@ -1960,22 +2005,15 @@ const dashboardConfigPromise = fetch('data/manifest.json', { cache: 'no-store' }
   })
   .then(normalizeDashboardManifest)
   .catch(error => {
-    console.warn('Using fallback dashboard manifest:', error);
-    return FALLBACK_DASHBOARD_MANIFEST;
+    console.warn('Using fallback dashboard manifest path:', error);
+    return buildFallbackDashboardManifest().catch(fallbackError => {
+      if (scriptDashboardManifest) return scriptDashboardManifest;
+      throw fallbackError;
+    });
   })
   .then(manifest => {
-    DATA_FILES_BY_YEAR = manifest.years;
-    DEFAULT_DASHBOARD_YEAR = manifest.defaultYear;
-    requestedDashboardYear = getRequestedDashboardYear();
-    dataFile = DATA_FILES_BY_YEAR[requestedDashboardYear];
-    dashboardYears = Object.keys(DATA_FILES_BY_YEAR).sort((a, b) => Number(a) - Number(b));
-    earliestDashboardYear = dashboardYears[0];
-    previousDashboardYear = dashboardYears[dashboardYears.indexOf(requestedDashboardYear) - 1];
-    yearMenuPanel.innerHTML = [...dashboardYears].reverse()
-      .map(year => `<a href="${yearMenuUrlForYear(year)}" data-year="${year}">${year}</a>`)
-      .join('');
-    setDashboardYearShell(requestedDashboardYear);
-    setCurrentYearMenuItem(requestedDashboardYear);
+    applyDashboardManifest(manifest);
+    return manifest;
   });
 let yearMenuCloseTimer;
 const setYearMenuOpen = open => {

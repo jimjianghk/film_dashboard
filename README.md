@@ -6,7 +6,7 @@ Data is sourced from a personal spreadsheet on Dropbox and synced by a manually 
 
 ## Dashboard
 
-The dashboard is driven by the film log and membership-fee total exported from the source spreadsheet. Year-specific data files are listed in `data/manifest.json`; archive views load frozen snapshots for past years while keeping the current dashboard design, so the same stats, charts, filters, and New releases / Repertory logic remain available across years.
+The dashboard is driven by the film log and membership-fee total exported from the source spreadsheet. Year-specific data files are listed in generated `data/manifest.json` and `data/manifest.js` files; archive views load frozen snapshots for past years while keeping the current dashboard design, so the same stats, charts, filters, and New releases / Repertory logic remain available across years.
 
 ### Archive views
 
@@ -100,4 +100,4 @@ When the year has fewer than 5 logged films, the masthead and stats row render a
 
 ## Data
 
-The film log is maintained in a personal spreadsheet and exported by a GitHub Actions workflow that can be run manually or triggered on a schedule from cron-job.org. Each sync checks the current year in New York time, looks for that two-digit spreadsheet sheet, and falls back to the previous year until the new sheet has at least one dated film row. The updater writes `data/data-<year>.json` directly and refreshes `data/manifest.json`, so the previous year remains the archive as soon as the new year takes over. Membership fees are tracked separately from per-screening prices, then folded into the total-spending stat and year-over-year comparison logic.
+The film log is maintained in a personal spreadsheet and exported by a GitHub Actions workflow that can be run manually or triggered on a schedule from cron-job.org. Each sync checks the current year in New York time, looks for that two-digit spreadsheet sheet, and falls back to the previous year until the new sheet has at least one dated film row. The updater writes `data/data-<year>.json` directly and refreshes `data/manifest.json` plus `data/manifest.js`, so the previous year remains the archive as soon as the new year takes over. Membership fees are tracked separately from per-screening prices, then folded into the total-spending stat and year-over-year comparison logic.
