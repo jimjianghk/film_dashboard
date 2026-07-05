@@ -1,0 +1,64 @@
+name: Retry failed Pages deploy
+
+on:
+  workflow_run:
+    # The built-in Pages workflow has slug "pages-build-deployment" and
+    # display name "pages build and deployment"; list both so the trigger
+    # matches whichever one GitHub uses for the event.
+    workflows:
+      - pages-build-deployment
+      - pages build and deployment
+    types: [completed]
+
+permissions:
+  actions: write
+
+concurrency:
+  group: pages-retry
+  cancel-in-progress: false
+
+jobs:
+  retry:
+    if: github.event.workflow_run.conclusion == 'failure' && github.event.workflow_run.run_attempt == 1
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rerun the failed deploy with backoff
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          REPO: ${{ github.repository }}
+        run: |
+          for wait in 60 600 1800; do
+            echo "Waiting ${wait}s before retrying..."
+            sleep "$wait"
+
+            # A newer run redeploys the whole site; rerunning this older run
+            # after it succeeded would replace the site with stale content.
+            latest=$(gh run list --repo "$REPO" --workflow pages-build-deployment --limit 1 --json databaseId --jq '.[0].databaseId')
+            if [ "$latest" != "$RUN_ID" ]; then
+              echo "A newer Pages deploy exists; leaving this one alone."
+              exit 0
+            fi
+
+            attempt=$(gh run view "$RUN_ID" --repo "$REPO" --json attempt --jq .attempt)
+            gh run rerun "$RUN_ID" --failed --repo "$REPO"
+
+            while true; do
+              sleep 20
+              info=$(gh run view "$RUN_ID" --repo "$REPO" --json attempt,status,conclusion)
+              new_attempt=$(jq -r .attempt <<<"$info")
+              status=$(jq -r .status <<<"$info")
+              if [ "$new_attempt" -gt "$attempt" ] && [ "$status" = "completed" ]; then
+                break
+              fi
+            done
+
+            if [ "$(jq -r .conclusion <<<"$info")" = "success" ]; then
+              echo "Deploy succeeded on retry."
+              exit 0
+            fi
+            echo "Retry failed."
+          done
+
+          echo "Deploy still failing after all retries."
+          exit 1
