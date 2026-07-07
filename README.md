@@ -101,3 +101,9 @@ When the year has fewer than 5 logged films, the masthead and stats row render a
 ## Data
 
 The film log is maintained in a personal spreadsheet and exported by a GitHub Actions workflow that can be run manually or triggered on a schedule from cron-job.org. Each sync checks the current year in New York time, looks for that two-digit spreadsheet sheet, and falls back to the previous year until the new sheet has at least one dated film row. The updater writes `data/data-<year>.json` directly and refreshes `data/manifest.json` plus `data/manifest.js`, so the previous year remains the archive as soon as the new year takes over. Membership fees are tracked separately from per-screening prices, then folded into the total-spending stat and year-over-year comparison logic.
+
+## Deployment
+
+The site is served by GitHub Pages at [jimsfilms.nyc](https://jimsfilms.nyc/), built from the `main` branch, so every push (including each data sync commit) deploys automatically.
+
+A companion workflow, `retry-pages-deploy.yml`, watches the built-in Pages deployment and handles failures. When a deploy fails, it re-runs the failed job with escalating backoff (1, 10, then 30 minutes). Pages can occasionally wedge on a single commit and reject every re-run of it, so once the retries are exhausted the workflow pushes an empty "Redeploy Pages" commit to force a fresh deploy under a new SHA. If that commit also fails to deploy, the workflow stops and leaves a failed run in the Actions tab as the signal for manual attention. Before each retry it checks whether a newer commit has already deployed, so it never overwrites the site with stale content.
