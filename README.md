@@ -83,7 +83,7 @@ Sortable, filterable table of every screening. Nine columns: date, title, year, 
 - Click any header to sort (ascending/descending). Null ratings always sort to the bottom. Shorts programs sort by their oldest listed year when sorting oldest-first and by their newest when sorting newest-first.
 - A shorts program's Year cell lists each production year on its own line, at the same line spacing as the Series column.
 - A "Rewatches only" switch in the Title header filters the table to rewatches.
-- Dropdown filters on date (by month), year (by decade, plus a Various option when a shorts program spans decades), rating (1–10 plus N/A), format, venue, and series. Menus align visually with their trigger, size to their options, avoid widening the page, and close when the page or table scrolls.
+- Dropdown filters on date (by month), year (by decade), rating (1–10 plus N/A), format, venue, and series. A shorts program appears under every decade at least one of its production years belongs to. Menus align visually with their trigger, size to their options, avoid widening the page, and close when the page or table scrolls.
 - Free-text search on title with IME composition support for CJK input.
 - When the table overflows horizontally, edge fades and an opacity-rippling `>>>` cue indicate additional columns; clicking the cue advances the table to the right, and both fade away after the user scrolls horizontally past a small threshold.
 - Rating badges are color-coded circles matching the bar chart palette, with text colors picked from within the same palette family for legible contrast. Unrated films show a grey badge with a horizontally narrowed em dash.

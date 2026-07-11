@@ -3782,9 +3782,8 @@ function getFilterOptions(key) {
   if (key === 'date') {
     vals = [...new Set(FILMS.map(f => { const d = new Date(f.date+'T12:00:00'); return d.toLocaleString('en-US',{month:'short'}); }))];
   } else if (key === 'year') {
-    const decades = [...new Set(FILMS.map(filmDecade))];
-    vals = decades.filter(d => d !== 'various').sort((a,b) => a-b).map(d => d+'s');
-    if (decades.includes('various')) vals.push('Various');
+    const decades = [...new Set(FILMS.flatMap(f => filmYears(f).map(y => Math.floor(y/10)*10)))];
+    vals = decades.sort((a,b) => a-b).map(d => d+'s');
   } else if (key === 'series') {
     const articles = /^(the|a|an)\s+/i;
     const sortKey = s => s.replace(articles, '').toLowerCase();
@@ -3805,8 +3804,7 @@ function matchesFilter(f, key, val) {
     return month === val;
   }
   if (key === 'year') {
-    const decade = filmDecade(f);
-    return val === 'Various' ? decade === 'various' : decade+'s' === val;
+    return filmYears(f).some(y => Math.floor(y/10)*10+'s' === val);
   }
   if (key === 'rating' && val === 'N/A') return f.rating == null;
   return String(f[key] ?? '') === val;
