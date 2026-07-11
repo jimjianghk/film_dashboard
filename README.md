@@ -28,6 +28,8 @@ Six summary cards cover total screenings, days at the cinema, average rating, to
 
 A floating liquid-glass pill, fixed top-center of the viewport, holds one short tab per section: Cumulative, Ratings, Decades, Formats, Runtimes, Venues, Calendar, Series, and Full log. It slides in once the first chart reaches the reading line (the upper third of the viewport), i.e. once the title and stats row have scrolled past, and slides away again above that point. The tab row scrolls horizontally when it overflows, with a hidden scrollbar and edge fades that only paint on a side that has more tabs offscreen.
 
+Chromium re-rasterizes a fixed backdrop-filter every frame the page scrolls beneath it, so there the pill trades its frost for a near-matching solid tint during active scrolling and frosts back over about 160ms after the last scroll event; Safari and Firefox composite the frost cheaply and keep it throughout. While hidden, the pill flips to `visibility: hidden` after its slide-out so the idle filter costs nothing.
+
 A scroll-spy lights the tab for the chart under the reading line: a chart takes over as soon as its top enters the upper third of the viewport and holds through the gap to the next one. The active tab renders as a red chip (the same treatment as the table filter menus' selected option) and auto-centers itself in the pill without fighting manual panning. When Rating and Production decade sit side by side on wide viewports they act as one stop: both tabs light together and clicking either scrolls to the shared row top; on stacked layouts geometry splits them back into separate stops automatically.
 
 Clicking a tab smooth-scrolls the chart to rest just below the nav and records the section in the URL fragment without adding history entries. On refresh the page re-anchors to that fragment after the charts render, since the browser's own fragment scroll fires against the pre-render placeholder layout; the spy likewise holds the nav back until the dashboard has rendered (and re-runs on any layout change via a body ResizeObserver), so it never flashes a tab computed against placeholder geometry. The nav is inert and hidden from assistive tech while offscreen, respects reduced-motion and reduced-transparency preferences, and venue name tips share the cursor tooltips' z-order so every tooltip floats above the nav when they overlap.
@@ -103,7 +105,7 @@ When the year has fewer than 5 logged films, the masthead and stats row render a
 - Standalone definition page uses a white article-style layout with serif reading text, drop cap, small caps, and a thin grey headline divider
 - Rating tiles blend translucently with the paper-cream background
 - Liquid glass floating layer: chart tooltips, venue name tips, the log table's filter menus, the year menu panel, the chart navigation pill, and the sticky log table header render as translucent glass with soft highlights, subtle depth, and capsule-style one-line tooltips
-- Browsers with advanced backdrop support add a restrained refractive edge treatment; other browsers keep the flatter solid design
+- Browsers without backdrop-filter support keep the flatter solid design
 - Reduced-transparency and high-contrast preferences restore solid, high-contrast surfaces
 - Fade-up entrance animations with staggered delays
 - Responsive at 1200 / 1000 / 900 / 800 / 600 / 500px breakpoints

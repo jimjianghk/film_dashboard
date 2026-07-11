@@ -1529,13 +1529,19 @@ footer img.footer-favicon {
   border: 1px solid var(--border-strong);
   box-shadow: 0 2px 6px rgba(0,0,0,0.08);
   opacity: 0;
+  visibility: hidden;
   transform: translate3d(0, calc(-100% - 14px), 0);
   will-change: opacity, transform;
-  transition: opacity 0.27s ease, transform 0.33s cubic-bezier(0.22,1,0.36,1);
+  /* visibility flips only after the slide-out finishes, and makes the hidden
+     pill genuinely free: Chromium keeps paying for a fixed backdrop-filter
+     even at opacity 0. */
+  transition: opacity 0.27s ease, transform 0.33s cubic-bezier(0.22,1,0.36,1), visibility 0s linear 0.33s;
 }
 .chart-nav.visible .chart-nav-glass {
   opacity: 1;
+  visibility: visible;
   transform: translate3d(0, 0, 0);
+  transition-delay: 0s;
 }
 .chart-nav-scroll {
   display: flex;
@@ -1599,10 +1605,8 @@ footer img.footer-favicon {
 
 /* LIQUID GLASS, floating overlay layer only (tooltips, menus, sticky table header).
    Progressive ladder: browsers without backdrop-filter keep the flat solid design
-   above; this block adds frosted glass everywhere backdrop-filter works; Chromium
-   additionally gets SVG edge refraction attached inline from JS (url() filters in
-   backdrop-filter parse but silently fail in Safari/Firefox, so @supports cannot
-   gate that tier). prefers-reduced-transparency restores the solid look. */
+   above; this block adds frosted glass everywhere backdrop-filter works.
+   prefers-reduced-transparency restores the solid look. */
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   :root {
     --lg-tint: 255 254 250;   /* warm white: pure white reads gray over the cream page */
@@ -1642,9 +1646,6 @@ footer img.footer-favicon {
     border-radius: 12px;
     padding: 4px 0;
   }
-  /* No corner-shape: squircle here: the Chromium displacement maps model
-     circular-arc corners, and a squircle clip would draw a second, mismatched
-     corner outline on top of the refraction band. */
   .year-menu-panel {
     border-radius: 18px;
     background: rgb(var(--lg-tint) / 0.45);
@@ -1654,6 +1655,16 @@ footer img.footer-favicon {
   .chart-nav-glass {
     border: none;
     background: rgb(var(--lg-tint) / 0.55);
+  }
+  /* Chromium re-rasterizes a fixed element's backdrop every scrolled frame,
+     so while the page is actively moving the nav trades its frost for a
+     near-matching solid tint (JS toggles this, Chromium only) and takes the
+     glass back at rest. Safari composites the frost on the GPU and never
+     needs this. */
+  .chart-nav-glass.scroll-plain {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: rgb(var(--lg-tint) / 0.88);
   }
   /* On touch devices the panel overlaps the big black headline, so it goes
      more opaque and brighter to keep the gray year links legible. */
@@ -1694,7 +1705,7 @@ footer img.footer-favicon {
   }
   /* Glass bezel: two thin curved glints hugging the inner rim (negative-spread
      inset shadows). Kept crisp and sparse so they read as polished edge, not
-     fog; the refraction band underneath must stay visible. */
+     fog. */
   .tooltip::after,
   .year-menu-panel::after,
   .chart-nav-glass::after {
@@ -2181,11 +2192,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') setYearMenuOpen(false);
 });
 
-// ====== LIQUID GLASS, TIER 3: SVG EDGE REFRACTION ======
-// Only Chromium renders SVG filters inside backdrop-filter (Safari: WebKit bug
-// 245510; Firefox: open feature request). The value parses everywhere, so
-// @supports lies; engine detection is the established gate. Other engines keep
-// the CSS frosted-glass tier untouched.
+// ====== LIQUID GLASS: KEEP BACKDROP-FILTER ALIVE ======
 // Completed entrance animations keep filling forwards, which Chromium treats
 // as an active opacity animation on the sections and silently breaks
 // backdrop-filter for everything inside them (table header pane, venue tips).
@@ -2194,185 +2201,6 @@ document.addEventListener('animationend', e => {
   if (e.animationName === 'fadeUp' && e.target.classList?.contains('animate')) {
     e.target.classList.remove('animate', 'delay-1', 'delay-2', 'delay-3', 'delay-4', 'delay-5');
   }
-});
-
-const liquidGlassRefraction = (() => {
-  const isChromium = navigator.userAgentData?.brands?.some(b => /Chromium/i.test(b.brand)) ?? false;
-  const enabled = isChromium &&
-    !window.matchMedia('(prefers-reduced-transparency: reduce)').matches &&
-    typeof CSS !== 'undefined' && CSS.supports('backdrop-filter', 'blur(1px)') &&
-    typeof ResizeObserver !== 'undefined' &&
-    typeof CanvasRenderingContext2D !== 'undefined' && 'roundRect' in CanvasRenderingContext2D.prototype;
-  if (!enabled) return { attach: () => {} };
-
-  const SVG_NS = 'http://www.w3.org/2000/svg';
-  const defs = document.createElementNS(SVG_NS, 'svg');
-  defs.setAttribute('width', '0');
-  defs.setAttribute('height', '0');
-  defs.setAttribute('aria-hidden', 'true');
-  defs.style.position = 'absolute'; // must stay rendered: display:none kills the filters
-  document.body.appendChild(defs);
-  const instances = [];
-  let nextId = 0;
-
-  // Displacement map: R channel encodes X shift, G channel Y shift, neutral
-  // gray means none. A signed-distance-field lens for the element's rounded
-  // rect: displacement points along the outward edge normal with a convex
-  // falloff, so backdrop content visibly bows around a wide rim band while
-  // the center stays optically flat and text floats over legible backdrop.
-  function lensParams(w, h) {
-    const band = Math.max(12, Math.min(30, Math.min(w, h) * 0.34));
-    const maxShift = Math.max(14, Math.min(38, band * 1.2));
-    return { band, maxShift };
-  }
-  const mapCache = new Map();
-  function displacementMap(w, h, radius) {
-    const key = `${w}x${h}r${radius}`;
-    let url = mapCache.get(key);
-    if (url) return url;
-    const { band, maxShift } = lensParams(w, h);
-    const hw = w / 2, hh = h / 2;
-    const r = Math.min(radius, hw, hh);
-    const bx = hw - r, by = hh - r;
-    const sd = (px, py) => {
-      const qx = Math.abs(px - hw) - bx;
-      const qy = Math.abs(py - hh) - by;
-      return Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - r;
-    };
-    const canvas = document.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext('2d');
-    const img = ctx.createImageData(w, h);
-    const data = img.data;
-    for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w; x++) {
-        const px = x + 0.5, py = y + 0.5;
-        const depth = -sd(px, py);
-        let dx = 0, dy = 0;
-        if (depth < band) {
-          const t = Math.max(0, 1 - depth / band);
-          const m = maxShift * t * t * (3 - 2 * t);
-          const gx = sd(px + 1, py) - sd(px - 1, py);
-          const gy = sd(px, py + 1) - sd(px, py - 1);
-          const len = Math.hypot(gx, gy) || 1;
-          dx = (gx / len) * m;
-          dy = (gy / len) * m;
-        }
-        const i = (y * w + x) * 4;
-        data[i] = Math.round(128 + (dx / maxShift) * 127);
-        data[i + 1] = Math.round(128 + (dy / maxShift) * 127);
-        data[i + 2] = 128;
-        data[i + 3] = 255;
-      }
-    }
-    ctx.putImageData(img, 0, 0);
-    url = canvas.toDataURL();
-    if (mapCache.size > 64) mapCache.delete(mapCache.keys().next().value);
-    mapCache.set(key, url);
-    return url;
-  }
-
-  const observer = new ResizeObserver(entries => {
-    for (const entry of entries) {
-      const inst = instances.find(i => i.el === entry.target);
-      if (!inst) continue;
-      const w = Math.round(entry.borderBoxSize?.[0]?.inlineSize ?? entry.target.offsetWidth);
-      const h = Math.round(entry.borderBoxSize?.[0]?.blockSize ?? entry.target.offsetHeight);
-      if (w < 24 || h < 16 || (w === inst.w && h === inst.h)) continue;
-      inst.w = w;
-      inst.h = h;
-      const radius = parseFloat(getComputedStyle(inst.el).borderTopLeftRadius) || 0;
-      inst.feImage.setAttribute('href', displacementMap(w, h, radius));
-      inst.feImage.setAttribute('width', w);
-      inst.feImage.setAttribute('height', h);
-      // Encoded shift spans 127/255 of the channel, so decode with 2x scale.
-      // The three channel passes diverge slightly: blue bends more than red,
-      // which paints the chromatic fringe along the rim.
-      const scale = lensParams(w, h).maxShift * 2;
-      inst.dispR.setAttribute('scale', (scale * 0.90).toFixed(1));
-      inst.dispG.setAttribute('scale', scale.toFixed(1));
-      inst.dispB.setAttribute('scale', (scale * 1.10).toFixed(1));
-      if (!inst.applied) {
-        inst.applied = true;
-        inst.el.style.backdropFilter = `url(#${inst.filterId}) blur(3px) saturate(170%)`;
-      }
-    }
-  });
-
-  function attach(el) {
-    if (!el || instances.some(i => i.el === el)) return;
-    // Re-rendered overlays (table filter menus) leave orphan filters behind.
-    for (let i = instances.length - 1; i >= 0; i--) {
-      if (!instances[i].el.isConnected) {
-        observer.unobserve(instances[i].el);
-        instances[i].filterEl.remove();
-        instances.splice(i, 1);
-      }
-    }
-    const filterId = `lg-refract-${nextId++}`;
-    const filterEl = document.createElementNS(SVG_NS, 'filter');
-    filterEl.setAttribute('id', filterId);
-    filterEl.setAttribute('color-interpolation-filters', 'sRGB');
-    filterEl.setAttribute('x', '0');
-    filterEl.setAttribute('y', '0');
-    filterEl.setAttribute('width', '100%');
-    filterEl.setAttribute('height', '100%');
-    const feImage = document.createElementNS(SVG_NS, 'feImage');
-    feImage.setAttribute('x', '0');
-    feImage.setAttribute('y', '0');
-    feImage.setAttribute('preserveAspectRatio', 'none');
-    feImage.setAttribute('result', 'map');
-    filterEl.appendChild(feImage);
-    // Three displacement passes at slightly different strengths, recombined
-    // channel-by-channel (screen of disjoint channels is additive), produce
-    // the prismatic fringe real glass shows at its rim.
-    const makeDisp = result => {
-      const disp = document.createElementNS(SVG_NS, 'feDisplacementMap');
-      disp.setAttribute('in', 'SourceGraphic');
-      disp.setAttribute('in2', 'map');
-      disp.setAttribute('xChannelSelector', 'R');
-      disp.setAttribute('yChannelSelector', 'G');
-      disp.setAttribute('result', result);
-      filterEl.appendChild(disp);
-      return disp;
-    };
-    const dispR = makeDisp('dr');
-    const dispG = makeDisp('dg');
-    const dispB = makeDisp('db');
-    const channelMatrix = {
-      r: '1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0',
-      g: '0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0',
-      b: '0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0',
-    };
-    [['dr', channelMatrix.r, 'cr'], ['dg', channelMatrix.g, 'cg'], ['db', channelMatrix.b, 'cb']].forEach(([input, values, result]) => {
-      const cm = document.createElementNS(SVG_NS, 'feColorMatrix');
-      cm.setAttribute('in', input);
-      cm.setAttribute('type', 'matrix');
-      cm.setAttribute('values', values);
-      cm.setAttribute('result', result);
-      filterEl.appendChild(cm);
-    });
-    const blendRG = document.createElementNS(SVG_NS, 'feBlend');
-    blendRG.setAttribute('in', 'cr');
-    blendRG.setAttribute('in2', 'cg');
-    blendRG.setAttribute('mode', 'screen');
-    blendRG.setAttribute('result', 'crg');
-    filterEl.appendChild(blendRG);
-    const blendRGB = document.createElementNS(SVG_NS, 'feBlend');
-    blendRGB.setAttribute('in', 'crg');
-    blendRGB.setAttribute('in2', 'cb');
-    blendRGB.setAttribute('mode', 'screen');
-    filterEl.appendChild(blendRGB);
-    defs.appendChild(filterEl);
-    instances.push({ el, filterEl, feImage, dispR, dispG, dispB, filterId, w: 0, h: 0, applied: false });
-    observer.observe(el);
-  }
-
-  return { attach };
-})();
-['tooltip', 'seg-tooltip', 'cum-tooltip', 'year-menu-panel', 'chart-nav-glass'].forEach(id => {
-  liquidGlassRefraction.attach(document.getElementById(id));
 });
 
 // ====== CHART NAV — show/hide, scroll-spy, tab centering ======
@@ -2476,6 +2304,21 @@ const liquidGlassRefraction = (() => {
     requestAnimationFrame(() => { updatePending = false; update(); });
   };
 
+  // Chromium re-rasterizes the pill's backdrop-filter every frame the page
+  // scrolls beneath it (Safari's compositor absorbs it), so during active
+  // scrolling the glass goes plain and frosts back over at rest.
+  const dampenGlass = navigator.userAgentData?.brands?.some(b => /Chromium/i.test(b.brand)) &&
+    !window.matchMedia('(prefers-reduced-transparency: reduce)').matches;
+  let scrollIdleTimer;
+  const requestScrollUpdate = () => {
+    if (dampenGlass && navVisible) {
+      glass.classList.add('scroll-plain');
+      clearTimeout(scrollIdleTimer);
+      scrollIdleTimer = setTimeout(() => glass.classList.remove('scroll-plain'), 160);
+    }
+    requestUpdate();
+  };
+
   links.forEach((link, i) => {
     link.addEventListener('click', e => {
       e.preventDefault();
@@ -2485,7 +2328,7 @@ const liquidGlassRefraction = (() => {
     });
   });
 
-  window.addEventListener('scroll', requestUpdate, { passive: true });
+  window.addEventListener('scroll', requestScrollUpdate, { passive: true });
   window.addEventListener('resize', requestUpdate);
   scroller.addEventListener('scroll', updateFades, { passive: true });
   // The spy measures live layout, but scroll events alone miss layout-only
@@ -4151,7 +3994,6 @@ function renderTable() {
         btn.setAttribute('aria-expanded', 'true');
         if (menu.parentElement !== document.body) document.body.appendChild(menu);
         menu.hidden = false;
-        liquidGlassRefraction.attach(menu);
         const r = btn.getBoundingClientRect();
         const menuOutset = 4; // menu overhangs the button; li padding re-aligns the text
         const menuLeft = r.left - menuOutset;
