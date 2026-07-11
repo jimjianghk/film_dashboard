@@ -1656,16 +1656,6 @@ footer img.footer-favicon {
     border: none;
     background: rgb(var(--lg-tint) / 0.55);
   }
-  /* Chromium re-rasterizes a fixed element's backdrop every scrolled frame,
-     so while the page is actively moving the nav trades its frost for a
-     near-matching solid tint (JS toggles this, Chromium only) and takes the
-     glass back at rest. Safari composites the frost on the GPU and never
-     needs this. */
-  .chart-nav-glass.scroll-plain {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    background: rgb(var(--lg-tint) / 0.88);
-  }
   /* On touch devices the panel overlaps the big black headline, so it goes
      more opaque and brighter to keep the gray year links legible. */
   @media (hover: none), (pointer: coarse) {
@@ -2304,21 +2294,6 @@ document.addEventListener('animationend', e => {
     requestAnimationFrame(() => { updatePending = false; update(); });
   };
 
-  // Chromium re-rasterizes the pill's backdrop-filter every frame the page
-  // scrolls beneath it (Safari's compositor absorbs it), so during active
-  // scrolling the glass goes plain and frosts back over at rest.
-  const dampenGlass = navigator.userAgentData?.brands?.some(b => /Chromium/i.test(b.brand)) &&
-    !window.matchMedia('(prefers-reduced-transparency: reduce)').matches;
-  let scrollIdleTimer;
-  const requestScrollUpdate = () => {
-    if (dampenGlass && navVisible) {
-      glass.classList.add('scroll-plain');
-      clearTimeout(scrollIdleTimer);
-      scrollIdleTimer = setTimeout(() => glass.classList.remove('scroll-plain'), 160);
-    }
-    requestUpdate();
-  };
-
   links.forEach((link, i) => {
     link.addEventListener('click', e => {
       e.preventDefault();
@@ -2328,7 +2303,7 @@ document.addEventListener('animationend', e => {
     });
   });
 
-  window.addEventListener('scroll', requestScrollUpdate, { passive: true });
+  window.addEventListener('scroll', requestUpdate, { passive: true });
   window.addEventListener('resize', requestUpdate);
   scroller.addEventListener('scroll', updateFades, { passive: true });
   // The spy measures live layout, but scroll events alone miss layout-only

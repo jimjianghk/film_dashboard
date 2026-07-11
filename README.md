@@ -28,7 +28,7 @@ Six summary cards cover total screenings, days at the cinema, average rating, to
 
 A floating liquid-glass pill, fixed top-center of the viewport, holds one short tab per section: Cumulative, Ratings, Decades, Formats, Runtimes, Venues, Calendar, Series, and Full log. It slides in once the first chart reaches the reading line (the upper third of the viewport), i.e. once the title and stats row have scrolled past, and slides away again above that point. The tab row scrolls horizontally when it overflows, with a hidden scrollbar and edge fades that only paint on a side that has more tabs offscreen.
 
-Chromium re-rasterizes a fixed backdrop-filter every frame the page scrolls beneath it, so there the pill trades its frost for a near-matching solid tint during active scrolling and frosts back over about 160ms after the last scroll event; Safari and Firefox composite the frost cheaply and keep it throughout. While hidden, the pill flips to `visibility: hidden` after its slide-out so the idle filter costs nothing.
+While hidden, the pill flips to `visibility: hidden` after its slide-out so the idle backdrop filter costs nothing.
 
 A scroll-spy lights the tab for the chart under the reading line: a chart takes over as soon as its top enters the upper third of the viewport and holds through the gap to the next one. The active tab renders as a red chip (the same treatment as the table filter menus' selected option) and auto-centers itself in the pill without fighting manual panning. When Rating and Production decade sit side by side on wide viewports they act as one stop: both tabs light together and clicking either scrolls to the shared row top; on stacked layouts geometry splits them back into separate stops automatically.
 
