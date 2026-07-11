@@ -18,9 +18,19 @@ Red *The Economist*-style masthead above an uppercase Headline font title ("{yea
 
 During June, a slim five-stripe pride accent in a softened rainbow palette extends from the right edge of the masthead without shrinking the logo. The accent is gated on the browser's real current month in New York time, independent of the dashboard year or its data. On page load the stripes drop into place one at a time, left to right, using the same easing as the page's entrance animations; the cascade is disabled for users who prefer reduced motion.
 
+The masthead (pride stripes included) links back to the home page, i.e. the current-year dashboard at the top of the page with no chart fragment, from both the dashboard and the definition page.
+
 ### Stats row
 
 Six summary cards cover total screenings, days at the cinema, average rating, total runtime, total spending, and unique NYC venues visited. Days at the cinema counts distinct screening dates against elapsed days using the same data-day rule as the cumulative chart. Average rating excludes unrated films and collapses rewatches to unique titles before averaging, matching the rating chart's dedup logic. Total spending combines per-screening prices with membership fees and ties to the page footnotes; unique venues exclude the `OTHER` catch-all. When a previous-year archive exists, an off-by-default toggle reveals same-date comparisons. Comparisons normalize Feb. 29 to Feb. 28; increases use signature red, flat or lower values use subdued gray, and spending comparisons prorate the previous year's membership fees through the comparison date. The row uses an editorial stat treatment and adapts from one line to wrapped layouts on smaller screens.
+
+### Chart navigation
+
+A floating liquid-glass pill, fixed top-center of the viewport, holds one short tab per section: Cumulative, Ratings, Decades, Formats, Runtimes, Venues, Calendar, Series, and Full log. It slides in once the first chart reaches the reading line (the upper third of the viewport), i.e. once the title and stats row have scrolled past, and slides away again above that point. The tab row scrolls horizontally when it overflows, with a hidden scrollbar and edge fades that only paint on a side that has more tabs offscreen.
+
+A scroll-spy lights the tab for the chart under the reading line: a chart takes over as soon as its top enters the upper third of the viewport and holds through the gap to the next one. The active tab renders as a red chip (the same treatment as the table filter menus' selected option) and auto-centers itself in the pill without fighting manual panning. When Rating and Production decade sit side by side on wide viewports they act as one stop: both tabs light together and clicking either scrolls to the shared row top; on stacked layouts geometry splits them back into separate stops automatically.
+
+Clicking a tab smooth-scrolls the chart to rest just below the nav and records the section in the URL fragment without adding history entries. On refresh the page re-anchors to that fragment after the charts render, since the browser's own fragment scroll fires against the pre-render placeholder layout; the spy likewise holds the nav back until the dashboard has rendered (and re-runs on any layout change via a body ResizeObserver), so it never flashes a tab computed against placeholder geometry. The nav is inert and hidden from assistive tech while offscreen, respects reduced-motion and reduced-transparency preferences, and venue name tips share the cursor tooltips' z-order so every tooltip floats above the nav when they overlap.
 
 ### Cumulative screenings
 
@@ -92,7 +102,7 @@ When the year has fewer than 5 logged films, the masthead and stats row render a
 - Sans font throughout (with Headline for the page title and hero stat values), signature red masthead, black section rules, tabular figures
 - Standalone definition page uses a white article-style layout with serif reading text, drop cap, small caps, and a thin grey headline divider
 - Rating tiles blend translucently with the paper-cream background
-- Liquid glass floating layer: chart tooltips, venue name tips, the log table's filter menus, the year menu panel, and the sticky log table header render as translucent glass with soft highlights, subtle depth, and capsule-style one-line tooltips
+- Liquid glass floating layer: chart tooltips, venue name tips, the log table's filter menus, the year menu panel, the chart navigation pill, and the sticky log table header render as translucent glass with soft highlights, subtle depth, and capsule-style one-line tooltips
 - Browsers with advanced backdrop support add a restrained refractive edge treatment; other browsers keep the flatter solid design
 - Reduced-transparency and high-contrast preferences restore solid, high-contrast surfaces
 - Fade-up entrance animations with staggered delays
