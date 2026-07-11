@@ -1257,10 +1257,13 @@ tbody tr:last-child td { border-bottom: none; }
   line-height: 1.5;
   color: var(--text-dim);
   margin-top: 50px;
-  display: flex;
-  flex-wrap: wrap;
-  column-gap: 25px;
-  row-gap: 0;
+  /* Inter-note gaps are plain spaces widened by word-spacing: unlike a
+     margin, a space is discarded at a line break, so a gap never counts
+     against the preceding word's fit or indents a wrapped line. */
+  word-spacing: 12px;
+}
+.page-footnotes span {
+  word-spacing: normal;
 }
 .page-footnotes a {
   color: inherit;
@@ -2014,7 +2017,7 @@ footer img.footer-favicon {
     </div>
   </div>
 
-  <div class="page-footnotes"><span>*Includes membership fees</span><span>†DCP includes other digital</span><span>‡Excludes membership fees</span></div>
+  <div class="page-footnotes"><span>*Includes membership fees</span> <span>†DCP includes other digital</span> <span>‡Excludes membership fees</span></div>
 
   <footer><img class="footer-favicon" src="assets/favicon-192.png" alt=""></footer>
 </div>
@@ -2559,6 +2562,32 @@ function dedupFilms(films) {
   return result;
 }
 
+// ====== PRODUCTION YEAR HELPERS ======
+// A shorts program screens as one entry whose year cell lists every short's
+// production year ("2013, 2025, 2026"); regular films carry a single number.
+function filmYears(f) {
+  return String(f.year).split(',').map(y => Number(y.trim())).filter(Number.isFinite);
+}
+function minFilmYear(f) { return Math.min(...filmYears(f)); }
+function maxFilmYear(f) { return Math.max(...filmYears(f)); }
+// Decade bucket: a single decade when every production year falls in it,
+// 'various' when a shorts program spans decades.
+function filmDecade(f) {
+  const decades = new Set(filmYears(f).map(y => Math.floor(y/10)*10));
+  return decades.size === 1 ? String(decades.values().next().value) : 'various';
+}
+const hasMultiDecadeFilms = FILMS.some(f => filmDecade(f) === 'various');
+// The Various decade bar claims the dagger, bumping the DCP note to a double
+// dagger and the membership-fees exclusion to a chapter sign.
+const formatNoteSymbol = hasMultiDecadeFilms ? '‡' : '†';
+const priceNoteSymbol = hasMultiDecadeFilms ? '§' : '‡';
+if (hasMultiDecadeFilms) {
+  const noteSpans = document.querySelectorAll('.page-footnotes span');
+  noteSpans[0].insertAdjacentHTML('afterend', ' <span id="various-decades-note"></span>');
+  noteSpans[1].textContent = `${formatNoteSymbol}DCP includes other digital`;
+  noteSpans[2].textContent = `${priceNoteSymbol}Excludes membership fees`;
+}
+
 // ====== CUMULATIVE CHART ======
 function renderCumulativeChart() {
   const container = document.getElementById('cumulative-chart');
@@ -2808,8 +2837,8 @@ const maxRatingAll = Math.max(...Object.values(allRatingCounts), 1);
 function renderRatingChart(filter) {
   const dedup = document.getElementById('rating-dedup').checked;
   const newReleaseCutoff = parseInt(dashYear, 10) - 1;
-  let subset = filter === 'new' ? FILMS.filter(f => f.year >= newReleaseCutoff)
-    : filter === 'rep' ? FILMS.filter(f => f.year < newReleaseCutoff) : FILMS;
+  let subset = filter === 'new' ? FILMS.filter(f => minFilmYear(f) >= newReleaseCutoff)
+    : filter === 'rep' ? FILMS.filter(f => minFilmYear(f) < newReleaseCutoff) : FILMS;
   if (dedup) subset = dedupFilms(subset);
   const ratingCounts = {};
   for (let i=1;i<=10;i++) ratingCounts[i] = 0;
@@ -3037,18 +3066,19 @@ function renderDecadeChart() {
   const films = dedup ? dedupFilms(FILMS) : FILMS;
   const decadeCounts = {};
   films.forEach(f => {
-    const d = Math.floor(f.year/10)*10;
+    const d = filmDecade(f);
     decadeCounts[d] = (decadeCounts[d]||0)+1;
   });
   const allDecadeCounts = {};
-  FILMS.forEach(f => { const d = Math.floor(f.year/10)*10; allDecadeCounts[d] = (allDecadeCounts[d]||0)+1; });
+  FILMS.forEach(f => { const d = filmDecade(f); allDecadeCounts[d] = (allDecadeCounts[d]||0)+1; });
   const maxDecade = Math.max(...Object.values(decadeCounts), 1);
-  const decadeArr = Object.keys(allDecadeCounts).sort((a,b) => a-b);
+  const decadeArr = Object.keys(allDecadeCounts).filter(d => d !== 'various').sort((a,b) => a-b);
+  if (allDecadeCounts.various) decadeArr.push('various');
   const container = document.getElementById('decade-chart');
   if (!container.dataset.init) {
     container.innerHTML = decadeArr.map(d =>
       `<div class="bar-row" data-decade="${d}">
-        <div class="bar-label">${d}s</div>
+        <div class="bar-label">${d === 'various' ? 'Various†' : d + 's'}</div>
         <div class="bar-track"><div class="bar-fill venue-bar" style="width:0"></div></div>
         <div class="bar-count">0</div>
       </div>`
@@ -3062,6 +3092,12 @@ function renderDecadeChart() {
     if (!row) continue;
     row.querySelector('.bar-fill').style.width = (c / maxDecade) * 100 + '%';
     row.querySelector('.bar-count').textContent = c;
+  }
+  const variousNote = document.getElementById('various-decades-note');
+  if (variousNote) {
+    variousNote.textContent = '†' + ((decadeCounts.various || 0) > 1
+      ? 'Shorts programs whose production years span multiple decades'
+      : 'Shorts program whose production years span multiple decades');
   }
 }
 renderDecadeChart();
@@ -3188,7 +3224,7 @@ const rowsHtml = bases.map(b => {
     return out;
   }).join('');
   return `<div class="format-row">
-    <div class="bar-label">${escapeHtml(b === 'DCP' ? 'DCP†' : b)}</div>
+    <div class="bar-label">${escapeHtml(b === 'DCP' ? 'DCP' + formatNoteSymbol : b)}</div>
     <div class="format-bar-outer"><div class="format-bar-track" style="width:${trackPct}%;min-width:${trackMinWidth}px;">${segs}</div></div>
     <div class="bar-count">${data.total}</div>
   </div>`;
@@ -3735,8 +3771,8 @@ const columns = [
   { key:'year', label:'Year', w:'7.5%' },
   { key:'runtime', label:'Length', w:'6.25%' },
   { key:'rating', label:'Rating', w:'7.5%' },
-  { key:'format', label:'Format†', w:'10%' },
-  { key:'price', label:'Price‡', w:'7%' },
+  { key:'format', label:'Format' + formatNoteSymbol, w:'10%' },
+  { key:'price', label:'Price' + priceNoteSymbol, w:'7%' },
   { key:'venue', label:'Venue', w:'7.75%' },
   { key:'series', label:'Series', w:'22.75%' }
 ];
@@ -3746,7 +3782,9 @@ function getFilterOptions(key) {
   if (key === 'date') {
     vals = [...new Set(FILMS.map(f => { const d = new Date(f.date+'T12:00:00'); return d.toLocaleString('en-US',{month:'short'}); }))];
   } else if (key === 'year') {
-    vals = [...new Set(FILMS.map(f => Math.floor(f.year/10)*10+'s'))].sort();
+    const decades = [...new Set(FILMS.map(filmDecade))];
+    vals = decades.filter(d => d !== 'various').sort((a,b) => a-b).map(d => d+'s');
+    if (decades.includes('various')) vals.push('Various');
   } else if (key === 'series') {
     const articles = /^(the|a|an)\s+/i;
     const sortKey = s => s.replace(articles, '').toLowerCase();
@@ -3767,8 +3805,8 @@ function matchesFilter(f, key, val) {
     return month === val;
   }
   if (key === 'year') {
-    const decade = Math.floor(f.year/10)*10+'s';
-    return decade === val;
+    const decade = filmDecade(f);
+    return val === 'Various' ? decade === 'various' : decade+'s' === val;
   }
   if (key === 'rating' && val === 'N/A') return f.rating == null;
   return String(f[key] ?? '') === val;
@@ -3806,6 +3844,11 @@ function getFilteredTableFilms() {
   filtered.forEach((f,i) => f._idx = i);
   filtered.sort((a,b) => {
     let va = a[currentSort.col], vb = b[currentSort.col];
+    if (currentSort.col === 'year') {
+      // Shorts programs sort by their oldest year ascending, newest descending.
+      va = currentSort.dir === 'asc' ? minFilmYear(a) : maxFilmYear(a);
+      vb = currentSort.dir === 'asc' ? minFilmYear(b) : maxFilmYear(b);
+    }
     if (currentSort.col === 'rating') {
       if (va == null && vb != null) return 1;
       if (va != null && vb == null) return -1;
@@ -3844,7 +3887,7 @@ function renderTableBody() {
         const tail = i >= 0 ? escapeHtml(title.slice(i + 1)) : escapeHtml(title);
         return `<span class="title-cell">${head}<span class="title-tail-nowrap">${tail}${badge}</span></span>`;
       })()}</td>
-      <td style="font-family:'Dashboard Sans',sans-serif;font-size:1rem;color:var(--text-dim)">${escapeHtml(f.year)}</td>
+      <td style="font-family:'Dashboard Sans',sans-serif;font-size:1rem;color:var(--text-dim);line-height:1.3">${filmYears(f).join('<br>')}</td>
       <td style="font-family:'Dashboard Sans',sans-serif;font-size:1rem;color:var(--text-dim)">${escapeHtml(f.runtime)}</td>
       <td><span class="rating-badge ${escapeHtml(rClass)}">${f.rating != null ? escapeHtml(f.rating) : '<span class="em-narrow">—</span>'}</span></td>
       <td><span class="format-tag">${escapeHtml(f.format)}</span></td>

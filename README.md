@@ -42,11 +42,13 @@ A cursor trace reveals the cumulative count for any day from January 1 through t
 
 ### Rating chart
 
-Horizontal bar chart with numeric 1-to-10 labels; the first row is labeled "1 out of 10" and the remaining rows use numbers only. Bars are color-coded across a 10-step palette running from deep red (1) through pastel salmon (5) to pastel blue (6) and deep navy (10), inspired by *The Economist's* political-spectrum gradient. An additional grey "Unrated" bar appears when applicable. Three text toggles (All / New releases / Repertory), with the active state shown by an underline and inactive states faded, subset by production year; a dedup switch collapses rewatches to unique titles. Bar widths are anchored to the tallest bar across all films at the current dedup state, so switching between All / New / Rep doesn't rescale; only toggling dedup does. Bars animate between states on toggle.
+Horizontal bar chart with numeric 1-to-10 labels; the first row is labeled "1 out of 10" and the remaining rows use numbers only. Bars are color-coded across a 10-step palette running from deep red (1) through pastel salmon (5) to pastel blue (6) and deep navy (10), inspired by *The Economist's* political-spectrum gradient. An additional grey "Unrated" bar appears when applicable. Three text toggles (All / New releases / Repertory), with the active state shown by an underline and inactive states faded, subset by production year; a dedup switch collapses rewatches to unique titles. A shorts program counts as a new release only when every production year it lists is the current or previous year; including even one older year sends it to Repertory. Bar widths are anchored to the tallest bar across all films at the current dedup state, so switching between All / New / Rep doesn't rescale; only toggling dedup does. Bars animate between states on toggle.
 
 ### Production decade chart
 
 Horizontal bar chart grouping films by the decade they were produced. Has its own dedup toggle; bars rescale to the tallest decade in the current view and animate between states.
+
+A shorts program whose production years all fall in one decade counts toward that decade. When its years span multiple decades it lands in a "Various" bar that sits below the decade bars, marked with a dagger that ties to a page footnote; the footnote reads singular or plural to match the bar's count.
 
 ### Screening format chart
 
@@ -78,17 +80,18 @@ All named screening series ranked by count. Each row shows the series name follo
 
 Sortable, filterable table of every screening. Nine columns: date, title, year, runtime, rating, format, price, venue, and series. Features:
 
-- Click any header to sort (ascending/descending). Null ratings always sort to the bottom.
+- Click any header to sort (ascending/descending). Null ratings always sort to the bottom. Shorts programs sort by their oldest listed year when sorting oldest-first and by their newest when sorting newest-first.
+- A shorts program's Year cell lists each production year on its own line, at the same line spacing as the Series column.
 - A "Rewatches only" switch in the Title header filters the table to rewatches.
-- Dropdown filters on date (by month), year (by decade), rating (1–10 plus N/A), format, venue, and series. Menus align visually with their trigger, size to their options, avoid widening the page, and close when the page or table scrolls.
+- Dropdown filters on date (by month), year (by decade, plus a Various option when a shorts program spans decades), rating (1–10 plus N/A), format, venue, and series. Menus align visually with their trigger, size to their options, avoid widening the page, and close when the page or table scrolls.
 - Free-text search on title with IME composition support for CJK input.
 - When the table overflows horizontally, edge fades and an opacity-rippling `>>>` cue indicate additional columns; clicking the cue advances the table to the right, and both fade away after the user scrolls horizontally past a small threshold.
 - Rating badges are color-coded circles matching the bar chart palette, with text colors picked from within the same palette family for legible contrast. Unrated films show a grey badge with a horizontally narrowed em dash.
-- The Format column header carries a dagger that ties to the page footnotes (DCP includes other digital), and the Price column header carries a double dagger (per-row prices exclude membership fees).
+- The Format column header carries a dagger that ties to the page footnotes (DCP includes other digital), and the Price column header carries a double dagger (per-row prices exclude membership fees). When the decade chart shows a Various bar, the dagger belongs to its footnote instead, so these headers shift to a double dagger and a chapter sign.
 
 ### Page footnotes
 
-A row of small notes between the log table and the footer carries the asterisk, dagger, and double dagger callouts referenced from the hero "Total spending" stat, the Format column (and the format chart's DCP row), and the Price column header. The notes sit inline, evenly spaced.
+A row of small notes between the log table and the footer carries the asterisk, dagger, and double dagger callouts referenced from the hero "Total spending" stat, the Format column (and the format chart's DCP row), and the Price column header. When multi-decade shorts programs are present, a dagger note for the decade chart's Various bar slots in right after the asterisk, the DCP note moves to a double dagger, and the membership-fees exclusion moves to a chapter sign, with the matching column headers and DCP row label following suit. The notes sit inline, evenly spaced.
 
 ### Screening definition page
 
@@ -113,6 +116,8 @@ When the year has fewer than 5 logged films, the masthead and stats row render a
 ## Data
 
 The film log is maintained in a personal spreadsheet and exported by a GitHub Actions workflow that can be run manually or triggered on a schedule from cron-job.org. Each sync checks the current year in New York time, looks for that two-digit spreadsheet sheet, and falls back to the previous year until the new sheet has at least one dated film row. The updater writes `data/data-<year>.json` directly and refreshes `data/manifest.json` plus `data/manifest.js`, so the previous year remains the archive as soon as the new year takes over. Membership fees are tracked separately from per-screening prices, then folded into the total-spending stat and year-over-year comparison logic.
+
+A shorts program (one screening of several short films) is logged as a single row whose year cell lists every short's production year separated by commas (e.g. "2013, 2025, 2026"). The exported JSON carries that string through unchanged, and the dashboard parses the listed years wherever production years matter: the rating chart's New releases / Repertory split, the decade chart, and the log table's Year column, sorting, and decade filter.
 
 ## Deployment
 
