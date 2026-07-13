@@ -1,4 +1,4 @@
-import { readdirSync, writeFileSync } from 'fs';
+import { readdirSync, readFileSync, writeFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -6,6 +6,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = resolve(__dirname, '..', 'data');
 const MANIFEST_OUTPUT = resolve(DATA_DIR, 'manifest.json');
 const MANIFEST_JS_OUTPUT = resolve(DATA_DIR, 'manifest.js');
+const FX_CACHE_PATH = resolve(DATA_DIR, 'fx-rates.json');
 
 const getCurrentYearInNewYork = () => Number(new Intl.DateTimeFormat('en-US', {
   timeZone: 'America/New_York',
@@ -86,6 +87,21 @@ const activeSheetName = sheetNameForYear(activeYear);
 const excelEpochMs = Date.UTC(1899, 11, 30);
 const excelSerialDateToDateString = serial => new Date(excelEpochMs + serial * 86400000).toISOString().slice(0, 10);
 
+// A plain number in the price cell is USD; a foreign ticket is logged as an
+// ISO currency code plus the local amount ("CNY50", "EUR14.50"). Anything
+// else fails the run so a typo can't silently become a $0 screening.
+const parsePriceCell = (cell, label) => {
+  if (cell == null || typeof cell === 'number') return { amount: cell || 0, currency: 'USD' };
+  const text = String(cell).trim();
+  if (!text) return { amount: 0, currency: 'USD' };
+  const match = text.match(/^([A-Za-z]{3})\s*(\d+(?:\.\d+)?)$/);
+  if (!match) {
+    console.error(`Unparseable price ${JSON.stringify(cell)} for ${label}; use a plain number (USD) or a currency code plus amount like "CNY50".`);
+    process.exit(1);
+  }
+  return { amount: Number(match[2]), currency: match[1].toUpperCase() };
+};
+
 // 4. Transform rows
 const films = [];
 let membershipFees = 0;
@@ -93,15 +109,18 @@ for (const r of rows) {
   if (r && typeof r[16] === 'number') membershipFees += r[16];
   if (!r || typeof r[0] !== 'number' || !r[1]) continue;
 
+  const date = excelSerialDateToDateString(r[0]);
+  const { amount, currency } = parsePriceCell(r[7], `${date} "${r[1]}"`);
   films.push({
-    date: excelSerialDateToDateString(r[0]),
+    date,
     title: String(r[1]),
     year: r[2],
     runtime: r[3],
     rating: r[4] ?? null,
     rewatch: r[5] === 'r',
     format: r[6] || 'DCP',
-    price: r[7] || 0,
+    price: amount,
+    ...(currency !== 'USD' && amount > 0 ? { priceOriginal: amount, currency } : {}),
     venue: r[8] || '',
     series: r[9] || null,
   });
@@ -109,10 +128,61 @@ for (const r of rows) {
 
 films.sort((a, b) => a.date.localeCompare(b.date));
 
-// 5. Write year-specific data and the site manifest.
+// 5. Convert foreign prices to USD at each screening date's ECB reference
+// rate (Frankfurter serves the most recent business day for weekends and
+// holidays). Rates are cached in data/fx-rates.json so past conversions
+// never drift across reruns; a rate can also be added there by hand if a
+// currency ever falls outside ECB coverage.
+//
+// A date's fixing publishes around 16:00 CET that same day, so a screening
+// logged from a timezone ahead of Frankfurt (a July 1 morning show in China
+// while Frankfurt is still on June 30) needs a rate that does not exist yet.
+// Until the screening date has ended in Frankfurt, convert with the latest
+// published rate but keep it out of the cache, so a later sync re-fetches
+// and locks in the date's own fixing.
+const foreignFilms = films.filter(f => f.currency);
+let fxCache = {};
+try { fxCache = JSON.parse(readFileSync(FX_CACHE_PATH, 'utf8')); } catch {}
+const todayInFrankfurt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin' }).format(new Date());
+const provisionalRates = {};
+const missingRates = [...new Set(foreignFilms
+  .filter(f => typeof fxCache[f.currency]?.[f.date] !== 'number')
+  .map(f => `${f.currency}|${f.date}`))];
+let cacheChanged = false;
+for (const missing of missingRates) {
+  const [currency, date] = missing.split('|');
+  const isFinal = date < todayInFrankfurt;
+  const fxRes = await fetch(`https://api.frankfurter.dev/v1/${isFinal ? date : 'latest'}?base=${currency}&symbols=USD`);
+  const rate = fxRes.ok ? (await fxRes.json()).rates?.USD : null;
+  if (typeof rate !== 'number') {
+    console.error(`No USD rate for ${currency} on ${date} (HTTP ${fxRes.status}); add {"${currency}": {"${date}": <rate>}} to data/fx-rates.json if this currency is outside ECB coverage.`);
+    process.exit(1);
+  }
+  if (isFinal) {
+    (fxCache[currency] ??= {})[date] = rate;
+    cacheChanged = true;
+  } else {
+    (provisionalRates[currency] ??= {})[date] = rate;
+    console.log(`Using provisional ${currency} rate for ${date}; the day's fixing is not published yet and a later sync will finalize it.`);
+  }
+}
+if (cacheChanged) {
+  const sortedCache = Object.fromEntries(Object.entries(fxCache)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([currency, rates]) => [currency, Object.fromEntries(
+      Object.entries(rates).sort(([a], [b]) => a.localeCompare(b)))]));
+  writeFileSync(FX_CACHE_PATH, `${JSON.stringify(sortedCache, null, 2)}\n`);
+}
+for (const f of foreignFilms) {
+  const rate = fxCache[f.currency]?.[f.date] ?? provisionalRates[f.currency][f.date];
+  f.price = Math.round(f.priceOriginal * rate * 100) / 100;
+}
+
+// 6. Write year-specific data and the site manifest.
 const output = resolve(DATA_DIR, `data-${activeYear}.json`);
 const manifest = buildManifest(activeYear);
 writeFileSync(output, JSON.stringify({ films, membershipFees }));
 writeFileSync(MANIFEST_OUTPUT, `${JSON.stringify(manifest, null, 2)}\n`);
 writeFileSync(MANIFEST_JS_OUTPUT, `window.DASHBOARD_MANIFEST = ${JSON.stringify(manifest)};\n`);
-console.log(`Wrote ${films.length} films and $${membershipFees} membership fees from sheet "${activeSheetName}" to data-${activeYear}.json`);
+const fxNote = foreignFilms.length ? ` (${foreignFilms.length} foreign-currency prices converted to USD)` : '';
+console.log(`Wrote ${films.length} films and $${membershipFees} membership fees from sheet "${activeSheetName}" to data-${activeYear}.json${fxNote}`);
