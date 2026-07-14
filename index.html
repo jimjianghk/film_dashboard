@@ -1161,6 +1161,9 @@ th {
 }
 th:hover { color: var(--accent); }
 th .sort-arrow { margin-left: 1px; color: var(--accent); display: inline-block; vertical-align: middle; line-height: 0; position: relative; top: -1px; }
+@media (hover: none) {
+  th:hover { color: var(--text); }
+}
 .table-title-header {
   display: flex;
   align-items: center;
