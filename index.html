@@ -1586,13 +1586,13 @@ footer img.footer-favicon {
   font-weight: 500;
   line-height: 1.2;
   letter-spacing: 0;
-  color: var(--text-dim);
+  color: var(--text);
   text-decoration: none;
   white-space: nowrap;
   transition: color 0.2s, background-color 0.2s;
 }
 @media (hover: hover) and (pointer: fine) {
-  .chart-nav-link:not([aria-current="true"]):hover { color: var(--text); }
+  .chart-nav-link:not([aria-current="true"]):hover { color: var(--accent); }
 }
 .chart-nav-link:focus-visible {
   outline: 2px solid var(--accent);
@@ -1657,21 +1657,15 @@ footer img.footer-favicon {
     border-radius: 18px;
     background: rgb(var(--lg-tint) / 0.45);
   }
-  /* The nav floats over dense chart ink for the whole scroll, so it runs a
-     touch more opaque than the transient overlays. */
+  /* Same frost as the tooltips; the glass tier only drops the solid-tier
+     border. */
   .chart-nav-glass {
     border: none;
-    background: rgb(var(--lg-tint) / 0.55);
   }
   /* On touch devices the panel overlaps the big black headline, so it goes
      more opaque and brighter to keep the gray year links legible. */
   @media (hover: none), (pointer: coarse) {
     .year-menu-panel {
-      background: rgb(var(--lg-tint) / 0.72);
-      -webkit-backdrop-filter: blur(14px) saturate(150%) brightness(1.1);
-      backdrop-filter: blur(14px) saturate(150%) brightness(1.1);
-    }
-    .chart-nav-glass {
       background: rgb(var(--lg-tint) / 0.72);
       -webkit-backdrop-filter: blur(14px) saturate(150%) brightness(1.1);
       backdrop-filter: blur(14px) saturate(150%) brightness(1.1);
