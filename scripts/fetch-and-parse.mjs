@@ -102,6 +102,21 @@ const parsePriceCell = (cell, label) => {
   return { amount: Number(match[2]), currency: match[1].toUpperCase() };
 };
 
+// A Chinese-language film's title cell carries the original and English
+// titles together, e.g. "流浪地球 2 || The Wandering Earth 2". Normalize the
+// separator spacing to the exact " || " the dashboard splits on, and fail on
+// a half-empty pair rather than let a typo ship as a title.
+const parseTitleCell = (cell, label) => {
+  const text = String(cell);
+  if (!text.includes('||')) return text;
+  const parts = text.split('||').map(part => part.trim());
+  if (parts.length !== 2 || !parts[0] || !parts[1]) {
+    console.error(`Unparseable title ${JSON.stringify(cell)} for ${label}; use "original title || English title".`);
+    process.exit(1);
+  }
+  return parts.join(' || ');
+};
+
 // 4. Transform rows
 const films = [];
 let membershipFees = 0;
@@ -113,7 +128,7 @@ for (const r of rows) {
   const { amount, currency } = parsePriceCell(r[7], `${date} "${r[1]}"`);
   films.push({
     date,
-    title: String(r[1]),
+    title: parseTitleCell(r[1], date),
     year: r[2],
     runtime: r[3],
     rating: r[4] ?? null,

@@ -1201,6 +1201,7 @@ tbody tr:last-child td { border-bottom: none; }
   color: var(--text);
   letter-spacing: 0;
 }
+.title-en { color: var(--text-dimmer); }
 .rating-badge {
   display: inline-flex;
   align-items: center;
@@ -2565,6 +2566,18 @@ function dedupFilms(films) {
   return result;
 }
 
+// ====== BILINGUAL TITLE HELPER ======
+// A Chinese-language film is logged as "流浪地球 2 || The Wandering Earth 2".
+// Only the log table renders the English half; everywhere else the original
+// title stands alone.
+function splitTitleParts(title) {
+  const text = String(title);
+  const i = text.indexOf(' || ');
+  return i === -1
+    ? { primary: text, english: null }
+    : { primary: text.slice(0, i), english: text.slice(i + 4) };
+}
+
 // ====== PRODUCTION YEAR HELPERS ======
 // A shorts program screens as one entry whose year cell lists every short's
 // production year ("2013, 2025, 2026"); regular films carry a single number.
@@ -3480,7 +3493,7 @@ months.forEach(m => {
       if (films.length > 0 && films.every(f => f.rating == null)) hasUnratedCalendarDay = true;
       const cls = films.length >= 5 ? 'watched-5' : films.length === 4 ? 'watched-4' : films.length === 3 ? 'watched-3' : films.length === 2 ? 'watched-2' : films.length === 1 ? 'watched-1' : '';
       const dayRuntime = films.reduce((sum,f) => sum + (f.runtime || 0), 0);
-      const filmTitlesJson = escapeHtml(JSON.stringify(films.map(f => String(f.title))));
+      const filmTitlesJson = escapeHtml(JSON.stringify(films.map(f => splitTitleParts(f.title).primary)));
       const filmRatingsJson = escapeHtml(JSON.stringify(films.map(f => f.rating)));
       html += `<div class="heatmap-cell ${cls}" data-date="${ds}" data-runtime="${dayRuntime}" data-films='${filmTitlesJson}' data-ratings='${filmRatingsJson}'>${d}</div>`;
     }
@@ -3827,7 +3840,9 @@ function normalizeTitleSearchText(text) {
 }
 
 function normalizeTableTitleSortText(text) {
-  return String(text)
+  // A recorded English title decides the row's position under title sort.
+  const { primary, english } = splitTitleParts(text);
+  return (english ?? primary)
     .toLowerCase()
     .replace(/^[^\p{L}\p{N}]+/u, '');
 }
@@ -3844,7 +3859,13 @@ function getFilteredTableFilms() {
   }
   if (activeFilters._titleSearch) {
     const q = normalizeTitleSearchText(activeFilters._titleSearch);
-    filtered = filtered.filter(f => normalizeTitleSearchText(f.title).includes(q));
+    // Match each half of a bilingual title on its own so the " || " separator
+    // is never searchable text.
+    filtered = filtered.filter(f => {
+      const { primary, english } = splitTitleParts(f.title);
+      return normalizeTitleSearchText(primary).includes(q)
+        || (english != null && normalizeTitleSearchText(english).includes(q));
+    });
   }
 
   filtered.forEach((f,i) => f._idx = i);
@@ -3890,12 +3911,16 @@ function renderTableBody() {
       <td><span style="font-family:'Dashboard Sans',sans-serif;font-size:1rem;color:var(--text-dim)">${dateStr}</span></td>
       <td style="line-height:1.3">${(() => {
         const badge = '<span class="rewatch-badge" title="Rewatch" aria-label="Rewatch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.5-6.3L21 8"/><polyline points="21 3 21 8 16 8"/><path d="M21 12a9 9 0 0 1-15.5 6.3L3 16"/><polyline points="3 21 3 16 8 16"/></svg></span>';
-        const title = String(f.title);
-        if (!f.rewatch) return `<span class="title-cell">${escapeHtml(title)}</span>`;
-        const i = title.lastIndexOf(' ');
-        const head = i >= 0 ? escapeHtml(title.slice(0, i + 1)) : '';
-        const tail = i >= 0 ? escapeHtml(title.slice(i + 1)) : escapeHtml(title);
-        return `<span class="title-cell">${head}<span class="title-tail-nowrap">${tail}${badge}</span></span>`;
+        const { primary, english } = splitTitleParts(f.title);
+        // The English half follows the original after an en space (about two
+        // regular spaces wide) and wraps exactly as a space inside one title.
+        const enJoin = html => `\u2002<span class="title-en">${html}</span>`;
+        if (!f.rewatch) return `<span class="title-cell">${escapeHtml(primary)}${english ? enJoin(escapeHtml(english)) : ''}</span>`;
+        const last = english ?? primary;
+        const i = last.lastIndexOf(' ');
+        const head = i >= 0 ? escapeHtml(last.slice(0, i + 1)) : '';
+        const tailHtml = `${head}<span class="title-tail-nowrap">${escapeHtml(i >= 0 ? last.slice(i + 1) : last)}${badge}</span>`;
+        return `<span class="title-cell">${english ? escapeHtml(primary) + enJoin(tailHtml) : tailHtml}</span>`;
       })()}</td>
       <td style="font-family:'Dashboard Sans',sans-serif;font-size:1rem;color:var(--text-dim);line-height:1.3">${filmYears(f).join('<br>')}</td>
       <td style="font-family:'Dashboard Sans',sans-serif;font-size:1rem;color:var(--text-dim)">${escapeHtml(f.runtime)}</td>
