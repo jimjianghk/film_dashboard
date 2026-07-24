@@ -2015,7 +2015,7 @@ footer img.footer-favicon {
     </div>
   </div>
 
-  <div class="page-footnotes"><span>*Includes membership fees</span> <span>†DCP includes other digital</span> <span>‡Excludes membership fees</span></div>
+  <div class="page-footnotes"></div>
 
   <footer><img class="footer-favicon" src="assets/favicon-192.png" alt=""></footer>
 </div>
@@ -2434,6 +2434,36 @@ const uniqueVenues = currentStats.uniqueVenues;
 const daysElapsed = dataDayIdxForStats + 1;
 const daysAtCinema = currentStats.daysAtCinema;
 
+// ====== PAGE FOOTNOTES ======
+// One registry hands out the marker symbols in the traditional pecking
+// order. A marker site claims its note where it renders, and the first claim
+// of each id takes the next free symbol, so allocation follows first
+// appearance on the page: the script builds sections in DOM order (stat
+// cards, decade chart, format chart, log table). Repeat claims keep their
+// symbol; a claim with new text (the dedup toggle flips the Various note
+// between singular and plural) rewrites the note in place.
+const FOOTNOTE_SYMBOLS = ['*', '†', '‡', '§', '**'];
+const footnotes = [];
+function footnoteMark(id, text) {
+  let note = footnotes.find(n => n.id === id);
+  if (!note) {
+    if (footnotes.length === FOOTNOTE_SYMBOLS.length) throw new Error('out of footnote symbols');
+    footnotes.push(note = { id, text: null, symbol: FOOTNOTE_SYMBOLS[footnotes.length] });
+  }
+  if (note.text !== text) {
+    note.text = text;
+    // Joined with plain spaces; word-spacing turns them into the gaps.
+    document.querySelector('.page-footnotes').innerHTML =
+      footnotes.map(n => `<span>${n.symbol}${escapeHtml(n.text)}</span>`).join(' ');
+  }
+  return note.symbol;
+}
+// Foreign tickets show their local price in the log; the total-spending stat
+// uses the parser's USD conversions, which its footnote calls out.
+const membershipMark = footnoteMark('membership', FILMS.some(f => f.currency)
+  ? 'Includes membership fees; non-USD prices converted using market exchange rates'
+  : 'Includes membership fees');
+
 const statsRowEl = document.getElementById('stats-row');
 const statsCompareToggleWrap = document.getElementById('stats-compare-toggle-wrap');
 const statsCompareToggle = document.getElementById('stats-compare-toggle');
@@ -2442,7 +2472,7 @@ statsRowEl.innerHTML = [
   { val: `${daysAtCinema}<span class="stat-val-slash">/</span>${daysElapsed}`, label: daysAtCinema === 1 ? 'Day at the cinema' : 'Days at the cinema', compare: statComparisons.daysAtCinema },
   { val: avgRating, label: 'Average rating', compare: statComparisons.avgRating },
   { val: `${(totalRuntime/60).toFixed(1)}h`, label: 'Total runtime', compare: statComparisons.totalRuntimeHours },
-  { val: `$${totalSpent.toFixed(0)}`, label: 'Total spending*', compare: statComparisons.totalSpent },
+  { val: `$${totalSpent.toFixed(0)}`, label: 'Total spending' + membershipMark, compare: statComparisons.totalSpent },
   { val: uniqueVenues, label: uniqueVenues === 1 ? 'NYC venue visited' : 'NYC venues visited', compare: statComparisons.uniqueVenues }
 ].map(s => `<div class="stat-card${s.compare ? ' stat-card-compare-ready' : ''}"><div class="stat-val">${s.val}</div><div class="stat-label">${s.label}</div>${s.compare ? `<div class="stat-compare"><span class="stat-compare-badge${s.compare.isIncrease ? '' : ' is-muted'}">${s.compare.text}</span></div>` : ''}</div>`).join('');
 if (previousStats) {
@@ -2533,9 +2563,8 @@ if (previousStats) {
 if (FILMS.length < 5) {
   document.querySelector('.charts-grid').style.display = 'none';
   document.querySelectorAll('.section').forEach(el => el.style.display = 'none');
-  const footnoteSpans = document.querySelectorAll('.page-footnotes span');
-  if (footnoteSpans[1]) footnoteSpans[1].style.display = 'none';
-  if (footnoteSpans[2]) footnoteSpans[2].style.display = 'none';
+  // The footer keeps only the spending note: the chart and table markers are
+  // claimed at render, which the return below skips.
   const note = document.createElement('div');
   note.className = 'sparse-note animate delay-2';
   note.textContent = 'Visualizations will display when there are more film entries.';
@@ -2585,22 +2614,6 @@ function maxFilmYear(f) { return Math.max(...filmYears(f)); }
 function filmDecade(f) {
   const decades = new Set(filmYears(f).map(y => Math.floor(y/10)*10));
   return decades.size === 1 ? String(decades.values().next().value) : 'various';
-}
-const hasMultiDecadeFilms = FILMS.some(f => filmDecade(f) === 'various');
-// The Various decade bar claims the dagger, bumping the DCP note to a double
-// dagger and the membership-fees exclusion to a chapter sign.
-const formatNoteSymbol = hasMultiDecadeFilms ? '‡' : '†';
-const priceNoteSymbol = hasMultiDecadeFilms ? '§' : '‡';
-if (hasMultiDecadeFilms) {
-  const noteSpans = document.querySelectorAll('.page-footnotes span');
-  noteSpans[0].insertAdjacentHTML('afterend', ' <span id="various-decades-note"></span>');
-  noteSpans[1].textContent = `${formatNoteSymbol}DCP includes other digital`;
-  noteSpans[2].textContent = `${priceNoteSymbol}Excludes membership fees`;
-}
-// Foreign tickets show their local price in the log; the total-spending stat
-// uses the parser's USD conversions, which the asterisk note calls out.
-if (FILMS.some(f => f.currency)) {
-  document.querySelector('.page-footnotes span').textContent = '*Includes membership fees; non-USD prices converted using market exchange rates';
 }
 
 // ====== CUMULATIVE CHART ======
@@ -3090,10 +3103,17 @@ function renderDecadeChart() {
   const decadeArr = Object.keys(allDecadeCounts).filter(d => d !== 'various').sort((a,b) => a-b);
   if (allDecadeCounts.various) decadeArr.push('various');
   const container = document.getElementById('decade-chart');
+  // The Various note is claimed per render, not at startup: it exists only
+  // when a Various bar does, and its wording tracks the deduped count.
+  const variousMark = allDecadeCounts.various
+    ? footnoteMark('various', (decadeCounts.various || 0) > 1
+        ? 'Shorts programs whose production years span multiple decades'
+        : 'Shorts program whose production years span multiple decades')
+    : '';
   if (!container.dataset.init) {
     container.innerHTML = decadeArr.map(d =>
       `<div class="bar-row" data-decade="${d}">
-        <div class="bar-label">${d === 'various' ? 'Various†' : d + 's'}</div>
+        <div class="bar-label">${d === 'various' ? 'Various' + variousMark : d + 's'}</div>
         <div class="bar-track"><div class="bar-fill venue-bar" style="width:0"></div></div>
         <div class="bar-count">0</div>
       </div>`
@@ -3107,12 +3127,6 @@ function renderDecadeChart() {
     if (!row) continue;
     row.querySelector('.bar-fill').style.width = (c / maxDecade) * 100 + '%';
     row.querySelector('.bar-count').textContent = c;
-  }
-  const variousNote = document.getElementById('various-decades-note');
-  if (variousNote) {
-    variousNote.textContent = '†' + ((decadeCounts.various || 0) > 1
-      ? 'Shorts programs whose production years span multiple decades'
-      : 'Shorts program whose production years span multiple decades');
   }
 }
 renderDecadeChart();
@@ -3239,7 +3253,7 @@ const rowsHtml = bases.map(b => {
     return out;
   }).join('');
   return `<div class="format-row">
-    <div class="bar-label">${escapeHtml(b === 'DCP' ? 'DCP' + formatNoteSymbol : b)}</div>
+    <div class="bar-label">${escapeHtml(b === 'DCP' ? 'DCP' + footnoteMark('dcp', 'DCP includes other digital') : b)}</div>
     <div class="format-bar-outer"><div class="format-bar-track" style="width:${trackPct}%;min-width:${trackMinWidth}px;">${segs}</div></div>
     <div class="bar-count">${data.total}</div>
   </div>`;
@@ -3786,8 +3800,8 @@ const columns = [
   { key:'year', label:'Year', w:'7.5%' },
   { key:'runtime', label:'Length', w:'6.25%' },
   { key:'rating', label:'Rating', w:'7.5%' },
-  { key:'format', label:'Format' + formatNoteSymbol, w:'10%' },
-  { key:'price', label:'Price' + priceNoteSymbol, w:'7%' },
+  { key:'format', label:'Format' + footnoteMark('dcp', 'DCP includes other digital'), w:'10%' },
+  { key:'price', label:'Price' + footnoteMark('price', 'Excludes membership fees'), w:'7%' },
   { key:'venue', label:'Venue', w:'7.75%' },
   { key:'series', label:'Series', w:'22.75%' }
 ];
