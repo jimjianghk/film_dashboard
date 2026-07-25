@@ -3806,6 +3806,12 @@ const columns = [
   { key:'series', label:'Series', w:'22.75%' }
 ];
 
+// Articles observed leading logged titles (English, French, Italian, Spanish),
+// ignored when sorting titles and series. Curated rather than generic:
+// lookalikes that lead titles here as non-articles ("die" in Die Hard, "i" in
+// I Saw the TV Glow) must stay out of the list.
+const LEADING_ARTICLE_RE = /^(?:(?:the|an|a|les|le|la|los|el|un)\s+|l[’'])/;
+
 function getFilterOptions(key) {
   let vals;
   if (key === 'date') {
@@ -3814,9 +3820,7 @@ function getFilterOptions(key) {
     const decades = [...new Set(FILMS.flatMap(f => filmYears(f).map(y => Math.floor(y/10)*10)))];
     vals = decades.sort((a,b) => a-b).map(d => d+'s');
   } else if (key === 'series') {
-    const articles = /^(the|a|an)\s+/i;
-    const sortKey = s => s.replace(articles, '').toLowerCase();
-    vals = [...new Set(FILMS.map(f => f[key] != null ? String(f[key]) : ''))].filter(Boolean).sort((a,b) => sortKey(a).localeCompare(sortKey(b)));
+    vals = [...new Set(FILMS.map(f => f[key] != null ? String(f[key]) : ''))].filter(Boolean).sort((a,b) => normalizeTableSortText(a).localeCompare(normalizeTableSortText(b)));
   } else {
     vals = [...new Set(FILMS.map(f => f[key] != null ? String(f[key]) : ''))].filter(Boolean).sort((a,b) => {
       const na = Number(a), nb = Number(b);
@@ -3847,12 +3851,18 @@ function normalizeTitleSearchText(text) {
     .toLowerCase();
 }
 
-function normalizeTableTitleSortText(text) {
-  // A recorded English title decides the row's position under title sort.
+function normalizeTableSortText(text) {
+  // Sort key for the table's title and series columns and the series filter
+  // menu. A recorded English title decides a bilingual row's position.
+  // Articles must strip before diacritics fold: folding first would turn the
+  // non-article "À" of "À nos amours" into a strippable "a".
   const { primary, english } = splitTitleParts(text);
   return (english ?? primary)
     .toLowerCase()
-    .replace(/^[^\p{L}\p{N}]+/u, '');
+    .replace(/^[^\p{L}\p{N}]+/u, '')
+    .replace(LEADING_ARTICLE_RE, '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
 }
 
 function getFilteredTableFilms() {
@@ -3891,9 +3901,9 @@ function getFilteredTableFilms() {
     }
     if (va == null) va = '';
     if (vb == null) vb = '';
-    if (currentSort.col === 'title') {
-      va = normalizeTableTitleSortText(va);
-      vb = normalizeTableTitleSortText(vb);
+    if (currentSort.col === 'title' || currentSort.col === 'series') {
+      va = normalizeTableSortText(va);
+      vb = normalizeTableSortText(vb);
     }
     if (typeof va === 'string') va = va.toLowerCase();
     if (typeof vb === 'string') vb = vb.toLowerCase();

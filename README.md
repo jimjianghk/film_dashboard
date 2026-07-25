@@ -74,7 +74,7 @@ All named screening series ranked by count. Each row shows the series name follo
 
 Sortable, filterable table of every screening. Nine columns: date, title, year, runtime, rating, format, price, venue, and series. Features:
 
-- Click any header to sort (ascending/descending). Null ratings always sort to the bottom. Shorts programs sort by their oldest listed year when sorting oldest-first and by their newest when sorting newest-first.
+- Click any header to sort (ascending/descending). Null ratings always sort to the bottom. Shorts programs sort by their oldest listed year when sorting oldest-first and by their newest when sorting newest-first. Sorting by title or series ignores a leading English, French, Italian, or Spanish article (the, a, an, le, la, les, l', un, el, los), so *The Godfather* files under G and *L'Avventura* under A; the series filter menu orders its options the same way.
 - A shorts program's Year cell lists each production year on its own line.
 - A "Rewatches only" switch in the Title header filters the table to rewatches.
 - A bilingually logged film shows its English title in gray after the original title, an en space apart, wrapping as if the pair were one title; sorting by title places these rows by their English titles.
