@@ -2567,7 +2567,7 @@ if (FILMS.length < 5) {
   // claimed at render, which the return below skips.
   const note = document.createElement('div');
   note.className = 'sparse-note animate delay-2';
-  note.textContent = 'Visualizations will display when there are more film entries.';
+  note.textContent = 'Visualisations will display when there are more film entries.';
   document.querySelector('.charts-grid').insertAdjacentElement('afterend', note);
   return;
 }
@@ -3107,8 +3107,8 @@ function renderDecadeChart() {
   // when a Various bar does, and its wording tracks the deduped count.
   const variousMark = allDecadeCounts.various
     ? footnoteMark('various', (decadeCounts.various || 0) > 1
-        ? 'Shorts programs whose production years span multiple decades'
-        : 'Shorts program whose production years span multiple decades')
+        ? 'Shorts programmes whose production years span multiple decades'
+        : 'Shorts programme whose production years span multiple decades')
     : '';
   if (!container.dataset.init) {
     container.innerHTML = decadeArr.map(d =>
