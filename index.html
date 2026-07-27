@@ -2410,11 +2410,21 @@ function formatStatDelta(value, { decimals = 0, prefix = '', suffix = '' } = {})
 const currentStats = getHeroStats(FILMS, MEMBERSHIP_FEES);
 const previousFilmsAtCutoff = previousYearData?.films?.filter(f => isOnOrBeforeYearPoint(f.date, endDate)) || [];
 const previousYear = previousYearData?.films?.[0]?.date.slice(0,4) || previousDashboardYear;
+// Membership fees split two ways for the same-date comparison. An annual
+// membership payment carries its payment date and counts in full once the
+// comparison date reaches that date, and not at all before. The undated
+// remainder (the AMC subscription, billed monthly across the year) prorates
+// by elapsed days instead.
 const previousYearMembershipFees = previousYearData?.membershipFees || 0;
+const previousMembershipPayments = previousYearData?.membershipPayments || [];
+const previousUndatedFees = previousYearMembershipFees - previousMembershipPayments.reduce((s, p) => s + p.amount, 0);
+const previousPaymentsByCutoff = previousMembershipPayments
+  .filter(p => isOnOrBeforeYearPoint(p.date, endDate))
+  .reduce((s, p) => s + p.amount, 0);
 const previousYearDays = previousYear ? countDaysThroughYearPoint(previousYear, `${previousYear}-12-31`) : 0;
-const previousMembershipFeesAtCutoff = previousYearDays
-  ? previousYearMembershipFees * (countDaysThroughYearPoint(previousYear, endDate) / previousYearDays)
-  : 0;
+const previousMembershipFeesAtCutoff = previousPaymentsByCutoff + (previousYearDays
+  ? previousUndatedFees * (countDaysThroughYearPoint(previousYear, endDate) / previousYearDays)
+  : 0);
 const previousStats = dashYear !== earliestDashboardYear && previousFilmsAtCutoff.length
   ? getHeroStats(previousFilmsAtCutoff, previousMembershipFeesAtCutoff)
   : null;

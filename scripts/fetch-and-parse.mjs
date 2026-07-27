@@ -120,8 +120,20 @@ const parseTitleCell = (cell, label) => {
 // 4. Transform rows
 const films = [];
 let membershipFees = 0;
+const membershipPayments = [];
 for (const r of rows) {
-  if (r && typeof r[16] === 'number') membershipFees += r[16];
+  // Membership rows hold the venue code in column P, fees paid in column Q,
+  // and, for an annual membership, the payment date in column R (same serial
+  // format as the screening date column). The AMC monthly subscription is a
+  // running total with no date, so it stays out of the dated-payments list;
+  // the dashboard prorates undated fees across the year and counts a dated
+  // payment only once the comparison date reaches its payment date.
+  if (r && typeof r[16] === 'number') {
+    membershipFees += r[16];
+    if (r[16] > 0 && typeof r[17] === 'number') {
+      membershipPayments.push({ venue: r[15] || '', amount: r[16], date: excelSerialDateToDateString(r[17]) });
+    }
+  }
   if (!r || typeof r[0] !== 'number' || !r[1]) continue;
 
   const date = excelSerialDateToDateString(r[0]);
@@ -142,6 +154,7 @@ for (const r of rows) {
 }
 
 films.sort((a, b) => a.date.localeCompare(b.date));
+membershipPayments.sort((a, b) => a.date.localeCompare(b.date));
 
 // 5. Convert foreign prices to USD at each screening date's ECB reference
 // rate (Frankfurter serves the most recent business day for weekends and
@@ -196,8 +209,8 @@ for (const f of foreignFilms) {
 // 6. Write year-specific data and the site manifest.
 const output = resolve(DATA_DIR, `data-${activeYear}.json`);
 const manifest = buildManifest(activeYear);
-writeFileSync(output, JSON.stringify({ films, membershipFees }));
+writeFileSync(output, JSON.stringify({ films, membershipFees, membershipPayments }));
 writeFileSync(MANIFEST_OUTPUT, `${JSON.stringify(manifest, null, 2)}\n`);
 writeFileSync(MANIFEST_JS_OUTPUT, `window.DASHBOARD_MANIFEST = ${JSON.stringify(manifest)};\n`);
 const fxNote = foreignFilms.length ? ` (${foreignFilms.length} foreign-currency prices converted to USD)` : '';
-console.log(`Wrote ${films.length} films and $${membershipFees} membership fees from sheet "${activeSheetName}" to data-${activeYear}.json${fxNote}`);
+console.log(`Wrote ${films.length} films and $${membershipFees} membership fees (${membershipPayments.length} dated payments) from sheet "${activeSheetName}" to data-${activeYear}.json${fxNote}`);

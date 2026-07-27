@@ -6,7 +6,7 @@ Data is sourced from a personal spreadsheet on Dropbox and synced by a manually 
 
 ## Dashboard
 
-The dashboard is driven by the film log and membership-fee total exported from the source spreadsheet. A generated manifest lists each year's data file; archive views load frozen snapshots for past years while keeping the current dashboard design, so the same stats, charts, filters, and New releases / Repertory logic remain available across years.
+The dashboard is driven by the film log and membership fees exported from the source spreadsheet. A generated manifest lists each year's data file; archive views load frozen snapshots for past years while keeping the current dashboard design, so the same stats, charts, filters, and New releases / Repertory logic remain available across years.
 
 ### Archive views
 
@@ -22,7 +22,7 @@ The masthead (pride stripes included) links back to the home page, i.e. the curr
 
 ### Stats row
 
-Six summary cards cover total screenings, days at the cinema, average rating, total runtime, total spending, and unique NYC venues visited. Days at the cinema counts distinct screening dates against elapsed days using the same data-day rule as the cumulative chart. Average rating excludes unrated films and collapses rewatches to unique titles before averaging, matching the rating chart's dedup logic. Total spending combines per-screening prices (foreign tickets at their USD-converted value) with membership fees and ties to the page footnotes; unique venues exclude the `OTHER` catch-all. When a previous-year archive exists, an off-by-default toggle reveals same-date comparisons. Comparisons normalize Feb. 29 to Feb. 28; increases use signature red, flat or lower values use subdued gray, and spending comparisons prorate the previous year's membership fees through the comparison date. The row uses an editorial stat treatment and adapts from one line to wrapped layouts on smaller screens.
+Six summary cards cover total screenings, days at the cinema, average rating, total runtime, total spending, and unique NYC venues visited. Days at the cinema counts distinct screening dates against elapsed days using the same data-day rule as the cumulative chart. Average rating excludes unrated films and collapses rewatches to unique titles before averaging, matching the rating chart's dedup logic. Total spending combines per-screening prices (foreign tickets at their USD-converted value) with membership fees and ties to the page footnotes; unique venues exclude the `OTHER` catch-all. When a previous-year archive exists, an off-by-default toggle reveals same-date comparisons. Comparisons normalize Feb. 29 to Feb. 28; increases use signature red, flat or lower values use subdued gray. Spending comparisons include an annual membership payment from the previous year only once the comparison date reaches its payment date, while monthly subscription fees prorate through the comparison date. The row uses an editorial stat treatment and adapts from one line to wrapped layouts on smaller screens.
 
 ### Chart navigation
 
@@ -111,7 +111,7 @@ When the year has fewer than 5 logged films, the masthead and stats row render a
 
 ## Data
 
-The film log is maintained in a personal spreadsheet, one sheet per year, and exported by a GitHub Actions workflow that can be run manually or triggered on a schedule from cron-job.org. Each sync targets the current year in New York time, falling back to the previous year until the new year's sheet has its first dated film row. The updater writes the year's data file and refreshes the manifest, so the previous year becomes the archive as soon as the new year takes over. Membership fees are tracked separately from per-screening prices, then folded into the total-spending stat and year-over-year comparison logic.
+The film log is maintained in a personal spreadsheet, one sheet per year, and exported by a GitHub Actions workflow that can be run manually or triggered on a schedule from cron-job.org. Each sync targets the current year in New York time, falling back to the previous year until the new year's sheet has its first dated film row. The updater writes the year's data file and refreshes the manifest, so the previous year becomes the archive as soon as the new year takes over. Membership fees are tracked separately from per-screening prices, annual payments carrying their payment dates, then folded into the total-spending stat and year-over-year comparison logic.
 
 A shorts program (one screening of several short films) is logged as a single row whose year cell lists every short's production year separated by commas (e.g. "2013, 2025, 2026"). The exported JSON carries that string through unchanged, and the dashboard parses the listed years wherever production years matter: the rating chart's New releases / Repertory split, the decade chart, and the log table's Year column, sorting, and decade filter.
 
