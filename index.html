@@ -2912,14 +2912,19 @@ function renderCumulativeChart(anim) {
   container.style.userSelect = 'none';
   container.style.webkitTouchCallout = 'none';
 
-  // The plotted line and the forecast layer are clipped to the plot area,
-  // in motion and at rest. Mid-animation the interpolated scales push
-  // geometry past the plot's top and right edges; settled, the line's
-  // rounded stroke ends would overhang the axes at Jan 1 and, once the
-  // chart runs through Dec 31, at the year end. The rect reaches 2px below
-  // the baseline so a flat zero segment keeps its full stroke, and the
-  // current year's mid-plot data-day line end keeps its cap.
-  const plotClip = `<clipPath id="cum-plot-clip"><rect x="${ML}" y="${MT}" width="${innerW}" height="${innerH + 2}"/></clipPath>`;
+  // The plotted line and the forecast layer are clipped at the plot's
+  // left and right edges, where the line's rounded stroke ends would
+  // otherwise overhang the axes at Jan 1 and, once the chart runs
+  // through Dec 31, at the year end; the current year's mid-plot
+  // data-day line end keeps its cap. At rest the top and bottom stay
+  // open, so a line hugging the top gridline keeps its full stroke.
+  // Animation frames close the vertical bounds to the plot area, since
+  // the interpolated scales push forecast geometry out of it while
+  // everything settles, with 2px of grace at the top so a line hugging
+  // the top gridline keeps its stroke mid-animation too.
+  const clipTop = anim ? MT - 2 : -20;
+  const clipBottom = anim ? MT + innerH + 2 : H + 20;
+  const plotClip = `<clipPath id="cum-plot-clip"><rect x="${ML}" y="${clipTop}" width="${innerW}" height="${clipBottom - clipTop}"/></clipPath>`;
   container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;overflow:visible;">${plotClip}${yAxis}${xAxis}${todayMark}${forecastLayer}<g clip-path="url(#cum-plot-clip)"><path d="${pathD}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></g>${hoverLine}${ringMask}${hoverDot}${hoverRing}${hoverZone}</svg>`;
 
   const svg = container.querySelector('svg');
