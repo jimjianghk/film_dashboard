@@ -861,6 +861,8 @@ h1 {
 /* RESPONSIVE HEADERS */
 .rating-header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .rating-dedup-toggle { margin-left: 6px; }
+.cum-forecast-toggle { display: none; margin-left: 6px; }
+.cum-forecast-toggle.is-visible { display: flex; align-items: center; gap: 6px; }
 @media (max-width: 499px) {
   .rating-header,
   .calendar-header {
@@ -1881,7 +1883,16 @@ footer img.footer-favicon {
 
   <div class="charts-grid">
     <div class="chart-card full animate delay-2" id="sec-cumulative">
-      <div class="chart-label with-subtitle">Cumulative screenings<span class="chart-num">1</span></div>
+      <div class="chart-label with-subtitle">Cumulative screenings
+        <span class="chart-dedup cum-forecast-toggle" id="cum-forecast-wrap">
+          <label class="switch-toggle" title="Forecast the year end from past years' pace">
+            <input type="checkbox" id="cum-forecast">
+            <span class="switch-slider"></span>
+          </label>
+          <label class="switch-label-text" for="cum-forecast">Show forecast</label>
+        </span>
+        <span class="chart-num">1</span>
+      </div>
       <div class="chart-subtitle"><span class="chart-subtitle-hover">Hover</span><span class="chart-subtitle-click">Tap</span> on chart for number of screenings as of any date</div>
       <div id="cumulative-chart"></div>
     </div>
@@ -2627,7 +2638,75 @@ function filmDecade(f) {
 }
 
 // ====== CUMULATIVE CHART ======
-function renderCumulativeChart() {
+// Year-end forecast (optional toggle, current year only). The forecast
+// total scales the current count by how far through a full year past years
+// were at this same date: central = count / mean(past-year fractions), with
+// a confidence band spanning the most and least front-loaded past year
+// (count / max fraction .. count / min fraction). The forecast remainder is
+// then spread over the rest of the year following past years' average
+// month-by-month share of screenings, so the curve keeps the usual seasonal
+// shape instead of climbing linearly. Fractions reuse the stats row's
+// Feb. 29-safe same-date comparison. The rendering follows The Economist's
+// forecast treatment: a grey band shades the forecast span under a
+// "Forecast" label, the line runs solid through it, and the confidence
+// band fills salmon; band and salmon hexes are sampled from print so they
+// composite correctly on the shared cream paper.
+let cumForecast = null;
+let cumForecastLoad = null;
+let cumForecastAnimId = null;
+let cumForecastP = 0;
+const cumForecastInput = document.getElementById('cum-forecast');
+const cumForecastWrap = document.getElementById('cum-forecast-wrap');
+
+function computeCumForecast(pastFilmsLists) {
+  const cumNow = FILMS.filter(f => f.date <= endDate).length;
+  if (!cumNow) return null;
+  const fractions = [];
+  const monthShares = new Array(12).fill(0);
+  let shareYears = 0;
+  pastFilmsLists.forEach(films => {
+    if (!films.length) return;
+    const atCutoff = films.filter(f => isOnOrBeforeYearPoint(f.date, endDate)).length;
+    if (atCutoff) fractions.push(atCutoff / films.length);
+    films.forEach(f => { monthShares[parseInt(f.date.slice(5, 7), 10) - 1] += 1 / films.length; });
+    shareYears++;
+  });
+  if (!fractions.length) return null;
+  for (let m = 0; m < 12; m++) monthShares[m] /= shareYears;
+  const meanFraction = fractions.reduce((s, v) => s + v, 0) / fractions.length;
+  const centralTotal = cumNow / meanFraction;
+  const loTotal = cumNow / Math.max(...fractions);
+  const hiTotal = cumNow / Math.min(...fractions);
+  // Daily weights for the not-yet-logged days: each month's average share,
+  // spread evenly across that month's days.
+  const yearStart = new Date(dashYear + '-01-01T12:00:00');
+  const weights = [];
+  let weightSum = 0;
+  for (let i = dataDayIdxForStats + 1; i < daysInYearForStats; i++) {
+    const d = new Date(yearStart.getTime() + i * 86400000);
+    weights.push(monthShares[d.getMonth()] / new Date(parseInt(dashYear), d.getMonth() + 1, 0).getDate());
+    weightSum += weights[weights.length - 1];
+  }
+  const curve = total => {
+    const remaining = Math.max(0, total - cumNow);
+    const values = [cumNow];
+    let running = cumNow;
+    weights.forEach(w => {
+      running += weightSum > 0 ? remaining * w / weightSum : 0;
+      values.push(running);
+    });
+    return values;
+  };
+  return {
+    startIdx: dataDayIdxForStats,
+    central: curve(centralTotal),
+    lo: curve(loTotal),
+    hi: curve(hiTotal),
+    yearEndHi: hiTotal
+  };
+}
+
+function renderCumulativeChart(anim) {
   const container = document.getElementById('cumulative-chart');
   const W = container.getBoundingClientRect().width;
   if (!W) return;
@@ -2651,9 +2730,18 @@ function renderCumulativeChart() {
   const chartEndMonth = chartEndDate.getMonth();
   const daysInChartEndMonth = new Date(parseInt(dashYear), chartEndMonth + 1, 0).getDate();
   const twoThirdsPoint = Math.ceil(daysInChartEndMonth * 2 / 3);
-  const endMonth = chartEndDate.getDate() > twoThirdsPoint ? Math.min(11, chartEndMonth + 1) : chartEndMonth;
-  const endMonthLastDay = new Date(parseInt(dashYear), endMonth + 1, 0, 12, 0, 0);
-  const endIdx = Math.min(daysInYear - 1, Math.round((endMonthLastDay - yearStart) / dayMs));
+  // Forecast visibility runs 0..1. Static renders sit at the endpoints;
+  // toggle-animation frames pass intermediate values, so the axes rescale
+  // and the forecast layer fades in step, like the bar charts' toggles.
+  const p = anim ? anim.p : (cumForecastInput.checked && cumForecast ? 1 : 0);
+  cumForecastP = p;
+  const fcst = p > 0 && cumForecast ? cumForecast : null;
+  const forecastTarget = anim ? anim.on : p === 1;
+  const baseEndMonth = chartEndDate.getDate() > twoThirdsPoint ? Math.min(11, chartEndMonth + 1) : chartEndMonth;
+  const baseEndMonthLastDay = new Date(parseInt(dashYear), baseEndMonth + 1, 0, 12, 0, 0);
+  const baseEndIdx = Math.min(daysInYear - 1, Math.round((baseEndMonthLastDay - yearStart) / dayMs));
+  const endMonth = p > 0 ? 11 : baseEndMonth;
+  const endIdx = baseEndIdx + (daysInYear - 1 - baseEndIdx) * p;
   let cum = 0;
   const points = [];
   let lastDayIdx = -1;
@@ -2674,53 +2762,107 @@ function renderCumulativeChart() {
   // Pick the smallest step such that the chart has at least 4 intervals (≥ 5
   // ticks counting 0) and at most 6 intervals. Steps are multiples of 10,
   // except for very low totals (≤ 30 films) which allow multiples of 5.
-  const minStep = total <= 30 ? 5 : 10;
-  let yStep = minStep;
-  while (yStep <= 1000) {
-    const m = Math.max(4 * yStep, Math.ceil(total / yStep) * yStep);
-    if (m / yStep <= 6) break;
-    yStep += minStep;
-  }
-  const niceMax = Math.max(4 * yStep, Math.ceil(total / yStep) * yStep);
-  const yTicks = niceMax / yStep;
+  const yAxisFor = maxVal => {
+    const minStep = maxVal <= 30 ? 5 : 10;
+    let step = minStep;
+    while (step <= 1000) {
+      const m = Math.max(4 * step, Math.ceil(maxVal / step) * step);
+      if (m / step <= 6) break;
+      step += minStep;
+    }
+    return { step, max: Math.max(4 * step, Math.ceil(maxVal / step) * step) };
+  };
+  const offAxis = yAxisFor(total);
+  const onAxis = cumForecast ? yAxisFor(Math.max(total, Math.ceil(cumForecast.yearEndHi))) : offAxis;
+  const niceMax = offAxis.max + (onAxis.max - offAxis.max) * p;
   const yScale = v => MT + innerH - (v / niceMax) * innerH;
   const pathD = points.map((p, i) =>
     `${i === 0 ? 'M' : 'L'}${xScale(p.x).toFixed(1)},${yScale(p.y).toFixed(1)}`
   ).join(' ');
+  const yTickSet = [];
+  const addYTicks = (axis, key) => {
+    for (let v = 0; v <= axis.max; v += axis.step) {
+      const existing = yTickSet.find(t => t.v === v);
+      if (existing) existing[key] = true; else yTickSet.push({ v, [key]: true });
+    }
+  };
+  addYTicks(offAxis, 'off');
+  if (p > 0) addYTicks(onAxis, 'on');
   let yAxis = '';
-  for (let i = 0; i <= yTicks; i++) {
-    const v = yStep * i;
-    const y = yScale(v);
-    yAxis += `<line x1="${i===0?ML-0.75:ML}" x2="${i===0?ML+innerW+0.75:ML+innerW}" y1="${y}" y2="${y}" stroke="${i===0?'var(--text)':'rgb(192,192,191)'}" stroke-width="1.5"/>`;
-    yAxis += `<text x="${W-6}" y="${y+5}" text-anchor="end" font-family="'Dashboard Sans',sans-serif" font-size="1rem" font-weight="350" fill="var(--text)">${Math.round(v)}</text>`;
-  }
-  const useShortLabels = endMonth >= 10 && window.matchMedia('(max-width: 500px)').matches;
+  yTickSet.forEach(({ v, off, on }) => {
+    const alpha = off && on ? 1 : off ? 1 - p : p;
+    if (alpha <= 0.001) return;
+    const y = Math.max(MT, yScale(v));
+    const op = alpha < 1 ? ` opacity="${alpha.toFixed(3)}"` : '';
+    yAxis += `<line x1="${v===0?ML-0.75:ML}" x2="${v===0?ML+innerW+0.75:ML+innerW}" y1="${y}" y2="${y}" stroke="${v===0?'var(--text)':'rgb(192,192,191)'}" stroke-width="1.5"${op}/>`;
+    yAxis += `<text x="${W-6}" y="${y+5}" text-anchor="end" font-family="'Dashboard Sans',sans-serif" font-size="1rem" font-weight="350" fill="var(--text)"${op}>${Math.round(v)}</text>`;
+  });
+  const useShortLabels = (forecastTarget ? 11 : baseEndMonth) >= 10 && window.matchMedia('(max-width: 500px)').matches;
   const months = useShortLabels
     ? ['J','F','M','A','M','J','J','A','S','O','N','D']
     : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   let xAxis = '';
   for (let m = 0; m <= endMonth; m++) {
+    const alpha = m <= baseEndMonth ? 1 : p;
+    if (alpha <= 0.001) continue;
+    const op = alpha < 1 ? ` opacity="${alpha.toFixed(3)}"` : '';
     const monthStart = new Date(dashYear + '-' + String(m+1).padStart(2,'0') + '-01T12:00:00');
-    const dayIdx = Math.round((monthStart - yearStart) / dayMs);
+    const dayIdx = Math.min(Math.round((monthStart - yearStart) / dayMs), endIdx);
     const x = xScale(dayIdx);
-    xAxis += `<line x1="${x}" x2="${x}" y1="${MT+innerH+0.75}" y2="${MT+innerH+5.75}" stroke="var(--text)" stroke-width="1.5"/>`;
-    let nextX;
-    if (m < endMonth) {
+    xAxis += `<line x1="${x}" x2="${x}" y1="${MT+innerH+0.75}" y2="${MT+innerH+5.75}" stroke="var(--text)" stroke-width="1.5"${op}/>`;
+    let nextIdx = endIdx;
+    if (m < 11) {
       const nextMonthStart = new Date(dashYear + '-' + String(m+2).padStart(2,'0') + '-01T12:00:00');
-      nextX = xScale(Math.round((nextMonthStart - yearStart) / dayMs));
-    } else {
-      nextX = xScale(endIdx);
+      nextIdx = Math.min(Math.round((nextMonthStart - yearStart) / dayMs), endIdx);
     }
-    const labelX = (x + nextX) / 2;
-    xAxis += `<text x="${labelX}" y="${MT+innerH+20}" text-anchor="middle" font-family="'Dashboard Sans',sans-serif" font-size="1rem" font-weight="350" fill="var(--text)">${months[m]}</text>`;
+    const labelX = (x + xScale(nextIdx)) / 2;
+    xAxis += `<text x="${labelX}" y="${MT+innerH+20}" text-anchor="middle" font-family="'Dashboard Sans',sans-serif" font-size="1rem" font-weight="350" fill="var(--text)"${op}>${months[m]}</text>`;
   }
   const xEnd = xScale(endIdx);
   xAxis += `<line x1="${xEnd}" x2="${xEnd}" y1="${MT+innerH+0.75}" y2="${MT+innerH+5.75}" stroke="var(--text)" stroke-width="1.5"/>`;
   let todayMark = '';
-  const chartExtendsToYearEnd = endIdx >= daysInYear - 1;
-  if (!chartExtendsToYearEnd && chartEndDate >= yearStart && chartEndDate <= yearEnd) {
+  const baseExtendsToYearEnd = baseEndIdx >= daysInYear - 1;
+  if (!baseExtendsToYearEnd && (1 - p) > 0.001 && chartEndDate >= yearStart && chartEndDate <= yearEnd) {
     const tx = xScale(dataDayIdx);
-    todayMark = `<line x1="${tx}" x2="${tx}" y1="${MT}" y2="${MT+innerH-0.75}" stroke="rgb(192,192,191)" stroke-width="1.5" stroke-dasharray="8,5"/>`;
+    const op = p > 0 ? ` opacity="${(1 - p).toFixed(3)}"` : '';
+    todayMark = `<line x1="${tx}" x2="${tx}" y1="${MT}" y2="${MT+innerH-0.75}" stroke="rgb(192,192,191)" stroke-width="1.5" stroke-dasharray="8,5"${op}/>`;
+  }
+  // The Economist forecast treatment: a grey band shades the forecast span
+  // (top edge on the top gridline, bottom clear of the baseline, left edge
+  // doing the data-day marker's job), a "Forecast" label at the top, the
+  // salmon confidence area over the band, and the line running solid
+  // through. The print original composites in CMYK, which no single sRGB
+  // fill-plus-opacity reproduces, so each visible result is painted
+  // directly with the exact sRGB values extracted from the page: the band
+  // turns the paper rgb(210,209,198) and leaves gridlines untouched, so
+  // they are re-drawn across it as-is; the salmon area reads
+  // rgb(216,172,149) over the band and tints the gridlines it crosses
+  // rgb(203,163,141), so those segments are re-drawn clipped to the fan.
+  let forecastLayer = '';
+  if (fcst) {
+    const bandX = xScale(fcst.startIdx);
+    const bandW = xScale(endIdx) - bandX;
+    const bandGrid = stroke => {
+      let lines = '';
+      for (let v = onAxis.step; v <= onAxis.max; v += onAxis.step) {
+        const gy = Math.max(MT, yScale(v));
+        lines += `<line x1="${bandX.toFixed(1)}" x2="${(bandX + bandW).toFixed(1)}" y1="${gy}" y2="${gy}" stroke="${stroke}" stroke-width="1.5"/>`;
+      }
+      return lines;
+    };
+    const fcstPt = (v, k) => `${xScale(fcst.startIdx + k).toFixed(1)},${yScale(v).toFixed(1)}`;
+    const fanD = `M${fcst.hi.map(fcstPt).join(' L')} L${fcst.lo.map(fcstPt).reverse().join(' L')} Z`;
+    const centralD = fcst.central.map((v, k) => `${k === 0 ? 'M' : 'L'}${fcstPt(v, k)}`).join(' ');
+    forecastLayer = `<g opacity="${p.toFixed(3)}" clip-path="url(#cum-plot-clip)">` +
+      `<rect x="${bandX.toFixed(1)}" y="${MT}" width="${bandW.toFixed(1)}" height="${innerH - 0.75}" fill="rgb(210,209,198)"/>` +
+      bandGrid('rgb(192,192,191)') +
+      `<path d="${fanD}" fill="rgb(216,172,149)"/>` +
+      `<clipPath id="cum-forecast-fan"><path d="${fanD}"/></clipPath>` +
+      `<g clip-path="url(#cum-forecast-fan)">${bandGrid('rgb(203,163,141)')}</g>`;
+    if (bandW >= 76) {
+      forecastLayer += `<text x="${(bandX + bandW / 2).toFixed(1)}" y="${MT + 20}" text-anchor="middle" font-family="'Dashboard Sans',sans-serif" font-size="1rem" font-weight="400" fill="rgb(89,89,89)">Forecast</text>`;
+    }
+    forecastLayer += `<path d="${centralD}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></g>`;
   }
 
   // Build per-day cumulative lookup so a cursor anywhere on the chart can resolve to (date, count).
@@ -2741,7 +2883,15 @@ function renderCumulativeChart() {
   container.style.userSelect = 'none';
   container.style.webkitTouchCallout = 'none';
 
-  container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;overflow:visible;">${yAxis}${xAxis}${todayMark}<path d="${pathD}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>${hoverLine}${hoverDot}${hoverZone}</svg>`;
+  // The plotted line and the forecast layer are clipped to the plot area,
+  // in motion and at rest. Mid-animation the interpolated scales push
+  // geometry past the plot's top and right edges; settled, the line's
+  // rounded stroke ends would overhang the axes at Jan 1 and, once the
+  // chart runs through Dec 31, at the year end. The rect reaches 2px below
+  // the baseline so a flat zero segment keeps its full stroke, and the
+  // current year's mid-plot data-day line end keeps its cap.
+  const plotClip = `<clipPath id="cum-plot-clip"><rect x="${ML}" y="${MT}" width="${innerW}" height="${innerH + 2}"/></clipPath>`;
+  container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;overflow:visible;">${plotClip}${yAxis}${xAxis}${todayMark}${forecastLayer}<g clip-path="url(#cum-plot-clip)"><path d="${pathD}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></g>${hoverLine}${hoverDot}${hoverZone}</svg>`;
 
   const svg = container.querySelector('svg');
   const lineEl = svg.querySelector('.cum-hover-line');
@@ -2754,11 +2904,13 @@ function renderCumulativeChart() {
     const r = svg.getBoundingClientRect();
     const svgX = (clientX - r.left) * (W / r.width);
     const rawDayIdx = Math.round((svgX - ML) / innerW * endIdx);
-    if (rawDayIdx > dataDayIdx && !allowClamp) { hideHover(); return; }
-    const dayIdx = Math.max(0, Math.min(dataDayIdx, rawDayIdx));
-    const cum = cumByDay[dayIdx];
+    const maxHoverIdx = fcst ? daysInYear - 1 : dataDayIdx;
+    if (rawDayIdx > maxHoverIdx && !allowClamp) { hideHover(); return; }
+    const dayIdx = Math.max(0, Math.min(maxHoverIdx, rawDayIdx));
+    const inForecast = fcst && dayIdx > dataDayIdx;
+    const cum = inForecast ? Math.round(fcst.central[dayIdx - fcst.startIdx]) : cumByDay[dayIdx];
     const x = xScale(dayIdx);
-    const y = yScale(cum);
+    const y = yScale(inForecast ? fcst.central[dayIdx - fcst.startIdx] : cum);
     lineEl.setAttribute('x1', x);
     lineEl.setAttribute('x2', x);
     lineEl.setAttribute('visibility', 'visible');
@@ -2767,7 +2919,9 @@ function renderCumulativeChart() {
     dotEl.setAttribute('visibility', 'visible');
     const dt = new Date(yearStart.getTime() + dayIdx * dayMs);
     const dateStr = dt.toLocaleDateString('en-US', { month:'short', day:'numeric' });
-    cumTooltip.textContent = `${dateStr} · ${cum} ${cum === 1 ? 'screening' : 'screenings'}`;
+    cumTooltip.textContent = inForecast
+      ? `${dateStr} · ${cum} forecast ${cum === 1 ? 'screening' : 'screenings'}`
+      : `${dateStr} · ${cum} ${cum === 1 ? 'screening' : 'screenings'}`;
     cumTooltip.style.display = 'block';
     const dotClientX = r.left + x * (r.width / W);
     const dotClientY = r.top + y * (r.height / H);
@@ -2816,6 +2970,65 @@ window.addEventListener('resize', () => {
   clearTimeout(cumulativeResizeTimer);
   cumulativeResizeTimer = setTimeout(renderCumulativeChart, 120);
 });
+
+// Animates the forecast toggle between its states: the axes rescale while
+// the forecast layer, incoming ticks, and month labels fade, easing out
+// like the bar charts' toggle transitions (their CSS
+// cubic-bezier(0.22,1,0.36,1) approximated here as ease-out quintic).
+// Starts from the current visual progress, so flipping mid-animation
+// reverses smoothly, and collapses to a static render for reduced motion.
+function animateCumForecast() {
+  if (cumForecastAnimId) cancelAnimationFrame(cumForecastAnimId);
+  const target = cumForecastInput.checked && cumForecast ? 1 : 0;
+  const from = cumForecastP;
+  if (from === target || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    cumForecastAnimId = null;
+    renderCumulativeChart();
+    return;
+  }
+  const startTime = performance.now();
+  const duration = 800;
+  const easeOut = t => 1 - Math.pow(1 - t, 5);
+  const stepFrame = now => {
+    const raw = Math.min(1, (now - startTime) / duration);
+    if (raw >= 1) {
+      cumForecastAnimId = null;
+      renderCumulativeChart();
+      return;
+    }
+    renderCumulativeChart({ p: from + (target - from) * easeOut(raw), on: target === 1 });
+    cumForecastAnimId = requestAnimationFrame(stepFrame);
+  };
+  cumForecastAnimId = requestAnimationFrame(stepFrame);
+}
+
+// The forecast toggle only appears on the current year's dashboard when
+// archive years exist to forecast from. Past-year data loads on first use;
+// the already-fetched previous year is reused rather than fetched again.
+const cumForecastYears = Object.keys(DATA_FILES_BY_YEAR || {}).filter(y => y < dashYear).sort();
+if (isCurrentDashboardYear && cumForecastYears.length && FILMS.length) {
+  cumForecastWrap.classList.add('is-visible');
+  cumForecastInput.addEventListener('change', () => {
+    if (cumForecastInput.checked && !cumForecast && !cumForecastLoad) {
+      cumForecastLoad = Promise.all(cumForecastYears.map(y => {
+        if (y === previousDashboardYear && previousYearData?.films) return Promise.resolve(previousYearData.films);
+        return fetch(DATA_FILES_BY_YEAR[y], { cache: 'no-store' })
+          .then(r => r.ok ? r.json() : null)
+          .then(d => d?.films || null)
+          .catch(() => null);
+      })).then(lists => {
+        cumForecast = computeCumForecast(lists.filter(Boolean));
+        if (!cumForecast) {
+          cumForecastInput.checked = false;
+          cumForecastWrap.classList.remove('is-visible');
+        }
+        animateCumForecast();
+      });
+      return;
+    }
+    animateCumForecast();
+  });
+}
 
 const BAR_ROW_GAP = 12;
 function syncBarLabelColumn(container) {
