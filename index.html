@@ -2929,6 +2929,19 @@ function renderCumulativeChart(anim) {
     const cum = inForecast ? Math.round(fcst.central[dayIdx - fcst.startIdx]) : cumByDay[dayIdx];
     const x = xScale(dayIdx);
     const y = yScale(inForecast ? fcst.central[dayIdx - fcst.startIdx] : cum);
+    // The dot's ring fakes the backdrop showing through between dot and
+    // line, so it wears the exact colour of what it sits on: cream over
+    // actual data and at the join itself, where the dot straddles the
+    // band edge; the grey band just past the join; and the salmon
+    // confidence area once its height reaches 8px, enough to dominate
+    // the dot's surroundings.
+    let ringColor = 'var(--bg)';
+    if (fcst && dayIdx > fcst.startIdx) {
+      const k = dayIdx - fcst.startIdx;
+      const fanPx = yScale(fcst.lo[k]) - yScale(fcst.hi[k]);
+      ringColor = fanPx >= 8 ? 'rgb(216,172,149)' : 'rgb(210,209,198)';
+    }
+    dotEl.setAttribute('stroke', ringColor);
     lineEl.setAttribute('x1', x);
     lineEl.setAttribute('x2', x);
     lineEl.setAttribute('visibility', 'visible');
