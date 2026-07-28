@@ -2868,9 +2868,18 @@ function renderCumulativeChart(anim) {
       `<path d="${fanD}" fill="rgb(216,172,149)"/>` +
       `<clipPath id="cum-forecast-fan"><path d="${fanD}"/></clipPath>` +
       `<g clip-path="url(#cum-forecast-fan)">${bandGrid('rgb(203,163,141)')}</g>`;
-    if (bandW >= 76) {
-      forecastLayer += `<text x="${(bandX + bandW / 2).toFixed(1)}" y="${MT + 20}" text-anchor="middle" font-family="'Dashboard Sans',sans-serif" font-size="1rem" font-weight="400" fill="rgb(89,89,89)">Forecast</text>`;
-    }
+    // Vertically centred between the top two gridlines of the forecast
+    // axis, tracking their clamped positions while the toggle animates;
+    // the +5 baseline offset is the same optical-centring nudge the
+    // y-axis labels use. The label sits centred in the band, or slips to
+    // right-aligned just outside the band's left edge when the band is
+    // too narrow to hold it; the choice keys on the settled band width
+    // rather than the animated one so it never switches sides mid-toggle.
+    const labelY = (Math.max(MT, yScale(onAxis.max)) + Math.max(MT, yScale(onAxis.max - onAxis.step))) / 2 + 5;
+    const settledBandW = innerW * (daysInYear - 1 - fcst.startIdx) / (daysInYear - 1);
+    forecastLayer += settledBandW >= 76
+      ? `<text x="${(bandX + bandW / 2).toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="middle" font-family="'Dashboard Sans',sans-serif" font-size="1rem" font-weight="400" fill="rgb(89,89,89)">Forecast</text>`
+      : `<text x="${(bandX - 8).toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="end" font-family="'Dashboard Sans',sans-serif" font-size="1rem" font-weight="400" fill="rgb(89,89,89)">Forecast</text>`;
     forecastLayer += `<path d="${centralD}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></g>`;
   }
 
