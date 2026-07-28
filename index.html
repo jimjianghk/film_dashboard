@@ -2848,6 +2848,7 @@ function renderCumulativeChart(anim) {
   // rgb(216,172,149) over the band and tints the gridlines it crosses
   // rgb(203,163,141), so those segments are re-drawn clipped to the fan.
   let forecastLayer = '';
+  let ringBackdropLayers = '';
   if (fcst) {
     const bandX = xScale(fcst.startIdx);
     const bandW = xScale(endIdx) - bandX;
@@ -2862,6 +2863,7 @@ function renderCumulativeChart(anim) {
     const fcstPt = (v, k) => `${xScale(fcst.startIdx + k).toFixed(1)},${yScale(v).toFixed(1)}`;
     const fanD = `M${fcst.hi.map(fcstPt).join(' L')} L${fcst.lo.map(fcstPt).reverse().join(' L')} Z`;
     const centralD = fcst.central.map((v, k) => `${k === 0 ? 'M' : 'L'}${fcstPt(v, k)}`).join(' ');
+    ringBackdropLayers = `<g clip-path="url(#cum-plot-clip)" opacity="${p.toFixed(3)}"><rect x="${bandX.toFixed(1)}" y="${MT}" width="${bandW.toFixed(1)}" height="${innerH - 0.75}" fill="rgb(210,209,198)"/><path d="${fanD}" fill="rgb(216,172,149)"/></g>`;
     forecastLayer = `<g opacity="${p.toFixed(3)}" clip-path="url(#cum-plot-clip)">` +
       `<rect x="${bandX.toFixed(1)}" y="${MT}" width="${bandW.toFixed(1)}" height="${innerH - 0.75}" fill="rgb(210,209,198)"/>` +
       bandGrid('rgb(192,192,191)') +
@@ -2894,7 +2896,16 @@ function renderCumulativeChart(anim) {
   }
 
   const hoverLine = `<line class="cum-hover-line" x1="0" x2="0" y1="${MT}" y2="${MT+innerH}" stroke="var(--text)" stroke-width="1" visibility="hidden" pointer-events="none"/>`;
-  const hoverDot = `<circle class="cum-hover-dot" r="4" cx="0" cy="0" fill="var(--accent)" stroke="var(--bg)" stroke-width="2" visibility="hidden" pointer-events="none"/>`;
+  // The dot's halo is a pseudo-transparent annulus: a masked repaint of
+  // the true backdrop (paper, then the band and confidence area under the
+  // same clip and animation opacity as the real ones), so region seams
+  // pass through the ring exactly where they run, while the lines and
+  // gridlines the halo exists to hold apart stay erased. Only the mask
+  // circle moves on hover; the halo paints over the dot's edge, leaving
+  // the usual red core and 1px ring geometry.
+  const hoverDot = `<g class="cum-hover-dot" visibility="hidden" pointer-events="none"><circle r="4" fill="var(--accent)"/></g>`;
+  const ringMask = `<mask id="cum-ring-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="black"/><circle class="cum-ring-mask-circle" cx="-10" cy="-10" r="4" fill="none" stroke="white" stroke-width="2"/></mask>`;
+  const hoverRing = `<g class="cum-hover-ring" mask="url(#cum-ring-mask)" visibility="hidden" pointer-events="none"><rect width="${W}" height="${H}" fill="var(--bg)"/>${ringBackdropLayers}</g>`;
   const hoverZone = `<rect class="cum-hover-zone" x="${ML}" y="${MT}" width="${innerW}" height="${innerH}" fill="transparent" style="cursor:crosshair;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none"/>`;
   container.style.touchAction = 'none';
   container.style.webkitUserSelect = 'none';
@@ -2909,11 +2920,13 @@ function renderCumulativeChart(anim) {
   // the baseline so a flat zero segment keeps its full stroke, and the
   // current year's mid-plot data-day line end keeps its cap.
   const plotClip = `<clipPath id="cum-plot-clip"><rect x="${ML}" y="${MT}" width="${innerW}" height="${innerH + 2}"/></clipPath>`;
-  container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;overflow:visible;">${plotClip}${yAxis}${xAxis}${todayMark}${forecastLayer}<g clip-path="url(#cum-plot-clip)"><path d="${pathD}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></g>${hoverLine}${hoverDot}${hoverZone}</svg>`;
+  container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;overflow:visible;">${plotClip}${yAxis}${xAxis}${todayMark}${forecastLayer}<g clip-path="url(#cum-plot-clip)"><path d="${pathD}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></g>${hoverLine}${ringMask}${hoverDot}${hoverRing}${hoverZone}</svg>`;
 
   const svg = container.querySelector('svg');
   const lineEl = svg.querySelector('.cum-hover-line');
   const dotEl = svg.querySelector('.cum-hover-dot');
+  const ringEl = svg.querySelector('.cum-hover-ring');
+  const maskCircleEl = svg.querySelector('.cum-ring-mask-circle');
   const zoneEl = svg.querySelector('.cum-hover-zone');
   const cumTooltip = document.getElementById('cum-tooltip');
 
@@ -2929,24 +2942,13 @@ function renderCumulativeChart(anim) {
     const cum = inForecast ? Math.round(fcst.central[dayIdx - fcst.startIdx]) : cumByDay[dayIdx];
     const x = xScale(dayIdx);
     const y = yScale(inForecast ? fcst.central[dayIdx - fcst.startIdx] : cum);
-    // The dot's ring fakes the backdrop showing through between dot and
-    // line, so it wears the exact colour of what it sits on: cream over
-    // actual data and at the join itself, where the dot straddles the
-    // band edge; the grey band just past the join; and the salmon
-    // confidence area once its height reaches 8px, enough to dominate
-    // the dot's surroundings.
-    let ringColor = 'var(--bg)';
-    if (fcst && dayIdx > fcst.startIdx) {
-      const k = dayIdx - fcst.startIdx;
-      const fanPx = yScale(fcst.lo[k]) - yScale(fcst.hi[k]);
-      ringColor = fanPx >= 8 ? 'rgb(216,172,149)' : 'rgb(210,209,198)';
-    }
-    dotEl.setAttribute('stroke', ringColor);
     lineEl.setAttribute('x1', x);
     lineEl.setAttribute('x2', x);
     lineEl.setAttribute('visibility', 'visible');
-    dotEl.setAttribute('cx', x);
-    dotEl.setAttribute('cy', y);
+    maskCircleEl.setAttribute('cx', x);
+    maskCircleEl.setAttribute('cy', y);
+    ringEl.setAttribute('visibility', 'visible');
+    dotEl.setAttribute('transform', `translate(${x},${y})`);
     dotEl.setAttribute('visibility', 'visible');
     const dt = new Date(yearStart.getTime() + dayIdx * dayMs);
     const dateStr = dt.toLocaleDateString('en-US', { month:'short', day:'numeric' });
@@ -2966,6 +2968,7 @@ function renderCumulativeChart(anim) {
   };
   const hideHover = () => {
     lineEl.setAttribute('visibility', 'hidden');
+    ringEl.setAttribute('visibility', 'hidden');
     dotEl.setAttribute('visibility', 'hidden');
     cumTooltip.style.display = 'none';
   };
