@@ -2641,9 +2641,13 @@ function filmDecade(f) {
 // Year-end forecast (optional toggle, current year only). Each past year
 // implies a year-end total: the current count divided by the fraction of
 // that year's total it had logged by this same date. The central forecast
-// is the mean of those implied totals, and the confidence band is a 95%
-// Student-t prediction interval for a new year's implied total
-// (t(0.975, n-1) * sd * sqrt(1 + 1/n)). The forecast remainder is
+// blends two estimates by inverse prediction variance: the mean of those
+// implied totals (the pace estimate) and the mean of the past totals
+// themselves (the base rate). Early in the season the volatile fractions
+// leave the pace estimate imprecise, so the base rate anchors the blend;
+// as the year fills in the pace estimate takes over. The confidence band
+// is a 95% Student-t prediction interval on the blend's combined
+// standard error. The forecast remainder is
 // then spread over the rest of the year following past years' average
 // month-by-month share of screenings, so the curve keeps the usual seasonal
 // shape instead of climbing linearly. Fractions reuse the stats row's
@@ -2663,12 +2667,16 @@ function computeCumForecast(pastFilmsLists) {
   const cumNow = FILMS.filter(f => f.date <= endDate).length;
   if (!cumNow) return null;
   const fractions = [];
+  const yearTotals = [];
   const monthShares = new Array(12).fill(0);
   let shareYears = 0;
   pastFilmsLists.forEach(films => {
     if (!films.length) return;
     const atCutoff = films.filter(f => isOnOrBeforeYearPoint(f.date, endDate)).length;
-    if (atCutoff) fractions.push(atCutoff / films.length);
+    if (atCutoff) {
+      fractions.push(atCutoff / films.length);
+      yearTotals.push(films.length);
+    }
     films.forEach(f => { monthShares[parseInt(f.date.slice(5, 7), 10) - 1] += 1 / films.length; });
     shareYears++;
   });
@@ -2676,14 +2684,32 @@ function computeCumForecast(pastFilmsLists) {
   for (let m = 0; m < 12; m++) monthShares[m] /= shareYears;
   const impliedTotals = fractions.map(f => cumNow / f);
   const n = impliedTotals.length;
-  const centralTotal = impliedTotals.reduce((s, v) => s + v, 0) / n;
+  const paceMean = impliedTotals.reduce((s, v) => s + v, 0) / n;
   // t(0.975, df) by table for the small df this chart will ever see; the
   // closed-form fallback stays within ~0.01 of the true quantile. With one
-  // past year there is no variance to estimate and the band degenerates to
-  // the central line; the lower bound never dips below the logged count.
+  // past year there is no variance to weight the blend with and the band
+  // degenerates to the central line; the lower bound never dips below the
+  // logged count.
   const T95 = { 1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 6: 2.447, 7: 2.365, 8: 2.306, 9: 2.262, 10: 2.228 };
-  const sd = n > 1 ? Math.sqrt(impliedTotals.reduce((s, v) => s + (v - centralTotal) ** 2, 0) / (n - 1)) : 0;
-  const halfWidth = n > 1 ? (T95[n - 1] || 1.96 + 2.75 / (n - 1)) * sd * Math.sqrt(1 + 1 / n) : 0;
+  const predVar = vals => {
+    const mean = vals.reduce((s, v) => s + v, 0) / vals.length;
+    return (vals.reduce((s, v) => s + (v - mean) ** 2, 0) / (vals.length - 1)) * (1 + 1 / vals.length);
+  };
+  let centralTotal = paceMean;
+  let halfWidth = 0;
+  if (n > 1) {
+    const paceVar = predVar(impliedTotals);
+    const baseMean = yearTotals.reduce((s, v) => s + v, 0) / n;
+    const baseVar = predVar(yearTotals);
+    if (paceVar > 0 && baseVar > 0) {
+      const wPace = 1 / paceVar;
+      const wBase = 1 / baseVar;
+      centralTotal = (paceMean * wPace + baseMean * wBase) / (wPace + wBase);
+      halfWidth = (T95[n - 1] || 1.96 + 2.75 / (n - 1)) * Math.sqrt(1 / (wPace + wBase));
+    } else if (baseVar === 0 && paceVar > 0) {
+      centralTotal = baseMean;
+    }
+  }
   const loTotal = Math.max(cumNow, centralTotal - halfWidth);
   const hiTotal = centralTotal + halfWidth;
   // Daily weights for the not-yet-logged days: each month's average share,
@@ -3044,11 +3070,11 @@ function animateCumForecast() {
 // The forecast toggle only appears on the current year's dashboard when
 // archive years exist to forecast from, and only once the data day reaches
 // April 1. Through the first quarter the past years' same-date fractions
-// are so volatile that the 95% interval comes out wider than simply
-// predicting a typical past year (its lower bound stays clamped to the
-// already-logged count into March), so the forecast is withheld until the
-// pace signal is worth showing. Past-year data loads on first use; the
-// already-fetched previous year is reused rather than fetched again.
+// are so volatile that the blend leans almost entirely on the base rate,
+// a forecast that barely consults the year's own screenings, so it is
+// withheld until the pace component genuinely informs it. Past-year data
+// loads on first use; the already-fetched previous year is reused rather
+// than fetched again.
 const cumForecastYears = Object.keys(DATA_FILES_BY_YEAR || {}).filter(y => y < dashYear).sort();
 const cumForecastSeasonOpen = endDate >= dashYear + '-04-01';
 if (isCurrentDashboardYear && cumForecastSeasonOpen && cumForecastYears.length && FILMS.length) {
