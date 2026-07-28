@@ -3012,10 +3012,16 @@ function animateCumForecast() {
 }
 
 // The forecast toggle only appears on the current year's dashboard when
-// archive years exist to forecast from. Past-year data loads on first use;
-// the already-fetched previous year is reused rather than fetched again.
+// archive years exist to forecast from, and only once the data day reaches
+// April 1. Through the first quarter the past years' same-date fractions
+// are so volatile that the 95% interval comes out wider than simply
+// predicting a typical past year (its lower bound stays clamped to the
+// already-logged count into March), so the forecast is withheld until the
+// pace signal is worth showing. Past-year data loads on first use; the
+// already-fetched previous year is reused rather than fetched again.
 const cumForecastYears = Object.keys(DATA_FILES_BY_YEAR || {}).filter(y => y < dashYear).sort();
-if (isCurrentDashboardYear && cumForecastYears.length && FILMS.length) {
+const cumForecastSeasonOpen = endDate >= dashYear + '-04-01';
+if (isCurrentDashboardYear && cumForecastSeasonOpen && cumForecastYears.length && FILMS.length) {
   cumForecastWrap.classList.add('is-visible');
   cumForecastInput.addEventListener('change', () => {
     if (cumForecastInput.checked && !cumForecast && !cumForecastLoad) {
