@@ -2638,11 +2638,12 @@ function filmDecade(f) {
 }
 
 // ====== CUMULATIVE CHART ======
-// Year-end forecast (optional toggle, current year only). The forecast
-// total scales the current count by how far through a full year past years
-// were at this same date: central = count / mean(past-year fractions), with
-// a confidence band spanning the most and least front-loaded past year
-// (count / max fraction .. count / min fraction). The forecast remainder is
+// Year-end forecast (optional toggle, current year only). Each past year
+// implies a year-end total: the current count divided by the fraction of
+// that year's total it had logged by this same date. The central forecast
+// is the mean of those implied totals, and the confidence band is a 95%
+// Student-t prediction interval for a new year's implied total
+// (t(0.975, n-1) * sd * sqrt(1 + 1/n)). The forecast remainder is
 // then spread over the rest of the year following past years' average
 // month-by-month share of screenings, so the curve keeps the usual seasonal
 // shape instead of climbing linearly. Fractions reuse the stats row's
@@ -2673,10 +2674,18 @@ function computeCumForecast(pastFilmsLists) {
   });
   if (!fractions.length) return null;
   for (let m = 0; m < 12; m++) monthShares[m] /= shareYears;
-  const meanFraction = fractions.reduce((s, v) => s + v, 0) / fractions.length;
-  const centralTotal = cumNow / meanFraction;
-  const loTotal = cumNow / Math.max(...fractions);
-  const hiTotal = cumNow / Math.min(...fractions);
+  const impliedTotals = fractions.map(f => cumNow / f);
+  const n = impliedTotals.length;
+  const centralTotal = impliedTotals.reduce((s, v) => s + v, 0) / n;
+  // t(0.975, df) by table for the small df this chart will ever see; the
+  // closed-form fallback stays within ~0.01 of the true quantile. With one
+  // past year there is no variance to estimate and the band degenerates to
+  // the central line; the lower bound never dips below the logged count.
+  const T95 = { 1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 6: 2.447, 7: 2.365, 8: 2.306, 9: 2.262, 10: 2.228 };
+  const sd = n > 1 ? Math.sqrt(impliedTotals.reduce((s, v) => s + (v - centralTotal) ** 2, 0) / (n - 1)) : 0;
+  const halfWidth = n > 1 ? (T95[n - 1] || 1.96 + 2.75 / (n - 1)) * sd * Math.sqrt(1 + 1 / n) : 0;
+  const loTotal = Math.max(cumNow, centralTotal - halfWidth);
+  const hiTotal = centralTotal + halfWidth;
   // Daily weights for the not-yet-logged days: each month's average share,
   // spread evenly across that month's days.
   const yearStart = new Date(dashYear + '-01-01T12:00:00');
