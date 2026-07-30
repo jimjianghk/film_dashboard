@@ -3069,26 +3069,50 @@ function animateCumForecast() {
 
 // The forecast toggle only appears on the current year's dashboard when
 // archive years exist to forecast from, and only once the data day reaches
-// April 1. Through the first quarter the past years' same-date fractions
-// are so volatile that the blend leans almost entirely on the base rate,
-// a forecast that barely consults the year's own screenings, so it is
-// withheld until the pace component genuinely informs it. Past-year data
-// loads on first use; the already-fetched previous year is reused rather
-// than fetched again.
+// March 1: in January and February the volatile early fractions leave the
+// blend leaning almost entirely on the base rate, a forecast that barely
+// consults the year's own screenings. The pool also folds in 2017-2019,
+// which survive only as daily cumulative counts (data/history-counts.json)
+// expanded at load into bare {date} stubs that flow through the same
+// fraction, total, and month-share sums as the archives; 2020 and 2021
+// sit out as covid-distorted, and a missing history file degrades to the
+// archive years alone. Past-year data loads on first use; the
+// already-fetched previous year is reused rather than fetched again.
 const cumForecastYears = Object.keys(DATA_FILES_BY_YEAR || {}).filter(y => y < dashYear).sort();
-const cumForecastSeasonOpen = endDate >= dashYear + '-04-01';
+const cumForecastSeasonOpen = endDate >= dashYear + '-03-01';
 if (isCurrentDashboardYear && cumForecastSeasonOpen && cumForecastYears.length && FILMS.length) {
   cumForecastWrap.classList.add('is-visible');
   cumForecastInput.addEventListener('change', () => {
     if (cumForecastInput.checked && !cumForecast && !cumForecastLoad) {
-      cumForecastLoad = Promise.all(cumForecastYears.map(y => {
+      const archiveFetches = cumForecastYears.map(y => {
         if (y === previousDashboardYear && previousYearData?.films) return Promise.resolve(previousYearData.films);
         return fetch(DATA_FILES_BY_YEAR[y], { cache: 'no-store' })
           .then(r => r.ok ? r.json() : null)
           .then(d => d?.films || null)
           .catch(() => null);
-      })).then(lists => {
-        cumForecast = computeCumForecast(lists.filter(Boolean));
+      });
+      const historyFetch = fetch('data/history-counts.json', { cache: 'no-store' })
+        .then(r => r.ok ? r.json() : null)
+        .then(counts => {
+          if (!counts) return [];
+          const monthLengths = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+          return Object.entries(counts).map(([year, cum]) => {
+            const films = [];
+            let doy = 0;
+            monthLengths.forEach((len, m) => {
+              for (let day = 1; day <= len; day++) {
+                doy++;
+                const added = (cum[doy - 1] || 0) - (doy > 1 ? cum[doy - 2] || 0 : 0);
+                const date = `${year}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                for (let k = 0; k < added; k++) films.push({ date });
+              }
+            });
+            return films;
+          });
+        })
+        .catch(() => []);
+      cumForecastLoad = Promise.all([Promise.all(archiveFetches), historyFetch]).then(([lists, history]) => {
+        cumForecast = computeCumForecast(lists.filter(Boolean).concat(history.filter(h => h.length)));
         if (!cumForecast) {
           cumForecastInput.checked = false;
           cumForecastWrap.classList.remove('is-visible');
