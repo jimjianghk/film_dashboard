@@ -2460,9 +2460,10 @@ const daysAtCinema = currentStats.daysAtCinema;
 // order. A marker site claims its note where it renders, and the first claim
 // of each id takes the next free symbol, so allocation follows first
 // appearance on the page: the script builds sections in DOM order (stat
-// cards, decade chart, format chart, log table). Repeat claims keep their
-// symbol; a claim with new text (the dedup toggle flips the Various note
-// between singular and plural) rewrites the note in place.
+// cards, the cumulative chart's forecast switch when it is showing, decade
+// chart, format chart, log table). Repeat claims keep their symbol; a claim
+// with new text (the dedup toggle flips the Various note between singular
+// and plural) rewrites the note in place.
 const FOOTNOTE_SYMBOLS = ['*', '†', '‡', '§', '**'];
 const footnotes = [];
 function footnoteMark(id, text) {
@@ -3082,6 +3083,8 @@ const cumForecastYears = Object.keys(DATA_FILES_BY_YEAR || {}).filter(y => y < d
 const cumForecastSeasonOpen = endDate >= dashYear + '-03-01';
 if (isCurrentDashboardYear && cumForecastSeasonOpen && cumForecastYears.length && FILMS.length) {
   cumForecastWrap.classList.add('is-visible');
+  document.querySelector('label[for="cum-forecast"]').textContent =
+    'Show forecast' + footnoteMark('forecast', 'Estimates based on screening counts since 2017, excluding 2020 and 2021; band represents 95% probability');
   cumForecastInput.addEventListener('change', () => {
     if (cumForecastInput.checked && !cumForecast && !cumForecastLoad) {
       const archiveFetches = cumForecastYears.map(y => {
