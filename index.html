@@ -180,6 +180,8 @@ h1 {
 }
 @media (max-width: 599px) {
   h1 { font-size: 4.5rem; }
+  /* The all-years title takes the same 85% step-down as its stat values. */
+  .all-years h1 { font-size: 3.825rem; }
 }
 .header-divider { display: none; }
 .header-date {
@@ -1805,6 +1807,14 @@ footer img.footer-favicon {
 }
 @media (max-width: 500px) {
   .stats-row { display: grid; grid-template-columns: 0.9fr 1.1fr; column-gap: 0; row-gap: 0; }
+  /* All-years view: the aggregate figures run wider than any single year's,
+     so every stat value (slash included) steps down to 85%, and the accent
+     bars shorten to match. The bar tops track the shrunken digit tops: of
+     the full-size 20px inset, 8px is card padding and the 12px remainder
+     scales with the text. */
+  .all-years .stat-val { font-size: 3.4rem; }
+  .all-years .stat-card { --stat-bar-short: calc((4.4rem + 3px) * 0.85); }
+  .all-years .stat-card::before { top: calc(8px + 12px * 0.85); }
   header { padding: 48px 0 32px; }
   .sparse-note { font-size: 2rem; }
   .year-menu { top: 54px; }
@@ -2038,6 +2048,20 @@ if (window.location.pathname.endsWith('/index.html')) {
   window.history.replaceState(null, '', `${cleanPath}${window.location.search}${window.location.hash}`);
 }
 
+// ====== ALL-YEARS MODE (?all) ======
+// Hidden aggregate of every logged year, reachable only by typing /?all: no
+// page links here. It reuses the single-year dashboard with the calendar and
+// log dropped, comparisons and forecast off, and the cumulative chart showing
+// the cross-year average over each year's own curve.
+const IS_ALL_MODE = new URLSearchParams(window.location.search).has('all');
+if (IS_ALL_MODE) {
+  document.documentElement.classList.add('all-years');
+  document.getElementById('sec-calendar').remove();
+  document.getElementById('sec-log').remove();
+  document.querySelectorAll('.chart-nav-link[href="#sec-calendar"], .chart-nav-link[href="#sec-log"]').forEach(a => a.remove());
+  document.querySelector('#sec-series .chart-num').textContent = '7';
+}
+
 const DASHBOARD_START_YEAR = 2023;
 let DATA_FILES_BY_YEAR = {};
 let DEFAULT_DASHBOARD_YEAR = null;
@@ -2055,6 +2079,11 @@ const getUrlDashboardYear = () => {
 };
 const yearMenuUrlForYear = year => year === DEFAULT_DASHBOARD_YEAR ? './' : `?${year}`;
 const setDashboardYearShell = year => {
+  if (IS_ALL_MODE) {
+    document.title = 'Jim’s Cinema Log';
+    document.querySelector('h1').textContent = 'Jim’s Cinema Log';
+    return;
+  }
   const isDefaultYear = DEFAULT_DASHBOARD_YEAR ? year === DEFAULT_DASHBOARD_YEAR : !getUrlDashboardYear();
   document.title = `Jim’s ${year} Cinema Log`;
   document.querySelector('meta[property="og:title"]')?.setAttribute('content', `Jim’s ${year} Cinema Log`);
@@ -2063,6 +2092,7 @@ const setDashboardYearShell = year => {
   document.querySelector('h1').textContent = `${year} in cinema`;
 };
 const setCurrentYearMenuItem = year => {
+  if (IS_ALL_MODE) return;
   document.querySelectorAll('.year-menu-panel a').forEach(a => {
     if (a.dataset.year === year) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');
@@ -2253,10 +2283,11 @@ document.addEventListener('animationend', e => {
     // empty cards are a few dozen pixels tall), and the browser's early
     // fragment/restore scroll fires against exactly that layout, flashing a
     // wrong tab. Hold the nav back until the dashboard has rendered; the
-    // table is the last thing the render block builds, and the body
-    // ResizeObserver re-runs update the moment the page inflates.
+    // table is the last thing the render block builds (the series list in
+    // all-years mode, which drops the table), and the body ResizeObserver
+    // re-runs update the moment the page inflates.
     if (!layoutReady) {
-      layoutReady = document.getElementById('table-body').childElementCount > 0;
+      layoutReady = document.getElementById(IS_ALL_MODE ? 'series-list' : 'table-body').childElementCount > 0;
       if (!layoutReady) return;
     }
     // Scroll-spy: a chart takes over as soon as its top enters the upper
@@ -2329,7 +2360,21 @@ document.addEventListener('animationend', e => {
   update();
 })();
 
+// All-years mode keeps each year's film list around (keyed pairs in year
+// order) for the cumulative chart's per-year curves.
+let allYearsFilmsByYear = null;
 const dashboardDataPromise = dashboardConfigPromise.then(() => {
+  if (IS_ALL_MODE) {
+    return Promise.all(dashboardYears.map(year =>
+      fetch(DATA_FILES_BY_YEAR[year], { cache: 'no-store' }).then(r => r.json()).then(data => [year, data])
+    )).then(pairs => {
+      allYearsFilmsByYear = pairs.map(([year, data]) => [year, data.films]);
+      return [{
+        films: pairs.flatMap(([, data]) => data.films),
+        membershipFees: pairs.reduce((sum, [, data]) => sum + (data.membershipFees || 0), 0)
+      }, null];
+    });
+  }
   const currentDataPromise = fetch(dataFile, { cache: 'no-store' }).then(r => r.json());
   const previousDataPromise = previousDashboardYear
     ? fetch(DATA_FILES_BY_YEAR[previousDashboardYear], { cache: 'no-store' })
@@ -2347,7 +2392,9 @@ const filmDatesForRange = FILMS.map(f => f.date).sort();
 const firstDate = filmDatesForRange[0];
 const lastDate = filmDatesForRange[filmDatesForRange.length - 1];
 const fmtDate = ds => new Date(ds+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
-const dashYear = firstDate.slice(0,4);
+// All-years mode anchors the data-day arithmetic to the latest logged year;
+// the combined FILMS list spans every year.
+const dashYear = IS_ALL_MODE ? dashboardYears[dashboardYears.length - 1] : firstDate.slice(0,4);
 const isCurrentDashboardYear = dashYear === DEFAULT_DASHBOARD_YEAR;
 setDashboardYearShell(dashYear);
 setCurrentYearMenuItem(dashYear);
@@ -2378,7 +2425,9 @@ const dataDayDate = new Date(yearStartForStats.getTime() + dataDayIdxForStats * 
 const endDate = `${dataDayDate.getFullYear()}-${String(dataDayDate.getMonth()+1).padStart(2,'0')}-${String(dataDayDate.getDate()).padStart(2,'0')}`;
 const subtitleEndDate = isCurrentDashboardYear ? endDate : lastDate;
 
-document.getElementById('date-range').innerHTML = `${fmtDate(firstDate)}–${fmtDate(subtitleEndDate)}&nbsp;&nbsp;·&nbsp;&nbsp;New York City`;
+document.getElementById('date-range').innerHTML = IS_ALL_MODE
+  ? `${dashboardYears[0]}–${dashboardYears[dashboardYears.length - 1]}&nbsp;&nbsp;·&nbsp;&nbsp;New York City`
+  : `${fmtDate(firstDate)}–${fmtDate(subtitleEndDate)}&nbsp;&nbsp;·&nbsp;&nbsp;New York City`;
 
 // ====== STATS ======
 const normalizeYearPoint = ds => ds.slice(5,10) === '02-29' ? '02-28' : ds.slice(5,10);
@@ -2452,7 +2501,9 @@ const avgRating = currentStats.avgRating == null ? '—' : currentStats.avgRatin
 const totalRuntime = currentStats.totalRuntimeHours * 60;
 const totalSpent = currentStats.totalSpent;
 const uniqueVenues = currentStats.uniqueVenues;
-const daysElapsed = dataDayIdxForStats + 1;
+const daysElapsed = IS_ALL_MODE
+  ? Math.round((dataDayDate - new Date(dashboardYears[0] + '-01-01T12:00:00')) / dayMsForStats) + 1
+  : dataDayIdxForStats + 1;
 const daysAtCinema = currentStats.daysAtCinema;
 
 // ====== PAGE FOOTNOTES ======
@@ -2742,6 +2793,53 @@ function computeCumForecast(pastFilmsLists) {
   };
 }
 
+// All-years mode plots every year's cumulative curve on one non-leap
+// reference calendar (Feb. 29 folds into Feb. 28, reusing the stats row's
+// same-date rule) so the days line up across years, with the cross-year
+// average drawn on top. The average includes the current year through its
+// data day; past that day it continues on the previous years alone, with a
+// one-day break where the basis changes. Each year's own curve runs to its
+// end.
+const CUM_REF_YEAR = '2023';
+function buildAllYearsCum() {
+  const refStart = new Date(CUM_REF_YEAR + '-01-01T12:00:00');
+  const refDayIdx = ds => Math.round((new Date(CUM_REF_YEAR + '-' + normalizeYearPoint(ds) + 'T12:00:00') - refStart) / dayMsForStats);
+  const dataDayIdx = refDayIdx(endDate);
+  const years = allYearsFilmsByYear.map(([year, films]) => {
+    const cum = new Array(365).fill(0);
+    films.forEach(f => { cum[refDayIdx(f.date)]++; });
+    for (let i = 1; i < 365; i++) cum[i] += cum[i - 1];
+    return { year, cum, endIdx: year === dashYear ? dataDayIdx : 364 };
+  });
+  const avg = [];
+  for (let i = 0; i <= dataDayIdx; i++) {
+    avg[i] = years.reduce((sum, y) => sum + y.cum[i], 0) / years.length;
+  }
+  const pastYears = years.filter(y => y.year !== dashYear);
+  const pastAvg = pastYears.length
+    ? Array.from({ length: 365 }, (_, i) => pastYears.reduce((sum, y) => sum + y.cum[i], 0) / pastYears.length)
+    : null;
+  const hoverAvg = pastAvg ? avg.concat(pastAvg.slice(dataDayIdx + 1)) : avg;
+  return { years, avg, pastAvg, hoverAvg, dataDayIdx };
+}
+const allYearsCum = IS_ALL_MODE ? buildAllYearsCum() : null;
+// Step points from a per-day cumulative array, matching the single-year
+// build: the line starts at the day before the first screening, rises over
+// one day at each jump, and runs flat to endIdx. A nonzero startIdx anchors
+// the line mid-year instead, for the average's past-years continuation.
+function cumStepPoints(cum, endIdx, startIdx = 0) {
+  const points = [];
+  if (startIdx > 0) points.push({x: startIdx, y: cum[startIdx]});
+  for (let i = startIdx > 0 ? startIdx + 1 : 0; i <= endIdx; i++) {
+    const prev = i ? cum[i - 1] : 0;
+    if (cum[i] === prev) continue;
+    if (i >= 1 && (!points.length || points[points.length - 1].x < i - 1)) points.push({x: i - 1, y: prev});
+    points.push({x: i, y: cum[i]});
+  }
+  if (!points.length || points[points.length - 1].x < endIdx) points.push({x: endIdx, y: cum[endIdx] || 0});
+  return points;
+}
+
 function renderCumulativeChart(anim) {
   const container = document.getElementById('cumulative-chart');
   const W = container.getBoundingClientRect().width;
@@ -2750,21 +2848,37 @@ function renderCumulativeChart(anim) {
   const ML = 10, MR = 39, MT = 16, MB = 28;
   const innerW = W - ML - MR;
   const innerH = H - MT - MB;
-  const yearStart = new Date(dashYear + '-01-01T12:00:00');
-  const yearEnd = new Date(dashYear + '-12-31T12:00:00');
+  // All-years mode draws on the reference calendar instead of the dashboard
+  // year. The reference year always ends before today, so the axis math
+  // below settles on the full twelve months on its own.
+  const chartYear = IS_ALL_MODE ? CUM_REF_YEAR : dashYear;
+  const yearStart = new Date(chartYear + '-01-01T12:00:00');
+  const yearEnd = new Date(chartYear + '-12-31T12:00:00');
   const dayMs = 86400000;
   const daysInYear = Math.round((yearEnd - yearStart) / dayMs) + 1;
-  const sortedFilms = [...FILMS].sort((a,b) => a.date.localeCompare(b.date));
-  const total = sortedFilms.length;
   const dateCounts = {};
-  sortedFilms.forEach(f => { dateCounts[f.date] = (dateCounts[f.date] || 0) + 1; });
+  const yearLines = [];
+  let total, dataDayIdx, points, pastPoints = null;
+  if (IS_ALL_MODE) {
+    total = Math.max(...allYearsCum.years.map(y => y.cum[y.endIdx]));
+    dataDayIdx = allYearsCum.dataDayIdx;
+    points = cumStepPoints(allYearsCum.avg, dataDayIdx);
+    pastPoints = allYearsCum.pastAvg && dataDayIdx < daysInYear - 1
+      ? cumStepPoints(allYearsCum.pastAvg, daysInYear - 1, dataDayIdx + 1)
+      : null;
+    allYearsCum.years.forEach(y => { yearLines.push(cumStepPoints(y.cum, y.endIdx)); });
+  } else {
+    const sortedFilms = [...FILMS].sort((a,b) => a.date.localeCompare(b.date));
+    total = sortedFilms.length;
+    sortedFilms.forEach(f => { dateCounts[f.date] = (dateCounts[f.date] || 0) + 1; });
+  }
   const todayDate = new Date(todayStr + 'T12:00:00');
   const todayIdx = Math.round((todayDate - yearStart) / dayMs);
   const hasFilmToday = !!dateCounts[todayStr];
-  const dataDayIdx = Math.max(0, Math.min(daysInYear - 1, hasFilmToday ? todayIdx : todayIdx - 1));
+  if (!IS_ALL_MODE) dataDayIdx = Math.max(0, Math.min(daysInYear - 1, hasFilmToday ? todayIdx : todayIdx - 1));
   const chartEndDate = todayDate > yearEnd ? yearEnd : todayDate;
   const chartEndMonth = chartEndDate.getMonth();
-  const daysInChartEndMonth = new Date(parseInt(dashYear), chartEndMonth + 1, 0).getDate();
+  const daysInChartEndMonth = new Date(parseInt(chartYear), chartEndMonth + 1, 0).getDate();
   const twoThirdsPoint = Math.ceil(daysInChartEndMonth * 2 / 3);
   // Forecast visibility runs 0..1. Static renders sit at the endpoints;
   // toggle-animation frames pass intermediate values, so the axes rescale
@@ -2774,25 +2888,27 @@ function renderCumulativeChart(anim) {
   const fcst = p > 0 && cumForecast ? cumForecast : null;
   const forecastTarget = anim ? anim.on : p === 1;
   const baseEndMonth = chartEndDate.getDate() > twoThirdsPoint ? Math.min(11, chartEndMonth + 1) : chartEndMonth;
-  const baseEndMonthLastDay = new Date(parseInt(dashYear), baseEndMonth + 1, 0, 12, 0, 0);
+  const baseEndMonthLastDay = new Date(parseInt(chartYear), baseEndMonth + 1, 0, 12, 0, 0);
   const baseEndIdx = Math.min(daysInYear - 1, Math.round((baseEndMonthLastDay - yearStart) / dayMs));
   const endMonth = p > 0 ? 11 : baseEndMonth;
   const endIdx = baseEndIdx + (daysInYear - 1 - baseEndIdx) * p;
-  let cum = 0;
-  const points = [];
-  let lastDayIdx = -1;
-  Object.keys(dateCounts).sort().forEach(date => {
-    const dayIdx = Math.round((new Date(date+'T12:00:00') - yearStart) / dayMs);
-    if (dayIdx > dataDayIdx) return;
-    if (dayIdx >= 1 && lastDayIdx < dayIdx - 1) {
-      points.push({x: dayIdx - 1, y: cum});
+  if (!IS_ALL_MODE) {
+    let cum = 0;
+    points = [];
+    let lastDayIdx = -1;
+    Object.keys(dateCounts).sort().forEach(date => {
+      const dayIdx = Math.round((new Date(date+'T12:00:00') - yearStart) / dayMs);
+      if (dayIdx > dataDayIdx) return;
+      if (dayIdx >= 1 && lastDayIdx < dayIdx - 1) {
+        points.push({x: dayIdx - 1, y: cum});
+      }
+      cum += dateCounts[date];
+      points.push({x: dayIdx, y: cum});
+      lastDayIdx = dayIdx;
+    });
+    if (lastDayIdx < dataDayIdx) {
+      points.push({x: dataDayIdx, y: cum});
     }
-    cum += dateCounts[date];
-    points.push({x: dayIdx, y: cum});
-    lastDayIdx = dayIdx;
-  });
-  if (lastDayIdx < dataDayIdx) {
-    points.push({x: dataDayIdx, y: cum});
   }
   const xScale = day => ML + (day / endIdx) * innerW;
   // Pick the smallest step such that the chart has at least 4 intervals (≥ 5
@@ -2815,6 +2931,9 @@ function renderCumulativeChart(anim) {
   const pathD = points.map((p, i) =>
     `${i === 0 ? 'M' : 'L'}${xScale(p.x).toFixed(1)},${yScale(p.y).toFixed(1)}`
   ).join(' ');
+  const pastPathD = pastPoints ? pastPoints.map((pt, i) =>
+    `${i === 0 ? 'M' : 'L'}${xScale(pt.x).toFixed(1)},${yScale(pt.y).toFixed(1)}`
+  ).join(' ') : '';
   const yTickSet = [];
   const addYTicks = (axis, key) => {
     for (let v = 0; v <= axis.max; v += axis.step) {
@@ -2842,13 +2961,13 @@ function renderCumulativeChart(anim) {
     const alpha = m <= baseEndMonth ? 1 : p;
     if (alpha <= 0.001) continue;
     const op = alpha < 1 ? ` opacity="${alpha.toFixed(3)}"` : '';
-    const monthStart = new Date(dashYear + '-' + String(m+1).padStart(2,'0') + '-01T12:00:00');
+    const monthStart = new Date(chartYear + '-' + String(m+1).padStart(2,'0') + '-01T12:00:00');
     const dayIdx = Math.min(Math.round((monthStart - yearStart) / dayMs), endIdx);
     const x = xScale(dayIdx);
     xAxis += `<line x1="${x}" x2="${x}" y1="${MT+innerH+0.75}" y2="${MT+innerH+5.75}" stroke="var(--text)" stroke-width="1.5"${op}/>`;
     let nextIdx = endIdx;
     if (m < 11) {
-      const nextMonthStart = new Date(dashYear + '-' + String(m+2).padStart(2,'0') + '-01T12:00:00');
+      const nextMonthStart = new Date(chartYear + '-' + String(m+2).padStart(2,'0') + '-01T12:00:00');
       nextIdx = Math.min(Math.round((nextMonthStart - yearStart) / dayMs), endIdx);
     }
     const labelX = (x + xScale(nextIdx)) / 2;
@@ -2912,14 +3031,18 @@ function renderCumulativeChart(anim) {
     forecastLayer += `<path d="${centralD}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></g>`;
   }
 
-  // Build per-day cumulative lookup so a cursor anywhere on the chart can resolve to (date, count).
-  const cumByDay = new Array(dataDayIdx + 1).fill(0);
-  let runningCum = 0;
-  for (let i = 0; i <= dataDayIdx; i++) {
-    const d = new Date(yearStart.getTime() + i * dayMs);
-    const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    runningCum += (dateCounts[ds] || 0);
-    cumByDay[i] = runningCum;
+  // Build per-day cumulative lookup so a cursor anywhere on the chart can
+  // resolve to (date, count); in all-years mode the averages serve as-is,
+  // switching to the past-years basis beyond the data day.
+  const cumByDay = IS_ALL_MODE ? allYearsCum.hoverAvg : new Array(dataDayIdx + 1).fill(0);
+  if (!IS_ALL_MODE) {
+    let runningCum = 0;
+    for (let i = 0; i <= dataDayIdx; i++) {
+      const d = new Date(yearStart.getTime() + i * dayMs);
+      const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      runningCum += (dateCounts[ds] || 0);
+      cumByDay[i] = runningCum;
+    }
   }
 
   const hoverLine = `<line class="cum-hover-line" x1="0" x2="0" y1="${MT}" y2="${MT+innerH}" stroke="var(--text)" stroke-width="1" visibility="hidden" pointer-events="none"/>`;
@@ -2952,7 +3075,15 @@ function renderCumulativeChart(anim) {
   const clipTop = anim ? MT - 2 : -20;
   const clipBottom = anim ? MT + innerH + 2 : H + 20;
   const plotClip = `<clipPath id="cum-plot-clip"><rect x="${ML}" y="${clipTop}" width="${innerW}" height="${clipBottom - clipTop}"/></clipPath>`;
-  container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;overflow:visible;">${plotClip}${yAxis}${xAxis}${todayMark}${forecastLayer}<g clip-path="url(#cum-plot-clip)"><path d="${pathD}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></g>${hoverLine}${ringMask}${hoverDot}${hoverRing}${hoverZone}</svg>`;
+  // All-years mode: each year's own curve in muted paper grey under the
+  // average line, plus the average's past-years continuation after the
+  // one-day break at the data day.
+  const yearLayer = yearLines.length
+    ? `<g clip-path="url(#cum-plot-clip)">${yearLines.map(pts =>
+        `<path d="${pts.map((pt, i) => `${i === 0 ? 'M' : 'L'}${xScale(pt.x).toFixed(1)},${yScale(pt.y).toFixed(1)}`).join(' ')}" fill="none" stroke="rgb(189,189,175)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`
+      ).join('')}</g>`
+    : '';
+  container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;overflow:visible;">${plotClip}${yAxis}${xAxis}${todayMark}${forecastLayer}${yearLayer}<g clip-path="url(#cum-plot-clip)"><path d="${pathD}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>${pastPathD ? `<path d="${pastPathD}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>` : ''}</g>${hoverLine}${ringMask}${hoverDot}${hoverRing}${hoverZone}</svg>`;
 
   const svg = container.querySelector('svg');
   const lineEl = svg.querySelector('.cum-hover-line');
@@ -2967,7 +3098,7 @@ function renderCumulativeChart(anim) {
     const r = svg.getBoundingClientRect();
     const svgX = (clientX - r.left) * (W / r.width);
     const rawDayIdx = Math.round((svgX - ML) / innerW * endIdx);
-    const maxHoverIdx = fcst ? daysInYear - 1 : dataDayIdx;
+    const maxHoverIdx = fcst || (IS_ALL_MODE && allYearsCum.pastAvg) ? daysInYear - 1 : dataDayIdx;
     if (rawDayIdx > maxHoverIdx && !allowClamp) { hideHover(); return; }
     const dayIdx = Math.max(0, Math.min(maxHoverIdx, rawDayIdx));
     const inForecast = fcst && dayIdx > dataDayIdx;
@@ -2984,7 +3115,13 @@ function renderCumulativeChart(anim) {
     dotEl.setAttribute('visibility', 'visible');
     const dt = new Date(yearStart.getTime() + dayIdx * dayMs);
     const dateStr = dt.toLocaleDateString('en-US', { month:'short', day:'numeric' });
-    cumTooltip.textContent = inForecast
+    // The all-years average shows one decimal, dropped when it lands on a
+    // whole number.
+    const avgRounded = Math.round(cum * 10) / 10;
+    const avgLabel = Number.isInteger(avgRounded) ? String(avgRounded) : avgRounded.toFixed(1);
+    cumTooltip.textContent = IS_ALL_MODE
+      ? `${dateStr} · ${avgLabel} ${avgRounded === 1 ? 'screening' : 'screenings'} on average`
+      : inForecast
       ? `${dateStr} · ${cum} forecast ${cum === 1 ? 'screening' : 'screenings'}`
       : `${dateStr} · ${cum} ${cum === 1 ? 'screening' : 'screenings'}`;
     cumTooltip.style.display = 'block';
@@ -3081,7 +3218,7 @@ function animateCumForecast() {
 // already-fetched previous year is reused rather than fetched again.
 const cumForecastYears = Object.keys(DATA_FILES_BY_YEAR || {}).filter(y => y < dashYear).sort();
 const cumForecastSeasonOpen = endDate >= dashYear + '-03-01';
-if (isCurrentDashboardYear && cumForecastSeasonOpen && cumForecastYears.length && FILMS.length) {
+if (!IS_ALL_MODE && isCurrentDashboardYear && cumForecastSeasonOpen && cumForecastYears.length && FILMS.length) {
   cumForecastWrap.classList.add('is-visible');
   document.querySelector('label[for="cum-forecast"]').textContent =
     'Show forecast' + footnoteMark('forecast', 'Estimates based on screening counts since 2017, excluding 2020 and 2021; band represents 95% probability');
@@ -3185,9 +3322,11 @@ FILMS.forEach(f => { if (f.rating != null) allRatingCounts[f.rating]++; else all
 const maxRatingAll = Math.max(...Object.values(allRatingCounts), 1);
 function renderRatingChart(filter) {
   const dedup = document.getElementById('rating-dedup').checked;
-  const newReleaseCutoff = parseInt(dashYear, 10) - 1;
-  let subset = filter === 'new' ? FILMS.filter(f => minFilmYear(f) >= newReleaseCutoff)
-    : filter === 'rep' ? FILMS.filter(f => minFilmYear(f) < newReleaseCutoff) : FILMS;
+  // All-years mode judges new-release against each screening's own year, so
+  // a film that was new when seen stays a new release in the aggregate.
+  const newReleaseCutoff = f => (IS_ALL_MODE ? parseInt(f.date.slice(0, 4), 10) : parseInt(dashYear, 10)) - 1;
+  let subset = filter === 'new' ? FILMS.filter(f => minFilmYear(f) >= newReleaseCutoff(f))
+    : filter === 'rep' ? FILMS.filter(f => minFilmYear(f) < newReleaseCutoff(f)) : FILMS;
   if (dedup) subset = dedupFilms(subset);
   const ratingCounts = {};
   for (let i=1;i<=10;i++) ratingCounts[i] = 0;
@@ -3784,208 +3923,212 @@ document.addEventListener('pointerdown', e => {
 });
 
 // ====== HEATMAP ======
-const filmsByDate = {};
-FILMS.forEach(f => {
-  if (!filmsByDate[f.date]) filmsByDate[f.date] = [];
-  filmsByDate[f.date].push(f);
-});
-// Calendar caps at the actual current date during the dashboard year, then at
-// Dec. 31 once the year has ended.
-const actualCalendarEnd = new Date(todayStr+'T12:00:00');
-const ed = actualCalendarEnd > yearEndForStats ? yearEndForStats : actualCalendarEnd;
-const months = [];
-let cursor = new Date(parseInt(dashYear), 0, 1);
-while (cursor <= ed) {
-  const y = cursor.getFullYear();
-  const m = cursor.getMonth();
-  const daysInMonth = new Date(y, m+1, 0).getDate();
-  months.push({ name: cursor.toLocaleString('en-US',{month:'long'}), year: y, month: m, days: daysInMonth });
-  cursor = new Date(y, m+1, 1);
-}
-const dayNames = ['S','M','T','W','T','F','S'];
-const heatmapEl = document.getElementById('heatmap');
-const calRow = document.createElement('div');
-calRow.className = 'calendars-row';
-let hasUnratedCalendarDay = false;
-months.forEach(m => {
-  const div = document.createElement('div');
-  div.className = 'heatmap-month';
-  let html = `<div class="heatmap-month-label">${m.name}</div><div class="cal-grid">`;
-  dayNames.forEach(dn => { html += `<div class="cal-dayname">${dn}</div>`; });
-  const startDay = new Date(m.year, m.month, 1).getDay();
-  for (let i = 0; i < startDay; i++) html += `<div class="heatmap-cell empty"></div>`;
-  for (let d = 1; d <= m.days; d++) {
-    const ds = `${m.year}-${String(m.month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const films = filmsByDate[ds] || [];
-    const isFuture = ds > todayStr;
-    if (isFuture) {
-      html += `<div class="heatmap-cell future">${d}</div>`;
-    } else {
-      if (films.length > 0 && films.every(f => f.rating == null)) hasUnratedCalendarDay = true;
-      const cls = films.length >= 5 ? 'watched-5' : films.length === 4 ? 'watched-4' : films.length === 3 ? 'watched-3' : films.length === 2 ? 'watched-2' : films.length === 1 ? 'watched-1' : '';
-      const dayRuntime = films.reduce((sum,f) => sum + (f.runtime || 0), 0);
-      const filmTitlesJson = escapeHtml(JSON.stringify(films.map(f => splitTitleParts(f.title).primary)));
-      const filmRatingsJson = escapeHtml(JSON.stringify(films.map(f => f.rating)));
-      html += `<div class="heatmap-cell ${cls}" data-date="${ds}" data-runtime="${dayRuntime}" data-films='${filmTitlesJson}' data-ratings='${filmRatingsJson}'>${d}</div>`;
-    }
-  }
-  html += '</div>';
-  div.innerHTML = html;
-  calRow.appendChild(div);
-});
-heatmapEl.appendChild(calRow);
-
-// ====== CALENDAR TOGGLE ======
-// Read rating colors from CSS custom properties (--rating-1 ... --rating-10)
-// so the palette has a single source of truth in :root.
-const ratingColors = (() => {
-  const rootStyle = getComputedStyle(document.documentElement);
-  const colors = [null];
-  for (let i = 1; i <= 10; i++) {
-    colors.push(
-      rootStyle.getPropertyValue(`--rating-${i}`).trim().split(/\s+/).map(Number)
-    );
-  }
-  return colors;
-})();
-const unratedColor = (() => {
-  return getComputedStyle(document.documentElement)
-    .getPropertyValue('--rating-unrated').trim().split(/\s+/).map(Number);
-})();
-const lerp = (a, b, t) => a + t * (b - a);
-function fiveSixBridgeColor(t) {
-  const midpointLift = Math.sin(Math.PI * t);
-  const base = ratingColors[5].map((v,i) => lerp(v, ratingColors[6][i], t));
-  return [
-    base[0] + 7 * midpointLift,
-    base[1] - 5 * midpointLift,
-    base[2] + 8 * midpointLift
-  ].map(v => Math.round(Math.max(0, Math.min(255, v))));
-}
-function avgRatingColor(avg) {
-  if (avg <= 1) return ratingColors[1];
-  if (avg >= 10) return ratingColors[10];
-  const lo = Math.floor(avg), hi = Math.ceil(avg);
-  if (lo === hi) return ratingColors[lo];
-  const t = avg - lo;
-  if (lo === 5 && hi === 6) return fiveSixBridgeColor(t);
-  return ratingColors[lo].map((v,i) => Math.round(lerp(v, ratingColors[hi][i], t)));
-}
-// Total daily runtime reuses the # of screenings palette, but interpolated
-// into a continuous spectrum. The domain is fixed so the color-to-runtime
-// mapping stays consistent across years: 1h or shorter gets the lightest
-// color, 7h or longer the darkest, and anything outside clamps to the ends.
-// (Daily totals across all years span ~24 to ~510 minutes.)
-const runtimePalette = [
-  [240, 196, 180], // #f0c4b4
-  [230, 143, 121], // #e68f79
-  [220, 90, 62],   // #dc5a3e
-  [216, 35, 42],   // #d8232a
-  [156, 29, 35],   // #9c1d23
-];
-const RUNTIME_MIN = 60;
-const RUNTIME_MAX = 420;
-function runtimeColor(total) {
-  const t = Math.max(0, Math.min(1, (total - RUNTIME_MIN) / (RUNTIME_MAX - RUNTIME_MIN)));
-  const seg = t * (runtimePalette.length - 1);
-  const lo = Math.floor(seg), hi = Math.min(lo + 1, runtimePalette.length - 1);
-  const f = seg - lo;
-  return runtimePalette[lo].map((v, i) => Math.round(lerp(v, runtimePalette[hi][i], f)));
-}
-
-const calendarHeader = document.querySelector('.calendar-header');
-const calendarRatingLegendScale = document.querySelector('.calendar-legend-rating-scale');
-const rgbaString = (rgb, alpha) => `rgba(${rgb.join(',')},${alpha})`;
-const calendarRuntimeLegendScale = document.querySelector('.calendar-legend-runtime-scale');
-if (calendarRuntimeLegendScale) {
-  const runtimeStops = [];
-  const stopCount = 36;
-  for (let i = 0; i <= stopCount; i++) {
-    const pct = (i / stopCount) * 100;
-    const total = RUNTIME_MIN + (RUNTIME_MAX - RUNTIME_MIN) * i / stopCount;
-    runtimeStops.push(`rgb(${runtimeColor(total).join(',')}) ${pct}%`);
-  }
-  calendarRuntimeLegendScale.style.background = `linear-gradient(to right, ${runtimeStops.join(',')})`;
-  const minLabel = document.querySelector('.calendar-legend-runtime-min');
-  const maxLabel = document.querySelector('.calendar-legend-runtime-max');
-  if (minLabel) minLabel.textContent = '1h or shorter';
-  if (maxLabel) maxLabel.textContent = '7h or longer';
-}
-if (calendarRatingLegendScale) {
-  const ratingStops = [];
-  const stopCount = 36;
-  for (let i = 0; i <= stopCount; i++) {
-    const pct = (i / stopCount) * 100;
-    const rating = 1 + (9 * i / stopCount);
-    ratingStops.push(`${rgbaString(avgRatingColor(rating), 0.75)} ${pct}%`);
-  }
-  calendarRatingLegendScale.style.background = `linear-gradient(to right, ${ratingStops.join(',')})`;
-}
-let calMode = 'screenings';
-function syncCalendarLegend() {
-  calendarHeader.classList.toggle('calendar-runtime-mode', calMode === 'runtime');
-  calendarHeader.classList.toggle('calendar-rating-mode', calMode === 'rating');
-  calendarHeader.classList.toggle('calendar-has-unrated-days', hasUnratedCalendarDay);
-}
-function applyCalMode() {
-  document.querySelectorAll('.heatmap-cell:not(.empty):not(.future)').forEach(cell => {
-    const ratings = JSON.parse(cell.dataset.ratings || '[]');
-    const films = JSON.parse(cell.dataset.films || '[]');
-    if (calMode === 'screenings') {
-      cell.style.background = '';
-      cell.classList.remove('rating-colored', 'rating-colored-dark', 'rating-colored-unrated', 'runtime-colored', 'runtime-colored-dark');
-      const cls = films.length >= 5 ? 'watched-5' : films.length === 4 ? 'watched-4' : films.length === 3 ? 'watched-3' : films.length === 2 ? 'watched-2' : films.length === 1 ? 'watched-1' : '';
-      cell.classList.remove('watched-1','watched-2','watched-3','watched-4','watched-5');
-      if (cls) cell.classList.add(cls);
-    } else if (calMode === 'runtime') {
-      cell.classList.remove('watched-1','watched-2','watched-3','watched-4','watched-5');
-      cell.classList.remove('rating-colored', 'rating-colored-dark', 'rating-colored-unrated');
-      if (films.length > 0) {
-        const total = Number(cell.dataset.runtime || 0);
-        const [r,g,b] = runtimeColor(total);
-        cell.style.background = `rgb(${r},${g},${b})`;
-        cell.classList.add('runtime-colored');
-        const t = (total - RUNTIME_MIN) / (RUNTIME_MAX - RUNTIME_MIN);
-        cell.classList.toggle('runtime-colored-dark', t >= 0.5);
-      } else {
-        cell.style.background = '';
-        cell.classList.remove('runtime-colored', 'runtime-colored-dark');
-      }
-    } else {
-      cell.classList.remove('runtime-colored', 'runtime-colored-dark');
-      cell.classList.remove('watched-1','watched-2','watched-3','watched-4','watched-5');
-      cell.classList.remove('rating-colored-dark', 'rating-colored-unrated');
-      const rated = ratings.filter(r => r != null);
-      if (rated.length > 0) {
-        const avg = rated.reduce((a,b) => a+b, 0) / rated.length;
-        const [r,g,b] = avgRatingColor(avg);
-        cell.style.background = `rgba(${r},${g},${b},0.75)`;
-        cell.classList.add('rating-colored');
-        if (avg <= 3 || avg >= 8) cell.classList.add('rating-colored-dark');
-      } else if (ratings.length > 0) {
-        cell.style.background = `rgba(${unratedColor.join(',')},0.75)`;
-        cell.classList.add('rating-colored', 'rating-colored-unrated');
-      } else {
-        cell.style.background = '';
-        cell.classList.remove('rating-colored');
-      }
-    }
+// The screening calendar only reads as a single year, so the all-years
+// page removes its section outright and skips the build.
+if (!IS_ALL_MODE) {
+  const filmsByDate = {};
+  FILMS.forEach(f => {
+    if (!filmsByDate[f.date]) filmsByDate[f.date] = [];
+    filmsByDate[f.date].push(f);
   });
-  syncCalendarLegend();
+  // Calendar caps at the actual current date during the dashboard year, then at
+  // Dec. 31 once the year has ended.
+  const actualCalendarEnd = new Date(todayStr+'T12:00:00');
+  const ed = actualCalendarEnd > yearEndForStats ? yearEndForStats : actualCalendarEnd;
+  const months = [];
+  let cursor = new Date(parseInt(dashYear), 0, 1);
+  while (cursor <= ed) {
+    const y = cursor.getFullYear();
+    const m = cursor.getMonth();
+    const daysInMonth = new Date(y, m+1, 0).getDate();
+    months.push({ name: cursor.toLocaleString('en-US',{month:'long'}), year: y, month: m, days: daysInMonth });
+    cursor = new Date(y, m+1, 1);
+  }
+  const dayNames = ['S','M','T','W','T','F','S'];
+  const heatmapEl = document.getElementById('heatmap');
+  const calRow = document.createElement('div');
+  calRow.className = 'calendars-row';
+  let hasUnratedCalendarDay = false;
+  months.forEach(m => {
+    const div = document.createElement('div');
+    div.className = 'heatmap-month';
+    let html = `<div class="heatmap-month-label">${m.name}</div><div class="cal-grid">`;
+    dayNames.forEach(dn => { html += `<div class="cal-dayname">${dn}</div>`; });
+    const startDay = new Date(m.year, m.month, 1).getDay();
+    for (let i = 0; i < startDay; i++) html += `<div class="heatmap-cell empty"></div>`;
+    for (let d = 1; d <= m.days; d++) {
+      const ds = `${m.year}-${String(m.month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const films = filmsByDate[ds] || [];
+      const isFuture = ds > todayStr;
+      if (isFuture) {
+        html += `<div class="heatmap-cell future">${d}</div>`;
+      } else {
+        if (films.length > 0 && films.every(f => f.rating == null)) hasUnratedCalendarDay = true;
+        const cls = films.length >= 5 ? 'watched-5' : films.length === 4 ? 'watched-4' : films.length === 3 ? 'watched-3' : films.length === 2 ? 'watched-2' : films.length === 1 ? 'watched-1' : '';
+        const dayRuntime = films.reduce((sum,f) => sum + (f.runtime || 0), 0);
+        const filmTitlesJson = escapeHtml(JSON.stringify(films.map(f => splitTitleParts(f.title).primary)));
+        const filmRatingsJson = escapeHtml(JSON.stringify(films.map(f => f.rating)));
+        html += `<div class="heatmap-cell ${cls}" data-date="${ds}" data-runtime="${dayRuntime}" data-films='${filmTitlesJson}' data-ratings='${filmRatingsJson}'>${d}</div>`;
+      }
+    }
+    html += '</div>';
+    div.innerHTML = html;
+    calRow.appendChild(div);
+  });
+  heatmapEl.appendChild(calRow);
+
+  // ====== CALENDAR TOGGLE ======
+  // Read rating colors from CSS custom properties (--rating-1 ... --rating-10)
+  // so the palette has a single source of truth in :root.
+  const ratingColors = (() => {
+    const rootStyle = getComputedStyle(document.documentElement);
+    const colors = [null];
+    for (let i = 1; i <= 10; i++) {
+      colors.push(
+        rootStyle.getPropertyValue(`--rating-${i}`).trim().split(/\s+/).map(Number)
+      );
+    }
+    return colors;
+  })();
+  const unratedColor = (() => {
+    return getComputedStyle(document.documentElement)
+      .getPropertyValue('--rating-unrated').trim().split(/\s+/).map(Number);
+  })();
+  const lerp = (a, b, t) => a + t * (b - a);
+  function fiveSixBridgeColor(t) {
+    const midpointLift = Math.sin(Math.PI * t);
+    const base = ratingColors[5].map((v,i) => lerp(v, ratingColors[6][i], t));
+    return [
+      base[0] + 7 * midpointLift,
+      base[1] - 5 * midpointLift,
+      base[2] + 8 * midpointLift
+    ].map(v => Math.round(Math.max(0, Math.min(255, v))));
+  }
+  function avgRatingColor(avg) {
+    if (avg <= 1) return ratingColors[1];
+    if (avg >= 10) return ratingColors[10];
+    const lo = Math.floor(avg), hi = Math.ceil(avg);
+    if (lo === hi) return ratingColors[lo];
+    const t = avg - lo;
+    if (lo === 5 && hi === 6) return fiveSixBridgeColor(t);
+    return ratingColors[lo].map((v,i) => Math.round(lerp(v, ratingColors[hi][i], t)));
+  }
+  // Total daily runtime reuses the # of screenings palette, but interpolated
+  // into a continuous spectrum. The domain is fixed so the color-to-runtime
+  // mapping stays consistent across years: 1h or shorter gets the lightest
+  // color, 7h or longer the darkest, and anything outside clamps to the ends.
+  // (Daily totals across all years span ~24 to ~510 minutes.)
+  const runtimePalette = [
+    [240, 196, 180], // #f0c4b4
+    [230, 143, 121], // #e68f79
+    [220, 90, 62],   // #dc5a3e
+    [216, 35, 42],   // #d8232a
+    [156, 29, 35],   // #9c1d23
+  ];
+  const RUNTIME_MIN = 60;
+  const RUNTIME_MAX = 420;
+  function runtimeColor(total) {
+    const t = Math.max(0, Math.min(1, (total - RUNTIME_MIN) / (RUNTIME_MAX - RUNTIME_MIN)));
+    const seg = t * (runtimePalette.length - 1);
+    const lo = Math.floor(seg), hi = Math.min(lo + 1, runtimePalette.length - 1);
+    const f = seg - lo;
+    return runtimePalette[lo].map((v, i) => Math.round(lerp(v, runtimePalette[hi][i], f)));
+  }
+
+  const calendarHeader = document.querySelector('.calendar-header');
+  const calendarRatingLegendScale = document.querySelector('.calendar-legend-rating-scale');
+  const rgbaString = (rgb, alpha) => `rgba(${rgb.join(',')},${alpha})`;
+  const calendarRuntimeLegendScale = document.querySelector('.calendar-legend-runtime-scale');
+  if (calendarRuntimeLegendScale) {
+    const runtimeStops = [];
+    const stopCount = 36;
+    for (let i = 0; i <= stopCount; i++) {
+      const pct = (i / stopCount) * 100;
+      const total = RUNTIME_MIN + (RUNTIME_MAX - RUNTIME_MIN) * i / stopCount;
+      runtimeStops.push(`rgb(${runtimeColor(total).join(',')}) ${pct}%`);
+    }
+    calendarRuntimeLegendScale.style.background = `linear-gradient(to right, ${runtimeStops.join(',')})`;
+    const minLabel = document.querySelector('.calendar-legend-runtime-min');
+    const maxLabel = document.querySelector('.calendar-legend-runtime-max');
+    if (minLabel) minLabel.textContent = '1h or shorter';
+    if (maxLabel) maxLabel.textContent = '7h or longer';
+  }
+  if (calendarRatingLegendScale) {
+    const ratingStops = [];
+    const stopCount = 36;
+    for (let i = 0; i <= stopCount; i++) {
+      const pct = (i / stopCount) * 100;
+      const rating = 1 + (9 * i / stopCount);
+      ratingStops.push(`${rgbaString(avgRatingColor(rating), 0.75)} ${pct}%`);
+    }
+    calendarRatingLegendScale.style.background = `linear-gradient(to right, ${ratingStops.join(',')})`;
+  }
+  let calMode = 'screenings';
+  function syncCalendarLegend() {
+    calendarHeader.classList.toggle('calendar-runtime-mode', calMode === 'runtime');
+    calendarHeader.classList.toggle('calendar-rating-mode', calMode === 'rating');
+    calendarHeader.classList.toggle('calendar-has-unrated-days', hasUnratedCalendarDay);
+  }
+  function applyCalMode() {
+    document.querySelectorAll('.heatmap-cell:not(.empty):not(.future)').forEach(cell => {
+      const ratings = JSON.parse(cell.dataset.ratings || '[]');
+      const films = JSON.parse(cell.dataset.films || '[]');
+      if (calMode === 'screenings') {
+        cell.style.background = '';
+        cell.classList.remove('rating-colored', 'rating-colored-dark', 'rating-colored-unrated', 'runtime-colored', 'runtime-colored-dark');
+        const cls = films.length >= 5 ? 'watched-5' : films.length === 4 ? 'watched-4' : films.length === 3 ? 'watched-3' : films.length === 2 ? 'watched-2' : films.length === 1 ? 'watched-1' : '';
+        cell.classList.remove('watched-1','watched-2','watched-3','watched-4','watched-5');
+        if (cls) cell.classList.add(cls);
+      } else if (calMode === 'runtime') {
+        cell.classList.remove('watched-1','watched-2','watched-3','watched-4','watched-5');
+        cell.classList.remove('rating-colored', 'rating-colored-dark', 'rating-colored-unrated');
+        if (films.length > 0) {
+          const total = Number(cell.dataset.runtime || 0);
+          const [r,g,b] = runtimeColor(total);
+          cell.style.background = `rgb(${r},${g},${b})`;
+          cell.classList.add('runtime-colored');
+          const t = (total - RUNTIME_MIN) / (RUNTIME_MAX - RUNTIME_MIN);
+          cell.classList.toggle('runtime-colored-dark', t >= 0.5);
+        } else {
+          cell.style.background = '';
+          cell.classList.remove('runtime-colored', 'runtime-colored-dark');
+        }
+      } else {
+        cell.classList.remove('runtime-colored', 'runtime-colored-dark');
+        cell.classList.remove('watched-1','watched-2','watched-3','watched-4','watched-5');
+        cell.classList.remove('rating-colored-dark', 'rating-colored-unrated');
+        const rated = ratings.filter(r => r != null);
+        if (rated.length > 0) {
+          const avg = rated.reduce((a,b) => a+b, 0) / rated.length;
+          const [r,g,b] = avgRatingColor(avg);
+          cell.style.background = `rgba(${r},${g},${b},0.75)`;
+          cell.classList.add('rating-colored');
+          if (avg <= 3 || avg >= 8) cell.classList.add('rating-colored-dark');
+        } else if (ratings.length > 0) {
+          cell.style.background = `rgba(${unratedColor.join(',')},0.75)`;
+          cell.classList.add('rating-colored', 'rating-colored-unrated');
+        } else {
+          cell.style.background = '';
+          cell.classList.remove('rating-colored');
+        }
+      }
+    });
+    syncCalendarLegend();
+  }
+  const calToggles = {
+    screenings: document.getElementById('cal-toggle-screenings'),
+    runtime: document.getElementById('cal-toggle-runtime'),
+    rating: document.getElementById('cal-toggle-rating'),
+  };
+  function setCalMode(mode) {
+    calMode = mode;
+    Object.entries(calToggles).forEach(([m, btn]) => btn.classList.toggle('active', m === mode));
+    applyCalMode();
+  }
+  calToggles.screenings.addEventListener('click', () => setCalMode('screenings'));
+  calToggles.runtime.addEventListener('click', () => setCalMode('runtime'));
+  calToggles.rating.addEventListener('click', () => setCalMode('rating'));
 }
-const calToggles = {
-  screenings: document.getElementById('cal-toggle-screenings'),
-  runtime: document.getElementById('cal-toggle-runtime'),
-  rating: document.getElementById('cal-toggle-rating'),
-};
-function setCalMode(mode) {
-  calMode = mode;
-  Object.entries(calToggles).forEach(([m, btn]) => btn.classList.toggle('active', m === mode));
-  applyCalMode();
-}
-calToggles.screenings.addEventListener('click', () => setCalMode('screenings'));
-calToggles.runtime.addEventListener('click', () => setCalMode('runtime'));
-calToggles.rating.addEventListener('click', () => setCalMode('rating'));
 
 const tooltip = document.getElementById('tooltip');
 function escapeHtml(text) {
@@ -4088,14 +4231,22 @@ document.addEventListener('touchstart', e => {
 // ====== SERIES LIST ======
 const seriesCounts = {};
 const seriesVenues = {};
+const seriesYears = {};
 FILMS.forEach(f => {
   if (f.series) {
     seriesCounts[f.series] = (seriesCounts[f.series]||0)+1;
     if (!seriesVenues[f.series]) seriesVenues[f.series] = {};
     seriesVenues[f.series][f.venue] = (seriesVenues[f.series][f.venue]||0)+1;
+    if (!seriesYears[f.series]) seriesYears[f.series] = new Set();
+    seriesYears[f.series].add(f.date.slice(0, 4));
   }
 });
-const seriesArr = Object.entries(seriesCounts).sort((a,b) => b[1]-a[1]);
+// All-years mode lists only the series that appeared in three or more
+// years, with their screening counts and venues pooled over every
+// appearance.
+const seriesArr = Object.entries(seriesCounts)
+  .filter(([s]) => !IS_ALL_MODE || seriesYears[s].size >= 3)
+  .sort((a,b) => b[1]-a[1]);
 document.getElementById('series-list').innerHTML = seriesArr.map(([s,c]) =>
   `<div class="series-row">
     <span class="series-name">${escapeHtml(s)}${Object.entries(seriesVenues[s]).sort((a,b) => b[1]-a[1]).map(e => `<span class="series-venue${e[0] === 'OTHER' ? ' series-venue-other' : ''}">${escapeHtml(e[0])}</span>`).join('')}</span>
@@ -4124,7 +4275,7 @@ const columns = [
   { key:'runtime', label:'Length', w:'6.25%' },
   { key:'rating', label:'Rating', w:'7.5%' },
   { key:'format', label:'Format' + footnoteMark('dcp', 'DCP includes other digital'), w:'10%' },
-  { key:'price', label:'Price' + footnoteMark('price', 'Excludes membership fees'), w:'7%' },
+  { key:'price', label:'Price' + (IS_ALL_MODE ? '' : footnoteMark('price', 'Excludes membership fees')), w:'7%' },
   { key:'venue', label:'Venue', w:'7.75%' },
   { key:'series', label:'Series', w:'22.75%' }
 ];
@@ -4482,7 +4633,7 @@ document.querySelectorAll('.table-scroll-cue').forEach(cue => {
   });
 });
 
-renderTable();
+if (!IS_ALL_MODE) renderTable();
 
 // Re-anchor to the URL fragment now that the charts exist. The browser
 // honored #sec-… (or restored a pixel offset) against the placeholder
