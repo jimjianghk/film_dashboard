@@ -1878,7 +1878,7 @@ footer img.footer-favicon {
 
   <div class="stats-row animate delay-1" id="stats-row"></div>
   <div class="stats-compare-toggle animate delay-1" id="stats-compare-toggle-wrap">
-    <label class="switch-toggle" title="Show year comparisons">
+    <label class="switch-toggle">
       <input type="checkbox" id="stats-compare-toggle" aria-label="Show year comparisons">
       <span class="switch-slider"></span>
     </label>
@@ -1895,7 +1895,7 @@ footer img.footer-favicon {
     <div class="chart-card full animate delay-2" id="sec-cumulative">
       <div class="chart-label with-subtitle">Cumulative screenings
         <span class="chart-dedup cum-forecast-toggle" id="cum-forecast-wrap">
-          <label class="switch-toggle" title="Forecast the year end from past years' pace">
+          <label class="switch-toggle">
             <input type="checkbox" id="cum-forecast">
             <span class="switch-slider"></span>
           </label>
@@ -1915,7 +1915,7 @@ footer img.footer-favicon {
           <button class="cal-toggle" id="rat-toggle-rep">Repertory</button>
         </span>
         <span class="rating-dedup-toggle chart-dedup" style="display:flex;align-items:center;gap:6px;">
-          <label class="switch-toggle" title="De-duplicate rewatches">
+          <label class="switch-toggle">
             <input type="checkbox" id="rating-dedup">
             <span class="switch-slider"></span>
           </label>
@@ -1928,7 +1928,7 @@ footer img.footer-favicon {
     <div class="chart-card animate delay-2" id="sec-decades">
       <div class="chart-label" style="display:flex;align-items:center;gap:18px;min-height:29px;">Production decade
         <span class="chart-dedup" style="display:flex;align-items:center;gap:6px;">
-          <label class="switch-toggle" title="De-duplicate rewatches">
+          <label class="switch-toggle">
             <input type="checkbox" id="decade-dedup">
             <span class="switch-slider"></span>
           </label>
@@ -1946,7 +1946,7 @@ footer img.footer-favicon {
     <div class="chart-card full animate delay-3" id="sec-runtimes">
       <div class="chart-label with-subtitle" style="display:flex;align-items:center;gap:18px;">Runtime distribution
         <span class="chart-dedup" style="display:flex;align-items:center;gap:6px;">
-          <label class="switch-toggle" title="De-duplicate rewatches">
+          <label class="switch-toggle">
             <input type="checkbox" id="runtime-dedup">
             <span class="switch-slider"></span>
           </label>
@@ -4471,7 +4471,7 @@ function renderTable() {
         <span class="table-title-header">
           <span class="table-title-sort">${c.label}${sortArrow}</span>
           <span class="table-rewatch-filter">
-            <label class="switch-toggle" title="Show rewatches only">
+            <label class="switch-toggle">
               <input type="checkbox" id="table-rewatch-only" aria-label="Show rewatches only"${activeFilters._rewatchOnly ? ' checked' : ''}>
               <span class="switch-slider"></span>
             </label>
