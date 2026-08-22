@@ -2691,15 +2691,18 @@ function filmDecade(f) {
 
 // ====== CUMULATIVE CHART ======
 // Year-end forecast (optional toggle, current year only). Each past year
-// implies a year-end total: the current count divided by the fraction of
-// that year's total it had logged by this same date. The central forecast
-// blends two estimates by inverse prediction variance: the mean of those
-// implied totals (the pace estimate) and the mean of the past totals
-// themselves (the base rate). Early in the season the volatile fractions
-// leave the pace estimate imprecise, so the base rate anchors the blend;
-// as the year fills in the pace estimate takes over. The confidence band
-// is a 95% Student-t prediction interval on the blend's combined
-// standard error. The forecast remainder is
+// yields two estimates of where this year lands, both conditioned on the
+// count logged so far: the pace estimate, that count divided by the
+// fraction of the past year's total logged by this same date, and the
+// remainder estimate, that count plus whatever the past year went on to
+// log after this same date. The central forecast blends their means by
+// inverse prediction variance. Early in the season the volatile fractions
+// leave the pace estimate imprecise and the remainder estimate carries the
+// blend; as the year fills in the two converge on the count already
+// logged. Because both estimators read the current year, the blend never
+// anchors to a past-year average that ignores the season in progress. The
+// confidence band is a 95% Student-t prediction interval on the blend's
+// combined standard error. The forecast remainder is
 // then spread over the rest of the year following past years' average
 // month-by-month share of screenings, so the curve keeps the usual seasonal
 // shape instead of climbing linearly. Fractions reuse the stats row's
@@ -2719,7 +2722,7 @@ function computeCumForecast(pastFilmsLists) {
   const cumNow = FILMS.filter(f => f.date <= endDate).length;
   if (!cumNow) return null;
   const fractions = [];
-  const yearTotals = [];
+  const yearRemainders = [];
   const monthShares = new Array(12).fill(0);
   let shareYears = 0;
   pastFilmsLists.forEach(films => {
@@ -2727,7 +2730,7 @@ function computeCumForecast(pastFilmsLists) {
     const atCutoff = films.filter(f => isOnOrBeforeYearPoint(f.date, endDate)).length;
     if (atCutoff) {
       fractions.push(atCutoff / films.length);
-      yearTotals.push(films.length);
+      yearRemainders.push(films.length - atCutoff);
     }
     films.forEach(f => { monthShares[parseInt(f.date.slice(5, 7), 10) - 1] += 1 / films.length; });
     shareYears++;
@@ -2735,13 +2738,15 @@ function computeCumForecast(pastFilmsLists) {
   if (!fractions.length) return null;
   for (let m = 0; m < 12; m++) monthShares[m] /= shareYears;
   const impliedTotals = fractions.map(f => cumNow / f);
+  const remainderTotals = yearRemainders.map(r => cumNow + r);
   const n = impliedTotals.length;
   const paceMean = impliedTotals.reduce((s, v) => s + v, 0) / n;
   // t(0.975, df) by table for the small df this chart will ever see; the
   // closed-form fallback stays within ~0.01 of the true quantile. With one
   // past year there is no variance to weight the blend with and the band
   // degenerates to the central line; the lower bound never dips below the
-  // logged count.
+  // logged count. On Dec. 31 every fraction is 1 and every remainder 0, so
+  // both estimates collapse onto that count and the band closes.
   const T95 = { 1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 6: 2.447, 7: 2.365, 8: 2.306, 9: 2.262, 10: 2.228 };
   const predVar = vals => {
     const mean = vals.reduce((s, v) => s + v, 0) / vals.length;
@@ -2751,15 +2756,15 @@ function computeCumForecast(pastFilmsLists) {
   let halfWidth = 0;
   if (n > 1) {
     const paceVar = predVar(impliedTotals);
-    const baseMean = yearTotals.reduce((s, v) => s + v, 0) / n;
-    const baseVar = predVar(yearTotals);
-    if (paceVar > 0 && baseVar > 0) {
+    const restMean = remainderTotals.reduce((s, v) => s + v, 0) / n;
+    const restVar = predVar(remainderTotals);
+    if (paceVar > 0 && restVar > 0) {
       const wPace = 1 / paceVar;
-      const wBase = 1 / baseVar;
-      centralTotal = (paceMean * wPace + baseMean * wBase) / (wPace + wBase);
-      halfWidth = (T95[n - 1] || 1.96 + 2.75 / (n - 1)) * Math.sqrt(1 / (wPace + wBase));
-    } else if (baseVar === 0 && paceVar > 0) {
-      centralTotal = baseMean;
+      const wRest = 1 / restVar;
+      centralTotal = (paceMean * wPace + restMean * wRest) / (wPace + wRest);
+      halfWidth = (T95[n - 1] || 1.96 + 2.75 / (n - 1)) * Math.sqrt(1 / (wPace + wRest));
+    } else if (restVar === 0 && paceVar > 0) {
+      centralTotal = restMean;
     }
   }
   const loTotal = Math.max(cumNow, centralTotal - halfWidth);
