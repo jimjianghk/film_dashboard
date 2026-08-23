@@ -2884,7 +2884,9 @@ function renderCumulativeChart(anim) {
   const chartEndDate = todayDate > yearEnd ? yearEnd : todayDate;
   const chartEndMonth = chartEndDate.getMonth();
   const daysInChartEndMonth = new Date(parseInt(chartYear), chartEndMonth + 1, 0).getDate();
-  const twoThirdsPoint = Math.ceil(daysInChartEndMonth * 2 / 3);
+  // The axis picks up the next month once the 1st is five days away or closer,
+  // so the curve never crowds the right edge at the turn of a month.
+  const nextMonthDaysAway = daysInChartEndMonth - chartEndDate.getDate() + 1;
   // Forecast visibility runs 0..1. Static renders sit at the endpoints;
   // toggle-animation frames pass intermediate values, so the axes rescale
   // and the forecast layer fades in step, like the bar charts' toggles.
@@ -2892,7 +2894,7 @@ function renderCumulativeChart(anim) {
   cumForecastP = p;
   const fcst = p > 0 && cumForecast ? cumForecast : null;
   const forecastTarget = anim ? anim.on : p === 1;
-  const baseEndMonth = chartEndDate.getDate() > twoThirdsPoint ? Math.min(11, chartEndMonth + 1) : chartEndMonth;
+  const baseEndMonth = nextMonthDaysAway <= 5 ? Math.min(11, chartEndMonth + 1) : chartEndMonth;
   const baseEndMonthLastDay = new Date(parseInt(chartYear), baseEndMonth + 1, 0, 12, 0, 0);
   const baseEndIdx = Math.min(daysInYear - 1, Math.round((baseEndMonthLastDay - yearStart) / dayMs));
   const endMonth = p > 0 ? 11 : baseEndMonth;
