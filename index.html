@@ -4290,8 +4290,9 @@ const columns = [
 // Articles observed leading logged titles (English, French, Italian, Spanish),
 // ignored when sorting titles and series. Curated rather than generic:
 // lookalikes that lead titles here as non-articles ("die" in Die Hard, "i" in
-// I Saw the TV Glow) must stay out of the list.
-const LEADING_ARTICLE_RE = /^(?:(?:the|an|a|les|le|la|los|el|un)\s+|l[’'])/;
+// I Saw the TV Glow) must stay out of the list. The "la" entry skips a doubled
+// "La La …" opening (La La Land), where La is a sung syllable, not an article.
+const LEADING_ARTICLE_RE = /^(?:(?:the|an|a|les|le|la(?!\s+la\b)|los|el|un)\s+|l[’'])/;
 
 function getFilterOptions(key) {
   let vals;
