@@ -2515,7 +2515,7 @@ const daysAtCinema = currentStats.daysAtCinema;
 // chart, format chart, log table). Repeat claims keep their symbol; a claim
 // with new text (the dedup toggle flips the Various note between singular
 // and plural) rewrites the note in place.
-const FOOTNOTE_SYMBOLS = ['*', '†', '‡', '§', '**'];
+const FOOTNOTE_SYMBOLS = ['*', '†', '‡', '§', '**', '††', '‡‡', '§§'];
 const footnotes = [];
 function footnoteMark(id, text) {
   let note = footnotes.find(n => n.id === id);
