@@ -4491,7 +4491,7 @@ function renderTable() {
   document.getElementById('table-head').innerHTML += filterRow;
   renderTableBody();
 
-  document.querySelectorAll('th').forEach(th => {
+  document.querySelectorAll('#table-head th').forEach(th => {
     th.addEventListener('click', e => {
       if (e.target.closest('.col-filter-wrap')) return;
       if (e.target.closest('.table-rewatch-filter')) return;
