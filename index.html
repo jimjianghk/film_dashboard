@@ -69,9 +69,10 @@
   --red: #d8232a;
   --green: #3e7a4c;
 
-  /* RATING COLORS — single source of truth, dark red (1) to dark navy (10).
-     Space-separated RGB so they compose with rgb()/alpha syntax.
-     The JS ratingColors array is derived from these on init. */
+  /* RATING COLORS — single source of truth, dark red (1) to dark navy (10),
+     each with the text color its badge carries. Space-separated RGB so they
+     compose with rgb()/alpha syntax. The JS ratingColors and ratingTextColors
+     arrays are derived from these on init. */
   --rating-1: 175 24 18;
   --rating-2: 210 45 39;
   --rating-3: 224 89 82;
@@ -82,6 +83,16 @@
   --rating-8: 84 119 182;
   --rating-9: 53 81 159;
   --rating-10: 31 46 122;
+  --rating-1-text: 250 208 196;
+  --rating-2-text: 250 208 196;
+  --rating-3-text: 252 215 207;
+  --rating-4-text: 253 235 231;
+  --rating-5-text: 138 19 15;
+  --rating-6-text: 31 46 122; /* the rating-10 background */
+  --rating-7-text: 225 234 249;
+  --rating-8-text: 222 232 248;
+  --rating-9-text: 213 225 242;
+  --rating-10-text: 201 215 232;
   --rating-unrated: 126 127 113;
   --rating-unrated-color: rgb(var(--rating-unrated));
   --rating-unrated-text: #ECEAE2;
@@ -975,67 +986,6 @@ h1 {
   font-size: 0.9rem;
 }
 
-/* SERIES */
-.series-list { display: grid; }
-.series-list.collapsed .series-row:nth-child(n+6) { display: none; }
-.series-list.expanded { max-height: 384px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
-.series-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 8px 12px;
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid var(--border);
-  border-radius: 0;
-  transition: background 0.2s;
-  cursor: default;
-}
-.series-row:hover { background: rgba(0,0,0,0.05); }
-.series-name { flex: 1; font-size: 1rem; font-weight: 400; color: var(--text); }
-.series-count {
-  font-family: 'Dashboard Sans', sans-serif;
-  font-size: 1rem;
-  color: var(--text);
-  font-weight: 350;
-}
-.series-venue {
-  font-family: 'Dashboard Sans', sans-serif;
-  font-size: 0.9rem;
-  background: transparent;
-  border: 1px solid var(--accent);
-  color: var(--accent);
-  padding: 0 5px;
-  border-radius: 0;
-  margin-left: 6px;
-  font-weight: 500;
-  white-space: nowrap;
-  position: relative;
-  top: -0.5px;
-}
-.series-venue-other {
-  border-color: var(--rating-unrated-color);
-  color: var(--rating-unrated-color);
-}
-.series-toggle {
-  margin-top: 14px;
-  font-family: 'Dashboard Sans', sans-serif;
-  font-size: 1rem;
-  font-weight: 500;
-  letter-spacing: 0;
-  text-transform: none;
-  color: var(--text);
-  background: transparent;
-  border: 1px solid var(--text);
-  padding: 6px 11px;
-  border-radius: 0;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-}
-@media (hover: hover) {
-  .series-toggle:hover { background: var(--text); color: var(--bg); }
-}
-
 /* FILM TABLE */
 .film-table-shell {
   position: relative;
@@ -1224,22 +1174,30 @@ tbody tr:last-child td { border-bottom: none; }
   .rating-badge { padding: 0 0 1px 0.5px; }
   .rating-badge.rating-10 { padding: 0 0 1px 1px; }
   .rating-badge.rating-unrated { padding: 0 0 2px 0; }
+  /* The smaller fractional average sits a pixel lower than the whole-number
+     digits: top padding in place of the lift above. */
+  .rating-badge.rating-badge-fraction { padding: 1px 0 0 0.5px; }
 }
 @media (min-width: 600px) {
   .rating-badge.rating-10 { padding-left: 0.5px; }
 }
-.rating-badge.rating-1  { background: rgb(var(--rating-1));  color: #FAD0C4; }
-.rating-badge.rating-2  { background: rgb(var(--rating-2));  color: #FAD0C4; }
-.rating-badge.rating-3  { background: rgb(var(--rating-3));  color: #FCD7CF; }
-.rating-badge.rating-4  { background: rgb(var(--rating-4));  color: #FDEBE7; }
-.rating-badge.rating-5  { background: rgb(var(--rating-5));  color: #8A130F; }
-.rating-badge.rating-6  { background: rgb(var(--rating-6));  color: rgb(var(--rating-10)); }
-.rating-badge.rating-7  { background: rgb(var(--rating-7));  color: #E1EAF9; }
-.rating-badge.rating-8  { background: rgb(var(--rating-8));  color: #DEE8F8; }
-.rating-badge.rating-9  { background: rgb(var(--rating-9));  color: #D5E1F2; }
-.rating-badge.rating-10 { background: rgb(var(--rating-10)); color: #C9D7E8; }
+.rating-badge.rating-1  { background: rgb(var(--rating-1));  color: rgb(var(--rating-1-text)); }
+.rating-badge.rating-2  { background: rgb(var(--rating-2));  color: rgb(var(--rating-2-text)); }
+.rating-badge.rating-3  { background: rgb(var(--rating-3));  color: rgb(var(--rating-3-text)); }
+.rating-badge.rating-4  { background: rgb(var(--rating-4));  color: rgb(var(--rating-4-text)); }
+.rating-badge.rating-5  { background: rgb(var(--rating-5));  color: rgb(var(--rating-5-text)); }
+.rating-badge.rating-6  { background: rgb(var(--rating-6));  color: rgb(var(--rating-6-text)); }
+.rating-badge.rating-7  { background: rgb(var(--rating-7));  color: rgb(var(--rating-7-text)); }
+.rating-badge.rating-8  { background: rgb(var(--rating-8));  color: rgb(var(--rating-8-text)); }
+.rating-badge.rating-9  { background: rgb(var(--rating-9));  color: rgb(var(--rating-9-text)); }
+.rating-badge.rating-10 { background: rgb(var(--rating-10)); color: rgb(var(--rating-10-text)); }
 .rating-badge.rating-unrated { background: rgb(var(--rating-unrated)); color: var(--rating-unrated-text); }
 .rating-badge .em-narrow { display: inline-block; transform: scaleX(0.8); }
+/* A fractional average in the series table keeps the same circle and steps
+   its font down so three characters fit: at 85% a one-decimal value is as
+   wide as the log's "10". Its colors arrive inline, read off the calendar's
+   continuous rating scale. */
+.rating-badge.rating-badge-fraction { font-size: 0.85rem; }
 .rewatch-badge {
   display: inline-block;
   width: 0.88em; height: 0.88em;
@@ -1259,6 +1217,21 @@ tbody tr:last-child td { border-bottom: none; }
   font-size: 1rem;
   color: var(--text-dim);
 }
+/* SERIES TABLE */
+/* Reuses the log table's shell with a shorter viewport and no filter row, so
+   each header cell draws the rule the log's filter row supplies. */
+.series-table-wrap { max-height: 330px; }
+.series-table { min-width: 680px; }
+.series-table th {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--text);
+}
+/* A month range and a split row's "(out of N)" each hold together, so a cell
+   breaks only at a comma or under its count. */
+.series-month-run, .series-count-of { white-space: nowrap; }
+/* Chevrons centered on the single 43px header row. */
+.series-table-shell .table-scroll-cue { padding-top: 14px; }
+
 .page-footnotes {
   font-family: 'Dashboard Sans', sans-serif;
   font-size: 0.9rem;
@@ -2014,8 +1987,20 @@ footer img.footer-favicon {
 
   <div class="section animate delay-4" id="sec-series">
     <div class="chart-label">Festivals &amp; series<span class="chart-num">8</span></div>
-    <div id="series-list" class="series-list collapsed"></div>
-    <button class="series-toggle" id="series-toggle">Show all series</button>
+    <div class="film-table-shell series-table-shell">
+      <div class="film-table-wrap series-table-wrap">
+        <div class="table-glass" aria-hidden="true"><div class="table-glass-pane"></div></div>
+        <table class="series-table">
+          <thead id="series-head"></thead>
+          <tbody id="series-body"></tbody>
+        </table>
+      </div>
+      <div class="table-scroll-cue" aria-hidden="true">
+        <span><svg viewBox="0 0 6 15"><polyline points="1 1 5 7.5 1 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter"/></svg></span>
+        <span><svg viewBox="0 0 6 15"><polyline points="1 1 5 7.5 1 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter"/></svg></span>
+        <span><svg viewBox="0 0 6 15"><polyline points="1 1 5 7.5 1 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter"/></svg></span>
+      </div>
+    </div>
   </div>
 
   <div class="section animate delay-5" id="sec-log">
@@ -2283,11 +2268,11 @@ document.addEventListener('animationend', e => {
     // empty cards are a few dozen pixels tall), and the browser's early
     // fragment/restore scroll fires against exactly that layout, flashing a
     // wrong tab. Hold the nav back until the dashboard has rendered; the
-    // table is the last thing the render block builds (the series list in
-    // all-years mode, which drops the table), and the body ResizeObserver
+    // table is the last thing the render block builds (the series table in
+    // all-years mode, which drops the log), and the body ResizeObserver
     // re-runs update the moment the page inflates.
     if (!layoutReady) {
-      layoutReady = document.getElementById(IS_ALL_MODE ? 'series-list' : 'table-body').childElementCount > 0;
+      layoutReady = document.getElementById(IS_ALL_MODE ? 'series-body' : 'table-body').childElementCount > 0;
       if (!layoutReady) return;
     }
     // Scroll-spy: a chart takes over as soon as its top enters the upper
@@ -3929,6 +3914,61 @@ document.addEventListener('pointerdown', e => {
   if (e.pointerType !== 'mouse' && !e.target.closest('.format-seg, .format-bar-track')) hideSegTooltip();
 });
 
+// ====== RATING PALETTE ======
+// Read rating colors from CSS custom properties (--rating-1 ... --rating-10
+// and their -text pairs) so the palette has a single source of truth in :root.
+// Shared by the calendar's average-rating view and the series table.
+const ratingColors = [null];
+const ratingTextColors = [null];
+const unratedColor = (() => {
+  const rootStyle = getComputedStyle(document.documentElement);
+  const rgbOf = name => rootStyle.getPropertyValue(name).trim().split(/\s+/).map(Number);
+  for (let i = 1; i <= 10; i++) {
+    ratingColors.push(rgbOf(`--rating-${i}`));
+    ratingTextColors.push(rgbOf(`--rating-${i}-text`));
+  }
+  return rgbOf('--rating-unrated');
+})();
+const lerp = (a, b, t) => a + t * (b - a);
+function fiveSixBridgeColor(t) {
+  const midpointLift = Math.sin(Math.PI * t);
+  const base = ratingColors[5].map((v,i) => lerp(v, ratingColors[6][i], t));
+  return [
+    base[0] + 7 * midpointLift,
+    base[1] - 5 * midpointLift,
+    base[2] + 8 * midpointLift
+  ].map(v => Math.round(Math.max(0, Math.min(255, v))));
+}
+function avgRatingColor(avg) {
+  if (avg <= 1) return ratingColors[1];
+  if (avg >= 10) return ratingColors[10];
+  const lo = Math.floor(avg), hi = Math.ceil(avg);
+  if (lo === hi) return ratingColors[lo];
+  const t = avg - lo;
+  if (lo === 5 && hi === 6) return fiveSixBridgeColor(t);
+  return ratingColors[lo].map((v,i) => Math.round(lerp(v, ratingColors[hi][i], t)));
+}
+// Text for a badge on an interpolated background: whichever neighboring whole
+// rating's text color contrasts more with it (WCAG relative luminance), except
+// across the 5-to-6 bridge, where the text follows the nearer rating: 5's dark
+// red below 5.5, 6's navy from 5.5 up. A whole-number average keeps its own
+// pairing, matching the log's badge.
+function relativeLuminance([r, g, b]) {
+  const ch = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+  return 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b);
+}
+function avgRatingTextColor(avg) {
+  if (avg > 5 && avg < 6) return ratingTextColors[avg < 5.5 ? 5 : 6];
+  const bgLum = relativeLuminance(avgRatingColor(avg));
+  const contrast = rgb => {
+    const lum = relativeLuminance(rgb);
+    return (Math.max(lum, bgLum) + 0.05) / (Math.min(lum, bgLum) + 0.05);
+  };
+  const clamp = n => Math.max(1, Math.min(10, n));
+  const lo = ratingTextColors[clamp(Math.floor(avg))], hi = ratingTextColors[clamp(Math.ceil(avg))];
+  return contrast(lo) >= contrast(hi) ? lo : hi;
+}
+
 // ====== HEATMAP ======
 // The screening calendar only reads as a single year, so the all-years
 // page removes its section outright and skips the build.
@@ -3985,41 +4025,6 @@ if (!IS_ALL_MODE) {
   heatmapEl.appendChild(calRow);
 
   // ====== CALENDAR TOGGLE ======
-  // Read rating colors from CSS custom properties (--rating-1 ... --rating-10)
-  // so the palette has a single source of truth in :root.
-  const ratingColors = (() => {
-    const rootStyle = getComputedStyle(document.documentElement);
-    const colors = [null];
-    for (let i = 1; i <= 10; i++) {
-      colors.push(
-        rootStyle.getPropertyValue(`--rating-${i}`).trim().split(/\s+/).map(Number)
-      );
-    }
-    return colors;
-  })();
-  const unratedColor = (() => {
-    return getComputedStyle(document.documentElement)
-      .getPropertyValue('--rating-unrated').trim().split(/\s+/).map(Number);
-  })();
-  const lerp = (a, b, t) => a + t * (b - a);
-  function fiveSixBridgeColor(t) {
-    const midpointLift = Math.sin(Math.PI * t);
-    const base = ratingColors[5].map((v,i) => lerp(v, ratingColors[6][i], t));
-    return [
-      base[0] + 7 * midpointLift,
-      base[1] - 5 * midpointLift,
-      base[2] + 8 * midpointLift
-    ].map(v => Math.round(Math.max(0, Math.min(255, v))));
-  }
-  function avgRatingColor(avg) {
-    if (avg <= 1) return ratingColors[1];
-    if (avg >= 10) return ratingColors[10];
-    const lo = Math.floor(avg), hi = Math.ceil(avg);
-    if (lo === hi) return ratingColors[lo];
-    const t = avg - lo;
-    if (lo === 5 && hi === 6) return fiveSixBridgeColor(t);
-    return ratingColors[lo].map((v,i) => Math.round(lerp(v, ratingColors[hi][i], t)));
-  }
   // Total daily runtime reuses the # of screenings palette, but interpolated
   // into a continuous spectrum. The domain is fixed so the color-to-runtime
   // mapping stays consistent across years: 1h or shorter gets the lightest
@@ -4235,41 +4240,6 @@ document.addEventListener('touchstart', e => {
   }
 });
 
-// ====== SERIES LIST ======
-const seriesCounts = {};
-const seriesVenues = {};
-const seriesYears = {};
-FILMS.forEach(f => {
-  if (f.series) {
-    seriesCounts[f.series] = (seriesCounts[f.series]||0)+1;
-    if (!seriesVenues[f.series]) seriesVenues[f.series] = {};
-    seriesVenues[f.series][f.venue] = (seriesVenues[f.series][f.venue]||0)+1;
-    if (!seriesYears[f.series]) seriesYears[f.series] = new Set();
-    seriesYears[f.series].add(f.date.slice(0, 4));
-  }
-});
-// All-years mode lists only the series that appeared in three or more
-// years, with their screening counts and venues pooled over every
-// appearance.
-const seriesArr = Object.entries(seriesCounts)
-  .filter(([s]) => !IS_ALL_MODE || seriesYears[s].size >= 3)
-  .sort((a,b) => b[1]-a[1]);
-document.getElementById('series-list').innerHTML = seriesArr.map(([s,c]) =>
-  `<div class="series-row">
-    <span class="series-name">${escapeHtml(s)}${Object.entries(seriesVenues[s]).sort((a,b) => b[1]-a[1]).map(e => `<span class="series-venue${e[0] === 'OTHER' ? ' series-venue-other' : ''}">${escapeHtml(e[0])}</span>`).join('')}</span>
-    <span class="series-count">${c}</span>
-  </div>`
-).join('');
-
-const seriesListEl = document.getElementById('series-list');
-const seriesToggleBtn = document.getElementById('series-toggle');
-seriesToggleBtn.addEventListener('click', () => {
-  const isCollapsed = seriesListEl.classList.contains('collapsed');
-  seriesListEl.classList.toggle('collapsed');
-  seriesListEl.classList.toggle('expanded');
-  seriesToggleBtn.textContent = isCollapsed ? 'Show fewer' : 'Show all series';
-});
-
 // ====== FILM TABLE ======
 let currentSort = { col: 'date', dir: 'desc' };
 const activeFilters = {};
@@ -4432,24 +4402,33 @@ function renderTableBody() {
     </tr>`;
   }).join('');
 
-  const wrapEl = document.querySelector('.film-table-wrap');
-  if (wrapEl) {
-    const needsScroll = wrapEl.scrollHeight > wrapEl.clientHeight + 1;
-    wrapEl.style.overflowY = needsScroll ? 'auto' : 'hidden';
-    wrapEl.style.overscrollBehaviorY = needsScroll ? 'auto' : 'none';
-    wrapEl.style.touchAction = needsScroll ? 'pan-x pan-y' : 'pan-x';
-  }
+  syncTableWrapOverflow(document.querySelector('#sec-log .film-table-wrap'));
+}
+
+// A table that fits its viewport gives up vertical scrolling, so a swipe over
+// it pans the page instead of stalling.
+function syncTableWrapOverflow(wrapEl) {
+  if (!wrapEl) return;
+  const needsScroll = wrapEl.scrollHeight > wrapEl.clientHeight + 1;
+  wrapEl.style.overflowY = needsScroll ? 'auto' : 'hidden';
+  wrapEl.style.overscrollBehaviorY = needsScroll ? 'auto' : 'none';
+  wrapEl.style.touchAction = needsScroll ? 'pan-x pan-y' : 'pan-x';
 }
 
 function syncTableGlass() {
-  const wrap = document.querySelector('.film-table-wrap');
-  const pane = wrap?.querySelector('.table-glass-pane');
-  const head = document.getElementById('table-head');
-  const tableEl = wrap?.querySelector('table');
-  if (!pane || !head || !tableEl) return;
-  pane.style.setProperty('--table-glass-width', tableEl.offsetWidth + 'px');
-  pane.style.setProperty('--table-glass-height', head.offsetHeight + 'px');
-  wrap.closest('.film-table-shell')?.style.setProperty('--cue-hit-height', head.offsetHeight + 'px');
+  document.querySelectorAll('.film-table-wrap').forEach(wrap => {
+    const pane = wrap.querySelector('.table-glass-pane');
+    const head = wrap.querySelector('thead');
+    const tableEl = wrap.querySelector('table');
+    if (!pane || !head || !tableEl) return;
+    pane.style.setProperty('--table-glass-width', tableEl.offsetWidth + 'px');
+    pane.style.setProperty('--table-glass-height', head.offsetHeight + 'px');
+    wrap.closest('.film-table-shell')?.style.setProperty('--cue-hit-height', head.offsetHeight + 'px');
+  });
+}
+
+function sortArrowHtml(dir) {
+  return `<span class="sort-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="7" viewBox="0 0 8 5"${dir === 'asc' ? ' style="transform:rotate(180deg)"' : ''}><path d="M0 0l4 5 4-5z" fill="currentColor"/></svg></span>`;
 }
 
 const TABLE_SCROLL_CUE_DISMISS_PX = 32;
@@ -4471,9 +4450,8 @@ function updateTableScrollIndicators() {
 
 function renderTable() {
   document.querySelectorAll('body > .col-filter-menu').forEach(m => m.remove());
-  const arrow = dir => `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="7" viewBox="0 0 8 5"${dir === 'asc' ? ' style="transform:rotate(180deg)"' : ''}><path d="M0 0l4 5 4-5z" fill="currentColor"/></svg>`;
   document.getElementById('table-head').innerHTML = '<tr>' + columns.map(c => {
-    const sortArrow = currentSort.col===c.key ? `<span class="sort-arrow">${arrow(currentSort.dir)}</span>` : '';
+    const sortArrow = currentSort.col===c.key ? sortArrowHtml(currentSort.dir) : '';
     if (c.key === 'title') {
       return `<th data-col="${c.key}" style="width:${c.w}">
         <span class="table-title-header">
@@ -4640,6 +4618,136 @@ document.querySelectorAll('.table-scroll-cue').forEach(cue => {
     wrap.scrollTo({ left: Math.min(maxScrollLeft, wrap.scrollLeft + step), behavior: prefersReduced ? 'auto' : 'smooth' });
   });
 });
+
+// ====== SERIES TABLE ======
+// Every named festival or series with its screenings pooled: the venues it
+// played at, most frequent first, the months it screened in, and the average
+// over its rated screenings. Each venue's own months, count, and average are
+// kept alongside for the venue sort.
+// All-years mode lists only the series that appeared in three or more years,
+// pooled over every appearance.
+const seriesRows = (() => {
+  const bySeries = new Map();
+  FILMS.forEach(f => {
+    if (!f.series) return;
+    let s = bySeries.get(f.series);
+    if (!s) bySeries.set(f.series, s = { title: f.series, byVenue: new Map(), years: new Set() });
+    let v = s.byVenue.get(f.venue);
+    if (!v) s.byVenue.set(f.venue, v = { venue: f.venue, count: 0, ratingSum: 0, ratedCount: 0, months: new Set() });
+    v.count++;
+    v.months.add(Number(f.date.slice(5, 7)) - 1);
+    if (f.rating != null) { v.ratingSum += f.rating; v.ratedCount++; }
+    s.years.add(f.date.slice(0, 4));
+  });
+  // Tenths of a point, rounded from the exact quotient so a half rounds up;
+  // null when nothing was rated.
+  const avgTenths = (ratingSum, ratedCount) => ratedCount ? Math.round(ratingSum * 10 / ratedCount) : null;
+  // Rows keep the order series first appeared in the data, which the sorts
+  // fall back to for ties.
+  return [...bySeries.values()]
+    .filter(s => !IS_ALL_MODE || s.years.size >= 3)
+    .map((s, idx) => {
+      const venues = [...s.byVenue.values()].sort((a, b) => b.count - a.count);
+      const sum = key => venues.reduce((total, v) => total + v[key], 0);
+      const sortedMonths = sets => [...new Set(sets.flatMap(set => [...set]))].sort((a, b) => a - b);
+      return {
+        idx,
+        title: s.title,
+        venues: venues.map(v => v.venue),
+        months: sortedMonths(venues.map(v => v.months)),
+        count: sum('count'),
+        avgTenths: avgTenths(sum('ratingSum'), sum('ratedCount')),
+        perVenue: venues.map(v => ({ venue: v.venue, months: sortedMonths([v.months]), count: v.count, avgTenths: avgTenths(v.ratingSum, v.ratedCount) }))
+      };
+    });
+})();
+
+// The narrow columns hold fixed widths; the name takes whatever width remains,
+// however wide the table runs.
+const seriesColumns = [
+  { key: 'title', label: 'Series name', w: 'auto' },
+  { key: 'venues', label: 'Venue', w: '150px' },
+  { key: 'months', label: 'Month', w: '110px' },
+  { key: 'count', label: 'Screenings', w: '110px' },
+  { key: 'avgTenths', label: 'Avg rating', w: '104px' }
+];
+let seriesSort = { col: 'count', dir: 'desc' };
+
+const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+// "Apr, Jun–Jul, Sep": consecutive months collapse into an en-dash range, and
+// each run holds together so a cell breaks only at a comma.
+function formatMonths(months) {
+  const runs = [];
+  months.forEach(m => {
+    const last = runs[runs.length - 1];
+    if (last && m === last[1] + 1) last[1] = m;
+    else runs.push([m, m]);
+  });
+  return runs.map(([a, b]) => `<span class="series-month-run">${MONTH_ABBR[a]}${b > a ? '–' + MONTH_ABBR[b] : ''}</span>`).join(', ');
+}
+
+function seriesRatingBadge(avgTenths) {
+  if (avgTenths == null) return '<span class="rating-badge rating-unrated"><span class="em-narrow">—</span></span>';
+  const avg = avgTenths / 10;
+  // A whole-number average is the log's badge, class and all; a fractional
+  // one shows one decimal in a smaller font with its exact colors inline.
+  if (avgTenths % 10 === 0) return `<span class="rating-badge rating-${avg}">${avg}</span>`;
+  return `<span class="rating-badge rating-badge-fraction" style="background:rgb(${avgRatingColor(avg).join(',')});color:rgb(${avgRatingTextColor(avg).join(',')})">${avg.toFixed(1)}</span>`;
+}
+
+function sortedSeriesRows() {
+  const { col, dir } = seriesSort;
+  const sign = dir === 'asc' ? 1 : -1;
+  // The venue sort splits a series that played more than one venue into a
+  // row per venue, each carrying that venue's months, count, and average with
+  // the series total for context; every other sort shows the series whole.
+  const rows = col === 'venues'
+    ? seriesRows.flatMap(s => s.perVenue.map(v => ({ ...s, venues: [v.venue], months: v.months, count: v.count, avgTenths: v.avgTenths, total: s.perVenue.length > 1 ? s.count : null })))
+    : seriesRows;
+  const keyOf = col === 'title' ? s => normalizeTableSortText(s.title)
+    : col === 'venues' ? s => s.venues.join(', ').toLowerCase()
+    // First month, then last, so "Apr" files ahead of "Apr–May".
+    : col === 'months' ? s => s.months[0] * 12 + s.months[s.months.length - 1]
+    : s => s[col];
+  // Ties keep the order series first appeared in the data, whichever way the
+  // column runs; the name sort has none.
+  return [...rows].sort((a, b) => {
+    const va = keyOf(a), vb = keyOf(b);
+    const aNull = va == null, bNull = vb == null;
+    // Unrated series close the rating sort in either direction.
+    if (aNull !== bNull) return aNull ? 1 : -1;
+    if (!aNull) {
+      const cmp = typeof va === 'string' ? va.localeCompare(vb) : va - vb;
+      if (cmp) return cmp * sign;
+    }
+    return a.idx - b.idx;
+  });
+}
+
+function renderSeriesTable() {
+  document.getElementById('series-head').innerHTML = '<tr>' + seriesColumns.map(c =>
+    `<th data-col="${c.key}" style="width:${c.w}">${c.label}${seriesSort.col === c.key ? sortArrowHtml(seriesSort.dir) : ''}</th>`
+  ).join('') + '</tr>';
+  document.getElementById('series-body').innerHTML = sortedSeriesRows().map(s => `<tr>
+    <td style="line-height:1.3"><span class="title-cell">${escapeHtml(s.title)}</span></td>
+    <td style="font-family:'Dashboard Sans',sans-serif;font-size:1rem;color:var(--text-dim);line-height:1.3">${escapeHtml(s.venues.join(', '))}</td>
+    <td style="font-family:'Dashboard Sans',sans-serif;font-size:1rem;color:var(--text-dim);line-height:1.3">${formatMonths(s.months)}</td>
+    <td style="font-family:'Dashboard Sans',sans-serif;font-size:1rem;color:var(--text-dim);line-height:1.3">${s.count}${s.total != null ? ` <span class="series-count-of">(out of ${s.total})</span>` : ''}</td>
+    <td>${seriesRatingBadge(s.avgTenths)}</td>
+  </tr>`).join('');
+  document.querySelectorAll('#series-head th').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.col;
+      if (seriesSort.col === col) seriesSort.dir = seriesSort.dir === 'asc' ? 'desc' : 'asc';
+      else seriesSort = { col, dir: 'asc' };
+      renderSeriesTable();
+    });
+  });
+  syncTableWrapOverflow(document.querySelector('.series-table-wrap'));
+  syncTableGlass();
+  requestAnimationFrame(updateTableScrollIndicators);
+}
+renderSeriesTable();
 
 if (!IS_ALL_MODE) renderTable();
 

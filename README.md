@@ -68,9 +68,9 @@ Monthly heatmap grid from January 1 through the current date in New York during 
 
 Hovering a tile with screenings shows a tooltip with film titles and color-coded rating badges. Hovering an empty past tile shows "No screenings"; today's tile (when no film is logged yet) shows "Awaiting data" instead.
 
-### Series list
+### Festivals and series table
 
-All named screening series ranked by count. Each row shows the series name followed by inline venue badges (ordered by frequency) and the film count. Collapsed to 5 rows by default with an expand toggle.
+Every named festival or series in a sortable table with five columns: series name, venue (each venue the series played at, most frequent first), month (the months it screened in, with consecutive months shown as a range), number of screenings, and average rating. The average covers only rated screenings and appears in the same circular badge as the log: a whole number when it lands on one, otherwise to one decimal in a slightly smaller type, with the badge color following the same continuous rating scale as the calendar's average-rating view. A series with no rated screening shows the grey unrated badge instead. Rows sort by screening count, highest first, by default, with ties in the order the series first appeared during the year. Clicking a header sorts by that column; unrated series always sort last on rating, and names order ignoring leading articles as titles do in the log table. Sorting by venue splits a series that played more than one venue into a row per venue, each showing that venue's own months, its screenings as a share of the series total ("23 (out of 24)"), and the average of its own screenings. The table scrolls within a viewport shorter than the log's.
 
 ### Complete log table
 
