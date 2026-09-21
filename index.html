@@ -1221,7 +1221,7 @@ tbody tr:last-child td { border-bottom: none; }
 /* Reuses the log table's shell with a shorter viewport and no filter row, so
    each header cell draws the rule the log's filter row supplies. */
 .series-table-wrap { max-height: 330px; }
-.series-table { min-width: 680px; }
+.series-table { min-width: 800px; }
 .series-table th {
   padding-bottom: 8px;
   border-bottom: 1px solid var(--text);
@@ -4666,7 +4666,7 @@ const seriesRows = (() => {
 // however wide the table runs.
 const seriesColumns = [
   { key: 'title', label: 'Series name', w: 'auto' },
-  { key: 'venues', label: 'Venue', w: '150px' },
+  { key: 'venues', label: 'Venue', w: '130px' },
   { key: 'months', label: 'Month', w: '110px' },
   { key: 'count', label: 'Screenings', w: '110px' },
   { key: 'avgTenths', label: 'Avg rating', w: '104px' }
