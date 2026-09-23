@@ -105,7 +105,7 @@ When the year has fewer than 5 logged films, the masthead and stats row render a
 - Sans font throughout (with Headline for the page title and hero stat values), signature red masthead, black section rules, tabular figures
 - Standalone definition page uses a white article-style layout with serif reading text, drop cap, small caps, and a thin grey headline divider
 - Rating tiles blend translucently with the paper-cream background
-- Liquid glass floating layer: chart tooltips, venue name tips, the log table's filter menus, the year menu panel, the chart navigation pill, and the sticky log table header render as translucent glass with soft highlights, subtle depth, and capsule-style one-line tooltips
+- Liquid glass floating layer: chart tooltips, venue name tips, the log table's filter menus, the year menu panel, the chart navigation pill, and the log and series table headers render as translucent glass with soft highlights, subtle depth, and capsule-style one-line tooltips
 - Browsers that can't render the glass effect keep the flatter solid design
 - Reduced-transparency and high-contrast preferences restore solid, high-contrast surfaces
 - Fade-up entrance animations with staggered delays

@@ -1073,30 +1073,53 @@ h1 {
     opacity: 0.95;
   }
 }
+/* Sideways scroller. Its single grid track is at least the table's minimum
+   width, so the header and the rows below share one width and slide
+   together. */
 .film-table-wrap {
+  display: grid;
+  grid-template-columns: minmax(var(--table-min-width, 950px), 1fr);
   overflow-x: auto;
-  max-height: 640px;
-  overflow-y: auto;
-  overscroll-behavior-y: auto;
+  overflow-y: hidden;
   overscroll-behavior-x: none;
   scrollbar-width: thin;
   scrollbar-color: var(--border-strong) transparent;
   background: transparent;
   border: none;
-  border-top: 1px solid var(--text);
   border-radius: 0;
+}
+.film-table-stack { position: relative; }
+/* The rows' own scroller. Its content starts a header's height down, so the
+   rows begin below the header at rest and slide beneath it once scrolled.
+   The header is layered over this box rather than placed inside it, which
+   keeps it still while an overscroll bounce drags the rows. JS supplies the
+   header height and, so the columns line up when a scrollbar takes space,
+   the scroller's inner width for the header. */
+.film-table-scroll {
+  max-height: var(--table-max-height, 640px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: auto;
+  padding-top: var(--table-head-height, 0px);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+.film-table-head {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--table-head-width, 100%);
+  z-index: 2;
 }
 table {
   width: 100%;
-  min-width: 950px;
   /* separate + zero spacing: collapsed borders rasterize unevenly under
-     pinch zoom (random thick lines) and misbehave with sticky headers */
+     pinch zoom (random thick lines) */
   border-collapse: separate;
   border-spacing: 0;
   table-layout: fixed;
   font-size: 1rem;
 }
-thead { position: sticky; top: 0; z-index: 5; }
 th {
   font-family: 'Dashboard Sans', sans-serif;
   font-size: 1rem;
@@ -1220,8 +1243,7 @@ tbody tr:last-child td { border-bottom: none; }
 /* SERIES TABLE */
 /* Reuses the log table's shell with a shorter viewport and no filter row, so
    each header cell draws the rule the log's filter row supplies. */
-.series-table-wrap { max-height: 330px; }
-.series-table { min-width: 800px; }
+.series-table-shell { --table-min-width: 800px; --table-max-height: 330px; }
 .series-table th {
   padding-bottom: 8px;
   border-bottom: 1px solid var(--text);
@@ -1688,41 +1710,17 @@ footer img.footer-favicon {
     filter: blur(0.75px);
     pointer-events: none;
   }
-  /* Sticky table header becomes a glass bar over the scrolling rows; the tint
-     matches the page so it stays quiet until rows slide beneath it. One shared
-     pane carries the blur for both header rows: per-cell backdrop-filters
-     sample independently and draw a visible seam between the rows. The pane is
-     a zero-height sticky element so it pins exactly with the thead; JS keeps
-     its size in sync with the header. */
-  /* Transparent so the shared pane behind shows through; position+z-index
-     keeps each header cell above that pane. Safari composites the
-     backdrop-filter pane above header content that isn't layer-promoted (the
-     filter dropdowns survive because each sits in a positioned
-     .col-filter-wrap, but the plain th label cells would be painted over).
-     Chrome/mobile already order it via thead's z-index, so this is a no-op
-     there. */
+  /* The header layered over the rows becomes a glass bar; the tint matches
+     the page so it stays quiet until rows slide beneath it. Cells go
+     transparent so the bar's own blur shows through both header rows. */
   th,
   .filter-row-tr td {
     background: transparent;
-    position: relative;
-    z-index: 1;
   }
-  .table-glass {
-    position: sticky;
-    top: 0;
-    height: 0;
-    z-index: 4;
-  }
-  .table-glass-pane {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: var(--table-glass-width, 100%);
-    height: var(--table-glass-height, 0px);
+  .film-table-head {
     background: rgb(235 233 220 / 0.65);
     -webkit-backdrop-filter: blur(8px) saturate(135%);
     backdrop-filter: blur(8px) saturate(135%);
-    pointer-events: none;
   }
 }
 @media (prefers-contrast: more) {
@@ -1732,7 +1730,7 @@ footer img.footer-favicon {
 }
 @media (prefers-reduced-transparency: reduce) {
   .tooltip, .seg-tooltip, .venue-tip, .col-filter-menu, .year-menu-panel, .chart-nav-glass,
-  th, .filter-row-tr td {
+  .film-table-head {
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
   }
@@ -1741,7 +1739,7 @@ footer img.footer-favicon {
   .year-menu-panel { background: rgba(235, 233, 220, 0.95); }
   .chart-nav-glass { background: rgba(235, 233, 220, 0.97); border: 1px solid var(--border-strong); }
   th, .filter-row-tr td { background: var(--bg); }
-  .table-glass-pane { display: none; }
+  .film-table-head { background: var(--bg); }
   .tooltip::before, .tooltip::after,
   .seg-tooltip::before, .venue-tip::before,
   .year-menu-panel::before, .year-menu-panel::after,
@@ -1988,12 +1986,21 @@ footer img.footer-favicon {
   <div class="section animate delay-4" id="sec-series">
     <div class="chart-label">Festivals &amp; series<span class="chart-num">8</span></div>
     <div class="film-table-shell series-table-shell">
-      <div class="film-table-wrap series-table-wrap">
-        <div class="table-glass" aria-hidden="true"><div class="table-glass-pane"></div></div>
-        <table class="series-table">
-          <thead id="series-head"></thead>
-          <tbody id="series-body"></tbody>
-        </table>
+      <div class="film-table-wrap">
+        <div class="film-table-stack">
+          <div class="film-table-scroll">
+            <table class="series-table">
+              <colgroup></colgroup>
+              <tbody id="series-body"></tbody>
+            </table>
+          </div>
+          <div class="film-table-head">
+            <table class="series-table">
+              <colgroup></colgroup>
+              <thead id="series-head"></thead>
+            </table>
+          </div>
+        </div>
       </div>
       <div class="table-scroll-cue" aria-hidden="true">
         <span><svg viewBox="0 0 6 15"><polyline points="1 1 5 7.5 1 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter"/></svg></span>
@@ -2007,11 +2014,20 @@ footer img.footer-favicon {
     <div class="chart-label">Complete log<span class="chart-num">9</span></div>
     <div class="film-table-shell">
       <div class="film-table-wrap">
-        <div class="table-glass" aria-hidden="true"><div class="table-glass-pane"></div></div>
-        <table>
-          <thead id="table-head"></thead>
-          <tbody id="table-body"></tbody>
-        </table>
+        <div class="film-table-stack">
+          <div class="film-table-scroll">
+            <table>
+              <colgroup></colgroup>
+              <tbody id="table-body"></tbody>
+            </table>
+          </div>
+          <div class="film-table-head">
+            <table>
+              <colgroup></colgroup>
+              <thead id="table-head"></thead>
+            </table>
+          </div>
+        </div>
       </div>
       <div class="table-scroll-cue" aria-hidden="true">
         <span><svg viewBox="0 0 6 15"><polyline points="1 1 5 7.5 1 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter"/></svg></span>
@@ -3592,7 +3608,7 @@ if (document.fonts && document.fonts.ready) {
     syncBarLabelColumn(document.getElementById('venue-chart'));
     syncBarLabelColumn(document.getElementById('format-chart'));
     applyFormatSegmentWidths();
-    syncTableGlass();
+    syncTableLayouts();
   });
 }
 
@@ -4402,29 +4418,35 @@ function renderTableBody() {
     </tr>`;
   }).join('');
 
-  syncTableWrapOverflow(document.querySelector('#sec-log .film-table-wrap'));
+  syncTableLayout(document.querySelector('#sec-log .film-table-shell'));
 }
 
-// A table that fits its viewport gives up vertical scrolling, so a swipe over
-// it pans the page instead of stalling.
-function syncTableWrapOverflow(wrapEl) {
-  if (!wrapEl) return;
-  const needsScroll = wrapEl.scrollHeight > wrapEl.clientHeight + 1;
-  wrapEl.style.overflowY = needsScroll ? 'auto' : 'hidden';
-  wrapEl.style.overscrollBehaviorY = needsScroll ? 'auto' : 'none';
-  wrapEl.style.touchAction = needsScroll ? 'pan-x pan-y' : 'pan-x';
+// Column widths live on <col> elements, repeated in the header table and the
+// body table so the two lay out identically.
+function setTableColumns(sectionId, cols) {
+  const html = cols.map(c => `<col style="width:${c.w}">`).join('');
+  document.querySelectorAll(`#${sectionId} colgroup`).forEach(cg => { cg.innerHTML = html; });
 }
 
-function syncTableGlass() {
-  document.querySelectorAll('.film-table-wrap').forEach(wrap => {
-    const pane = wrap.querySelector('.table-glass-pane');
-    const head = wrap.querySelector('thead');
-    const tableEl = wrap.querySelector('table');
-    if (!pane || !head || !tableEl) return;
-    pane.style.setProperty('--table-glass-width', tableEl.offsetWidth + 'px');
-    pane.style.setProperty('--table-glass-height', head.offsetHeight + 'px');
-    wrap.closest('.film-table-shell')?.style.setProperty('--cue-hit-height', head.offsetHeight + 'px');
-  });
+// Ties a shell's header to its body scroller: the scroller learns the header
+// height (its rows start below it, and the scroll cue's hit target spans it),
+// a body that fits its viewport gives up vertical scrolling so a swipe over it
+// pans the page instead of stalling, and the header then takes the scroller's
+// inner width so the columns line up when a scrollbar takes space.
+function syncTableLayout(shell) {
+  const head = shell?.querySelector('.film-table-head');
+  const scroll = shell?.querySelector('.film-table-scroll');
+  if (!head || !scroll) return;
+  shell.style.setProperty('--table-head-height', head.offsetHeight + 'px');
+  shell.style.setProperty('--cue-hit-height', head.offsetHeight + 'px');
+  const needsScroll = scroll.scrollHeight > scroll.clientHeight + 1;
+  scroll.style.overflowY = needsScroll ? 'auto' : 'hidden';
+  scroll.style.overscrollBehaviorY = needsScroll ? 'auto' : 'none';
+  scroll.style.touchAction = needsScroll ? 'pan-x pan-y' : 'pan-x';
+  shell.style.setProperty('--table-head-width', scroll.clientWidth + 'px');
+}
+function syncTableLayouts() {
+  document.querySelectorAll('.film-table-shell').forEach(syncTableLayout);
 }
 
 function sortArrowHtml(dir) {
@@ -4450,10 +4472,11 @@ function updateTableScrollIndicators() {
 
 function renderTable() {
   document.querySelectorAll('body > .col-filter-menu').forEach(m => m.remove());
+  setTableColumns('sec-log', columns);
   document.getElementById('table-head').innerHTML = '<tr>' + columns.map(c => {
     const sortArrow = currentSort.col===c.key ? sortArrowHtml(currentSort.dir) : '';
     if (c.key === 'title') {
-      return `<th data-col="${c.key}" style="width:${c.w}">
+      return `<th data-col="${c.key}">
         <span class="table-title-header">
           <span class="table-title-sort">${c.label}${sortArrow}</span>
           <span class="table-rewatch-filter">
@@ -4466,7 +4489,7 @@ function renderTable() {
         </span>
       </th>`;
     }
-    return `<th data-col="${c.key}" style="width:${c.w}">${c.label}${sortArrow}</th>`;
+    return `<th data-col="${c.key}">${c.label}${sortArrow}</th>`;
   }).join('') + '</tr>';
 
   const filterRow = '<tr class="filter-row-tr">' + columns.map(c => {
@@ -4575,7 +4598,6 @@ function renderTable() {
     });
   }
 
-  syncTableGlass();
   requestAnimationFrame(updateTableScrollIndicators);
 }
 
@@ -4594,7 +4616,7 @@ let tableGlassResizeTimer;
 window.addEventListener('resize', () => {
   clearTimeout(tableGlassResizeTimer);
   tableGlassResizeTimer = setTimeout(() => {
-    syncTableGlass();
+    syncTableLayouts();
     updateTableScrollIndicators();
   }, 120);
 });
@@ -4604,6 +4626,23 @@ document.querySelectorAll('.film-table-wrap').forEach(el => {
     if (el.scrollLeft >= TABLE_SCROLL_CUE_DISMISS_PX) el.closest('.film-table-shell')?.classList.add('scroll-x-dismissed');
     updateTableScrollIndicators();
   });
+});
+
+// Wheeling over the layered header scrolls the rows beneath it, as it did
+// while the header sat inside the scroller; the page takes over once the rows
+// have no further to go that way. Sideways wheeling already reaches the wrap.
+document.querySelectorAll('.film-table-shell').forEach(shell => {
+  const head = shell.querySelector('.film-table-head');
+  const scroll = shell.querySelector('.film-table-scroll');
+  if (!head || !scroll) return;
+  head.addEventListener('wheel', e => {
+    if (e.ctrlKey || !e.deltaY) return;
+    const delta = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+    const room = delta > 0 ? scroll.scrollHeight - scroll.clientHeight - scroll.scrollTop : scroll.scrollTop;
+    if (room <= 1 || scroll.style.overflowY === 'hidden') return;
+    e.preventDefault();
+    scroll.scrollTop += delta;
+  }, { passive: false });
 });
 
 // Clicking the cue nudges the table right (~50% of the viewport); crossing the
@@ -4725,8 +4764,9 @@ function sortedSeriesRows() {
 }
 
 function renderSeriesTable() {
+  setTableColumns('sec-series', seriesColumns);
   document.getElementById('series-head').innerHTML = '<tr>' + seriesColumns.map(c =>
-    `<th data-col="${c.key}" style="width:${c.w}">${c.label}${seriesSort.col === c.key ? sortArrowHtml(seriesSort.dir) : ''}</th>`
+    `<th data-col="${c.key}">${c.label}${seriesSort.col === c.key ? sortArrowHtml(seriesSort.dir) : ''}</th>`
   ).join('') + '</tr>';
   document.getElementById('series-body').innerHTML = sortedSeriesRows().map(s => `<tr>
     <td style="line-height:1.3"><span class="title-cell">${escapeHtml(s.title)}</span></td>
@@ -4743,8 +4783,7 @@ function renderSeriesTable() {
       renderSeriesTable();
     });
   });
-  syncTableWrapOverflow(document.querySelector('.series-table-wrap'));
-  syncTableGlass();
+  syncTableLayout(document.querySelector('.series-table-shell'));
   requestAnimationFrame(updateTableScrollIndicators);
 }
 renderSeriesTable();
