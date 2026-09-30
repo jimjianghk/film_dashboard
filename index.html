@@ -2691,27 +2691,26 @@ function filmDecade(f) {
 }
 
 // ====== CUMULATIVE CHART ======
-// Year-end forecast (optional toggle, current year only). Each past year
-// yields two estimates of where this year lands, both conditioned on the
-// count logged so far: the pace estimate, that count divided by the
-// fraction of the past year's total logged by this same date, and the
-// remainder estimate, that count plus whatever the past year went on to
-// log after this same date. The central forecast blends their means by
-// inverse prediction variance. Early in the season the volatile fractions
-// leave the pace estimate imprecise and the remainder estimate carries the
-// blend; as the year fills in the two converge on the count already
-// logged. Because both estimators read the current year, the blend never
-// anchors to a past-year average that ignores the season in progress. The
-// confidence band is a 95% Student-t prediction interval on the blend's
-// combined standard error. The forecast remainder is
-// then spread over the rest of the year following past years' average
-// month-by-month share of screenings, so the curve keeps the usual seasonal
-// shape instead of climbing linearly. Fractions reuse the stats row's
-// Feb. 29-safe same-date comparison. The rendering follows The Economist's
-// forecast treatment: a grey band shades the forecast span under a
-// "Forecast" label, the line runs solid through it, and the confidence
-// band fills salmon; band and salmon hexes are sampled from print so they
-// composite correctly on the shared cream paper.
+// Forecast (optional toggle, current year only), worked out afresh for
+// every remaining day through Dec. 31. For a target day, each past year
+// yields two estimates of this year's count by then, both conditioned on
+// the count logged so far: the pace estimate, that count scaled by how
+// much the past year grew between this same date and the target, and the
+// remainder estimate, that count plus whatever the past year logged in
+// between. The central forecast blends their means by inverse prediction
+// variance. Early in the season the volatile ratios leave the pace
+// estimate imprecise and the remainder estimate carries the blend; as the
+// year fills in the two converge on the count already logged. Because both
+// estimators read the current year, the blend never anchors to a past-year
+// average that ignores the season in progress, and because each day reads
+// the past years' own day-by-day counts, the curve keeps the usual
+// seasonal shape. The confidence band is a 95% Student-t prediction
+// interval on the blend's combined standard error. Same-date comparisons
+// reuse the stats row's Feb. 29-safe rule. The rendering follows The
+// Economist's forecast treatment: a grey band shades the forecast span
+// under a "Forecast" label, the line runs solid through it, and the
+// confidence band fills salmon; band and salmon hexes are sampled from
+// print so they composite correctly on the shared cream paper.
 let cumForecast = null;
 let cumForecastLoad = null;
 let cumForecastAnimId = null;
@@ -2722,80 +2721,78 @@ const cumForecastWrap = document.getElementById('cum-forecast-wrap');
 function computeCumForecast(pastFilmsLists) {
   const cumNow = FILMS.filter(f => f.date <= endDate).length;
   if (!cumNow) return null;
-  const fractions = [];
-  const yearRemainders = [];
-  const monthShares = new Array(12).fill(0);
-  let shareYears = 0;
-  pastFilmsLists.forEach(films => {
-    if (!films.length) return;
-    const atCutoff = films.filter(f => isOnOrBeforeYearPoint(f.date, endDate)).length;
-    if (atCutoff) {
-      fractions.push(atCutoff / films.length);
-      yearRemainders.push(films.length - atCutoff);
-    }
-    films.forEach(f => { monthShares[parseInt(f.date.slice(5, 7), 10) - 1] += 1 / films.length; });
-    shareYears++;
-  });
-  if (!fractions.length) return null;
-  for (let m = 0; m < 12; m++) monthShares[m] /= shareYears;
-  const impliedTotals = fractions.map(f => cumNow / f);
-  const remainderTotals = yearRemainders.map(r => cumNow + r);
-  const n = impliedTotals.length;
-  const paceMean = impliedTotals.reduce((s, v) => s + v, 0) / n;
+  // Each usable past year keeps its count at the cutoff and its sorted
+  // same-date keys, so its count by any later date is a pointer walk.
+  const pastYears = pastFilmsLists
+    .map(films => ({
+      atCutoff: films.filter(f => isOnOrBeforeYearPoint(f.date, endDate)).length,
+      points: films.map(f => normalizeYearPoint(f.date)).sort(),
+      seen: 0
+    }))
+    .filter(y => y.atCutoff);
+  if (!pastYears.length) return null;
+  const n = pastYears.length;
   // t(0.975, df) by table for the small df this chart will ever see; the
   // closed-form fallback stays within ~0.01 of the true quantile. With one
   // past year there is no variance to weight the blend with and the band
   // degenerates to the central line; the lower bound never dips below the
-  // logged count. On Dec. 31 every fraction is 1 and every remainder 0, so
-  // both estimates collapse onto that count and the band closes.
+  // logged count. The day after the cutoff barely differs across past
+  // years, so the band opens from nearly nothing.
   const T95 = { 1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 6: 2.447, 7: 2.365, 8: 2.306, 9: 2.262, 10: 2.228 };
+  const tCrit = T95[n - 1] || 1.96 + 2.75 / (n - 1);
+  const mean = vals => vals.reduce((s, v) => s + v, 0) / vals.length;
   const predVar = vals => {
-    const mean = vals.reduce((s, v) => s + v, 0) / vals.length;
-    return (vals.reduce((s, v) => s + (v - mean) ** 2, 0) / (vals.length - 1)) * (1 + 1 / vals.length);
+    const m = mean(vals);
+    return (vals.reduce((s, v) => s + (v - m) ** 2, 0) / (vals.length - 1)) * (1 + 1 / vals.length);
   };
-  let centralTotal = paceMean;
-  let halfWidth = 0;
-  if (n > 1) {
-    const paceVar = predVar(impliedTotals);
-    const restMean = remainderTotals.reduce((s, v) => s + v, 0) / n;
-    const restVar = predVar(remainderTotals);
-    if (paceVar > 0 && restVar > 0) {
-      const wPace = 1 / paceVar;
-      const wRest = 1 / restVar;
-      centralTotal = (paceMean * wPace + restMean * wRest) / (wPace + wRest);
-      halfWidth = (T95[n - 1] || 1.96 + 2.75 / (n - 1)) * Math.sqrt(1 / (wPace + wRest));
-    } else if (restVar === 0 && paceVar > 0) {
-      centralTotal = restMean;
-    }
-  }
-  const loTotal = Math.max(cumNow, centralTotal - halfWidth);
-  const hiTotal = centralTotal + halfWidth;
-  // Daily weights for the not-yet-logged days: each month's average share,
-  // spread evenly across that month's days.
   const yearStart = new Date(dashYear + '-01-01T12:00:00');
-  const weights = [];
-  let weightSum = 0;
+  const central = [cumNow];
+  const lo = [cumNow];
+  const hi = [cumNow];
   for (let i = dataDayIdxForStats + 1; i < daysInYearForStats; i++) {
     const d = new Date(yearStart.getTime() + i * 86400000);
-    weights.push(monthShares[d.getMonth()] / new Date(parseInt(dashYear), d.getMonth() + 1, 0).getDate());
-    weightSum += weights[weights.length - 1];
-  }
-  const curve = total => {
-    const remaining = Math.max(0, total - cumNow);
-    const values = [cumNow];
-    let running = cumNow;
-    weights.forEach(w => {
-      running += weightSum > 0 ? remaining * w / weightSum : 0;
-      values.push(running);
+    const point = normalizeYearPoint(`${dashYear}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+    const counts = pastYears.map(y => {
+      while (y.seen < y.points.length && y.points[y.seen] <= point) y.seen++;
+      return y.seen;
     });
-    return values;
-  };
+    const impliedCounts = counts.map((c, k) => cumNow * c / pastYears[k].atCutoff);
+    const remainderCounts = counts.map((c, k) => cumNow + c - pastYears[k].atCutoff);
+    const paceMean = mean(impliedCounts);
+    let est = paceMean;
+    let halfWidth = 0;
+    if (n > 1) {
+      const paceVar = predVar(impliedCounts);
+      const restMean = mean(remainderCounts);
+      const restVar = predVar(remainderCounts);
+      if (paceVar > 0 && restVar > 0) {
+        const wPace = 1 / paceVar;
+        const wRest = 1 / restVar;
+        est = (paceMean * wPace + restMean * wRest) / (wPace + wRest);
+        halfWidth = tCrit * Math.sqrt(1 / (wPace + wRest));
+      } else if (restVar === 0 && paceVar > 0) {
+        est = restMean;
+      }
+    }
+    central.push(est);
+    lo.push(Math.max(cumNow, est - halfWidth));
+    hi.push(est + halfWidth);
+  }
+  // A cumulative count never falls, so neither does its expected value, a
+  // floor it clears by one day holds on every later day, and a ceiling it
+  // stays under on one day holds on every earlier day. Carrying the central
+  // line and lower edge forward and the upper edge backward irons out the
+  // few days where the blend's shifting weights would tick a line back, and
+  // only ever tightens the band without loosening its 95% coverage.
+  for (let i = 1; i < central.length; i++) central[i] = Math.max(central[i], central[i - 1]);
+  for (let i = 1; i < lo.length; i++) lo[i] = Math.max(lo[i], lo[i - 1]);
+  for (let i = hi.length - 2; i >= 0; i--) hi[i] = Math.min(hi[i], hi[i + 1]);
   return {
     startIdx: dataDayIdxForStats,
-    central: curve(centralTotal),
-    lo: curve(loTotal),
-    hi: curve(hiTotal),
-    yearEndHi: hiTotal
+    central,
+    lo,
+    hi,
+    yearEndHi: hi[hi.length - 1]
   };
 }
 
