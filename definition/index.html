@@ -29,43 +29,6 @@ if (window.location.pathname.endsWith('/definition/') || window.location.pathnam
     .replace(/\/definition\/$/, '/definition');
   window.history.replaceState(null, '', `${cleanPath}${window.location.search}${window.location.hash}`);
 }
-
-// Page transitions, the dashboard's exchange in miniature (see PAGE
-// TRANSITIONS there): leaving, this page records itself and names the
-// masthead if it's in view; arriving from the dashboard, it slides in as a
-// sheet over it. pagereveal has to be registered before the first frame.
-const VT_RECORD_KEY = 'vt-from';
-const isFullyInView = el => {
-  const r = el?.getBoundingClientRect();
-  return !!r && r.top >= 0 && r.bottom <= window.innerHeight;
-};
-window.addEventListener('pageswap', e => {
-  if (!e.viewTransition) return;
-  const masthead = document.querySelector('.header-masthead');
-  const record = { page: 'definition' };
-  if (isFullyInView(masthead)) {
-    masthead.style.viewTransitionName = 'masthead';
-    record.masthead = true;
-  }
-  try { sessionStorage.setItem(VT_RECORD_KEY, JSON.stringify(record)); } catch (_) {}
-});
-window.addEventListener('pagereveal', e => {
-  let from = null;
-  try {
-    from = JSON.parse(sessionStorage.getItem(VT_RECORD_KEY));
-    sessionStorage.removeItem(VT_RECORD_KEY);
-  } catch (_) {}
-  if (!e.viewTransition || !from) return;
-  const root = document.documentElement;
-  const masthead = document.querySelector('.header-masthead');
-  const mastheadNamed = from.masthead && isFullyInView(masthead);
-  if (mastheadNamed) masthead.style.viewTransitionName = 'masthead';
-  if (from.page === 'dashboard') root.dataset.vt = 'turn-forward';
-  e.viewTransition.finished.finally(() => {
-    delete root.dataset.vt;
-    if (mastheadNamed) masthead.style.viewTransitionName = '';
-  });
-});
 </script>
 <style>
 @font-face {
@@ -303,29 +266,6 @@ h1 {
   .site-header { gap: 16px; }
   .back-link { margin-right: 8px; }
 }
-
-/* Page transitions, as on the dashboard: arriving from it, this page's white
-   sheet slides in from the right while the cream page eases off to the left,
-   the masthead holding still above both. Reduced motion opts out. */
-@media (prefers-reduced-motion: no-preference) {
-  @view-transition { navigation: auto; }
-}
-::view-transition-group(*) {
-  animation-duration: 0.45s;
-  animation-timing-function: cubic-bezier(0.22,1,0.36,1);
-}
-::view-transition-old(*):only-child,
-::view-transition-new(*):only-child { animation-duration: 0.15s; }
-html[data-vt="turn-forward"]::view-transition-new(root) {
-  animation-name: vt-sheet-in;
-  mix-blend-mode: normal;
-}
-html[data-vt="turn-forward"]::view-transition-old(root) {
-  animation-name: vt-under-out;
-  mix-blend-mode: normal;
-}
-@keyframes vt-sheet-in { from { transform: translateX(100%); } }
-@keyframes vt-under-out { to { transform: translateX(-12%); } }
 </style>
 </head>
 <body>
