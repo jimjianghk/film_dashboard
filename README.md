@@ -12,6 +12,18 @@ The dashboard is driven by the film log and membership fees exported from the so
 
 Past years are data archives, not design archives. A year menu in the top-right corner links between every year listed in the data manifest. The dashboard year is inferred from the loaded film data, so archive views keep current-year behavior while capping time-based chart, calendar, and stat views at December 31 of the archived year.
 
+### Loading
+
+The headline, page title and year menu name the requested year from the first frame: a short script right after the header reads the year from the URL and the manifest script, and starts downloading that year's data file at the same moment, alongside the check against the uncached manifest rather than after it. The page renders as soon as the file arrives. The previous year's file, which only feeds the stats row's comparisons and the forecast, follows on its own schedule, and the comparisons join their cards when it lands.
+
+Until the data is in, every chart and table holds its usual height, so nothing below it jumps when it fills, and once the wait passes 0.3 seconds each shows a pale plate of its frame: stubs where the date line and stat figures go, gridlines and a baseline for the cumulative chart, label stubs and axes for the bar charts, the histogram's baseline, a blank calendar of the right number of months, and header and row rules for the tables. When the forecast switch is due to appear, it holds its place in the cumulative chart's header from the start. Fast loads never see a plate. The date line and stats row fade in once the data lands, the stat cards one after another.
+
+Each chart draws itself the first time it scrolls into view. The cumulative line runs left to right, the data-day marker landing as the line reaches it; bars grow from their axis a row at a time with their counts fading in behind; the histogram's columns rise left to right; the format legend follows its bars; and the calendar's days take their colors in date order. Toggles later move the same rows, columns and days a few milliseconds apart rather than in unison. Users who prefer reduced motion, and anyone printing a chart before scrolling to it, get the finished charts straight away.
+
+### Page transitions
+
+In browsers with cross-document view transitions, moving between years or to and from the definition page animates instead of cutting. The masthead holds still. Between years the headline's year rolls over like a counter, up to a later year and down to an earlier one, while the rest of the page crossfades; the definition page slides in from the right as a white sheet over the dashboard and slides back off the same way. An element carries across only when it's in view on both pages, so nothing sails in from off screen, and a fresh load returning to a scrolled-down dashboard appears without a transition rather than jumping partway through one. Other browsers navigate as before, and reduced motion opts out.
+
 ### Masthead
 
 Red *The Economist*-style masthead above an uppercase Headline font title ("{year} in cinema"), tucked tight against an oversized light-weight Headline font subtitle ("{first screening date}–{end date} · New York City"). Current-year end dates follow the same data-day rule as the cumulative chart's marker line: today in New York if a film is logged today, otherwise yesterday. Archive end dates use the last screening date in the archive.
@@ -38,11 +50,11 @@ A cursor trace reveals the cumulative count for any day from January 1 through t
 
 ### Rating chart
 
-Horizontal bar chart with numeric 1-to-10 labels; the first row is labeled "1 out of 10" and the remaining rows use numbers only. Bars are color-coded across a 10-step palette running from deep red (1) through pastel salmon (5) to pastel blue (6) and deep navy (10), inspired by *The Economist's* political-spectrum gradient. An additional grey "Unrated" bar appears when applicable. Three text toggles (All / New releases / Repertory), with the active state shown by an underline and inactive states faded, subset by production year; a dedup switch collapses rewatches to unique titles. A shorts program counts as a new release only when every production year it lists is the current or previous year; including even one older year sends it to Repertory. Bar widths are anchored to the tallest bar across all films at the current dedup state, so switching between All / New / Rep doesn't rescale; only toggling dedup does. Bars animate between states on toggle.
+Horizontal bar chart with numeric 1-to-10 labels; the first row is labeled "1 out of 10" and the remaining rows use numbers only. Bars are color-coded across a 10-step palette running from deep red (1) through pastel salmon (5) to pastel blue (6) and deep navy (10), inspired by *The Economist's* political-spectrum gradient. An additional grey "Unrated" bar appears when applicable. Three text toggles (All / New releases / Repertory), with the active state shown by an underline and inactive states faded, subset by production year; a dedup switch collapses rewatches to unique titles. A shorts program counts as a new release only when every production year it lists is the current or previous year; including even one older year sends it to Repertory. Bar widths are anchored to the tallest bar across all films at the current dedup state, so switching between All / New / Rep doesn't rescale; only toggling dedup does. Bars animate between states on toggle, a row at a time from the top.
 
 ### Production decade chart
 
-Horizontal bar chart grouping films by the decade they were produced. Has its own dedup toggle; bars rescale to the tallest decade in the current view and animate between states.
+Horizontal bar chart grouping films by the decade they were produced. Has its own dedup toggle; bars rescale to the tallest decade in the current view and animate between states, a row at a time.
 
 A shorts program whose production years all fall in one decade counts toward that decade. When its years span multiple decades it lands in a "Various" bar that sits below the decade bars, marked with a dagger that ties to a page footnote; the footnote reads singular or plural to match the bar's count.
 
@@ -52,7 +64,7 @@ Horizontal stacked bar chart with one row per base projection format (DCP / 35mm
 
 ### Runtime distribution
 
-Vertical histogram with 5-minute bins. Has its own dedup toggle; bin structure stays fixed across views while heights rescale to the tallest bin in the current view and animate between states. The chart fills the available viewport width until the bars need more room, then becomes horizontally scrollable rather than dropping labels. Bar spacing scales with the available room so the histogram stays readable across viewport sizes. A horizontal axis line runs beneath the bars with downward tick marks at every bin boundary. When an outlier bin sits well apart from the main mass, the empty bins between them collapse into an elided gap: three dots sit inline with the x-axis labels and the axis line breaks into separate mass and outlier segments.
+Vertical histogram with 5-minute bins. Has its own dedup toggle; bin structure stays fixed across views while heights rescale to the tallest bin in the current view and animate between states, column by column. The chart fills the available viewport width until the bars need more room, then becomes horizontally scrollable rather than dropping labels. Bar spacing scales with the available room so the histogram stays readable across viewport sizes. A horizontal axis line runs beneath the bars with downward tick marks at every bin boundary. When an outlier bin sits well apart from the main mass, the empty bins between them collapse into an elided gap: three dots sit inline with the x-axis labels and the axis line breaks into separate mass and outlier segments.
 
 ### Screening venue chart
 
@@ -60,7 +72,7 @@ Two-column horizontal bar chart sorted by count, with a subtitle that says "Hove
 
 ### Screening calendar
 
-Monthly heatmap grid from January 1 through the current date in New York during the dashboard year, capped at December 31 once the year has ended. Rows cap at 4 months wide regardless of viewport, wrapping to fewer per row on narrower screens. Unlike the subtitle and cumulative chart, the calendar extends through today in New York during the active year regardless of whether a film has been logged, so the current day's tile is interactive even when empty. Three text modes are toggled with an underline/faded inactive treatment and an animated legend:
+Monthly heatmap grid from January 1 through the current date in New York during the dashboard year, capped at December 31 once the year has ended. Rows cap at 4 months wide regardless of viewport, wrapping to fewer per row on narrower screens. Unlike the subtitle and cumulative chart, the calendar extends through today in New York during the active year regardless of whether a film has been logged, so the current day's tile is interactive even when empty. Three text modes are toggled with an underline/faded inactive treatment and an animated legend, the days recoloring in date order:
 
 - **Number of screenings**: tile color darkens with count across five discrete steps, from pale peach through red to deep crimson for 1–5+ films. The legend shows five adjacent blocks labeled from "1 screening" to "5 or more".
 - **Total runtime**: tile color follows the day's combined runtime across a continuous spectrum interpolated from the same five-step screenings palette. The scale is fixed so the color-to-runtime mapping stays consistent across years: 1 hour or shorter takes the lightest color and 7 hours or longer the darkest. The legend shows the matching continuous spectrum labeled from "1h or shorter" to "7h or longer".
@@ -93,7 +105,7 @@ A row of small notes between the log table and the footer carries the symbol cal
 
 ### Screening definition page
 
-The `/definition` page explains the counting rules behind the screening totals. It is reached from a dotted-underline "What's a screening?" link (with a circular info icon) that sits beside the year-on-year comparison toggle below the stats row. The page keeps the shared masthead and "Go back" navigation, then switches to a white article-style page with a red sans pre-title, serif headline and body copy, a thin divider rule below the headline, a drop cap, and small-cap treatments for the opening words and short abbreviations. The counting rules are laid out as a numbered list, most items carrying an italic worked example (double features, standalone shorts, TV blocks, loop or installation visits), with a closing note on what does not count.
+The `/definition` page explains the counting rules behind the screening totals. It is reached from a dotted-underline "What's a screening?" link (with a circular info icon) that sits beside the year-on-year comparison toggle below the stats row. The page keeps the shared masthead and "Go back" navigation, then switches to a white article-style page with a red sans pre-title, serif headline and body copy, a thin divider rule below the headline, a drop cap, and small-cap treatments for the opening words and short abbreviations. The counting rules are laid out as a numbered list, most items carrying an italic worked example (double features, standalone shorts, TV blocks, loop or installation visits), with a closing note on what does not count. Where page transitions run, the page slides in over the dashboard as a white sheet and slides back off on the way back.
 
 ### Sparse mode
 
@@ -108,7 +120,8 @@ When the year has fewer than 5 logged films, the masthead and stats row render a
 - Liquid glass floating layer: chart tooltips, venue name tips, the log table's filter menus, the year menu panel, the chart navigation pill, and the log and series table headers render as translucent glass with soft highlights, subtle depth, and capsule-style one-line tooltips
 - Browsers that can't render the glass effect keep the flatter solid design
 - Reduced-transparency and high-contrast preferences restore solid, high-contrast surfaces
-- Fade-up entrance animations with staggered delays
+- Pale loading plates of each chart's frame, an entrance that waits for the data, and charts that draw themselves on first view
+- Page transitions between years and to and from the definition page, with the masthead holding still
 - Responsive layouts step down from wide desktop to small phone widths
 
 ## Data

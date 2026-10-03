@@ -12,6 +12,13 @@
 <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=2">
 <link rel="preload" href="fonts/sans-roman.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/sans-headline.woff2" as="font" type="font/woff2" crossorigin>
+<!-- Loaded in the head so the shell script after the header can name the
+     year, and start fetching its data, before the first frame -->
+<script src="data/manifest.js"></script>
+<!-- Holds the first frame until the shell script has run (Chromium), so
+     neither a slow connection nor a page transition's snapshot catches the
+     headline empty -->
+<link rel="expect" href="#stats-row" blocking="render">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://jimsfilms.nyc/">
 <meta property="og:title" content="Jim’s Cinema Log">
@@ -189,6 +196,8 @@ h1 {
   color: var(--text);
   margin-bottom: -10px;
 }
+/* Filled by the shell script right after it; holds the line until then. */
+h1:empty { min-height: 1em; }
 @media (max-width: 599px) {
   h1 { font-size: 4.5rem; }
   /* The all-years title takes the same 85% step-down as its stat values. */
@@ -430,7 +439,8 @@ h1 {
 #decade-chart .bar-row::before,
 #venue-chart .bar-row::before,
 .format-row::before { left: calc(var(--bar-axis-left, 60px) - var(--bar-axis-width, 1.5px)); }
-.hist-bar { transition: height 0.8s cubic-bezier(0.22,1,0.36,1); cursor: default; }
+.hist-bar { transition: height 0.8s cubic-bezier(0.22,1,0.36,1) calc(var(--i, 0) * var(--stagger-col, 0ms)); cursor: default; }
+.hist-count { transition: opacity 0.4s ease calc(var(--i, 0) * var(--stagger-col, 0ms) + 0.3s); }
 .bar-label {
   font-family: 'Dashboard Sans', sans-serif;
   font-size: 1rem;
@@ -479,7 +489,7 @@ h1 {
 .bar-fill {
   height: 100%;
   border-radius: 0;
-  transition: width 0.8s cubic-bezier(0.22,1,0.36,1);
+  transition: width 0.8s cubic-bezier(0.22,1,0.36,1) calc(var(--i, 0) * var(--stagger, 0ms));
   position: relative;
 }
 .bar-count {
@@ -492,6 +502,7 @@ h1 {
   text-align: right;
   margin-left: -10px;
   margin-right: 6px;
+  transition: opacity 0.4s ease calc(var(--i, 0) * var(--stagger, 0ms) + 0.3s);
 }
 
 /* RATING BAR COLORS — driven by --rating-N custom properties in :root */
@@ -528,7 +539,7 @@ h1 {
   display: flex;
   overflow: hidden;
   min-width: 3px;
-  transition: width 0.8s cubic-bezier(0.22,1,0.36,1);
+  transition: width 0.8s cubic-bezier(0.22,1,0.36,1) calc(var(--i, 0) * var(--stagger, 0ms));
   touch-action: none;
   -webkit-user-select: none;
   user-select: none;
@@ -565,6 +576,7 @@ h1 {
   letter-spacing: 0;
   text-transform: none;
   font-weight: 400;
+  transition: opacity 0.4s ease 0.5s;
 }
 .legend-chip { display: inline-flex; align-items: center; gap: 6px; }
 .legend-swatch { width: 12px; height: 12px; display: inline-block; flex-shrink: 0; position: relative; overflow: hidden; }
@@ -648,7 +660,13 @@ h1 {
   background: #ded8c8;
   border-radius: 0;
   cursor: pointer;
-  transition: outline-color 0.15s, background 0.2s;
+  /* --d is the day of the year, so a recolour sweeps through the days in
+     order: across the year in about a second when the calendar first
+     builds, half a second on a mode switch. */
+  transition:
+    outline-color 0.15s,
+    background-color 0.35s ease calc(var(--d, 0) * var(--sweep, 0ms)),
+    color 0.35s ease calc(var(--d, 0) * var(--sweep, 0ms));
   position: relative;
   display: flex;
   align-items: center;
@@ -875,7 +893,10 @@ h1 {
 .rating-header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .rating-dedup-toggle { margin-left: 6px; }
 .cum-forecast-toggle { display: none; margin-left: 6px; }
-.cum-forecast-toggle.is-visible { display: flex; align-items: center; gap: 6px; }
+.cum-forecast-toggle.is-visible,
+.forecast-pending .cum-forecast-toggle { display: flex; align-items: center; gap: 6px; }
+/* Holds its place in the header until the data decides it; inert till then. */
+.forecast-pending .cum-forecast-toggle { pointer-events: none; }
 @media (max-width: 499px) {
   .rating-header,
   .calendar-header {
@@ -1751,12 +1772,251 @@ footer img.footer-favicon {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.animate { animation: fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) forwards; opacity: 0; }
-.delay-1 { animation-delay: 0.05s; }
-.delay-2 { animation-delay: 0.15s; }
-.delay-3 { animation-delay: 0.25s; }
-.delay-4 { animation-delay: 0.35s; }
-.delay-5 { animation-delay: 0.45s; }
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes plateIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+/* The entrance waits for the data: .is-ready lands on <html> once the stats
+   row is filled, so the fade never plays out over empty shells. */
+.animate { opacity: 0; }
+.is-ready .animate { animation: fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) forwards; }
+.is-ready .animate.animate-fade { animation-name: fadeIn; }
+/* As specific as the shorthand above, which would otherwise zero them. */
+.is-ready .delay-1 { animation-delay: 0.05s; }
+.is-ready .delay-2 { animation-delay: 0.15s; }
+.is-ready .delay-3 { animation-delay: 0.25s; }
+.is-ready .delay-4 { animation-delay: 0.35s; }
+.is-ready .delay-5 { animation-delay: 0.45s; }
+
+/* LOADING PLATES
+   Until the data lands, every chart body holds its usual height, so nothing
+   below it jumps when it fills, and once the wait passes 0.3s it shows a pale
+   plate of its frame: gridlines and baseline for the line chart, label column
+   and axis for the bar charts, baseline for the histogram, header and row
+   rules for the tables, a blank month grid for the calendar, and stubs for
+   the date line and stat cards. A body stops matching :empty the moment it is
+   drawn, which takes its plate away. Fast loads never see a plate. */
+:root {
+  --plate-rule: #dedacc;
+  --plate-axis: #cdc7b6;
+}
+.header-date:empty {
+  min-height: 1.5em;
+  background: linear-gradient(var(--plate-rule), var(--plate-rule)) 0 17px / min(275px, 100%) 27px no-repeat;
+  animation: plateIn 0.4s ease 0.3s both;
+}
+/* The shell's blank cards: a pale bar, a block where the figure sits and a
+   stub for its label, at a typical card's width. */
+.stat-card-plate { animation: plateIn 0.4s ease 0.3s both; }
+.stat-card-plate::before { background: var(--plate-axis); }
+.stat-card-plate .stat-val,
+.stat-card-plate .stat-label { max-width: 100%; }
+.stat-card-plate .stat-val {
+  width: 120px;
+  background: linear-gradient(var(--plate-rule), var(--plate-rule)) 0 12px / 100% 48px no-repeat;
+}
+.stat-card-plate .stat-label {
+  width: 90px;
+  background: linear-gradient(var(--plate-rule), var(--plate-rule)) 0 9px / 100% 10px no-repeat;
+}
+#cumulative-chart:empty,
+#rating-chart:empty,
+#decade-chart:empty,
+#format-chart:empty,
+#runtime-chart:empty,
+#venue-chart:empty { position: relative; }
+#cumulative-chart:empty { min-height: 260px; }
+#rating-chart:empty,
+#decade-chart:empty { min-height: 324px; }
+#format-chart:empty { min-height: 161px; }
+#venue-chart:empty { min-height: 330px; }
+/* The shell script counts the months the calendar will show and sets one
+   row count per column layout below; each row of month grids runs ~280px
+   with a 28px gap. */
+#heatmap:empty {
+  /* One blank month (label, day initials, five weeks of tiles), its 28px
+     bottom margin the gap between rows of months; the same tint as the
+     plates' rules. */
+  --cal-plate: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='308'%3E%3Cdefs%3E%3Cpattern id='d' x='14.7' y='38' width='40.43' height='9' patternUnits='userSpaceOnUse'%3E%3Crect width='8' height='9' fill='%23dedacc'/%3E%3C/pattern%3E%3Cpattern id='t' y='60.6' width='40.43' height='40.43' patternUnits='userSpaceOnUse'%3E%3Crect width='37.43' height='37.43' fill='%23dedacc'/%3E%3C/pattern%3E%3C/defs%3E%3Cg fill='%23dedacc'%3E%3Crect y='7' width='64' height='11'/%3E%3C/g%3E%3Crect y='38' width='280' height='9' fill='url(%23d)'/%3E%3Crect y='60.6' width='280' height='199.15' fill='url(%23t)'/%3E%3C/svg%3E");
+  min-height: calc(var(--cal-rows-4, 3) * 308px - 28px);
+  background-image: var(--cal-plate), var(--cal-plate), var(--cal-plate), var(--cal-plate);
+  background-position: calc(50% - 462px) 0, calc(50% - 154px) 0, calc(50% + 154px) 0, calc(50% + 462px) 0;
+  background-size: 280px 308px;
+  background-repeat: repeat-y;
+  animation: plateIn 0.4s ease 0.3s both;
+}
+.film-table-shell:has(tbody:empty) .film-table-stack { min-height: 640px; }
+.series-table-shell:has(tbody:empty) .film-table-stack { min-height: 330px; }
+#cumulative-chart:empty::before,
+#rating-chart:empty::before,
+#decade-chart:empty::before,
+#format-chart:empty::before,
+#runtime-chart:empty::before,
+#venue-chart:empty::before,
+.film-table-shell:has(tbody:empty) .film-table-stack::before {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  animation: plateIn 0.4s ease 0.3s both;
+}
+/* The line chart's own plot margins, six evenly spaced rules, the last one
+   the baseline. */
+#cumulative-chart:empty::before {
+  inset: 16px 39px 28px 10px;
+  border-bottom: 1.5px solid var(--plate-axis);
+  background: linear-gradient(var(--plate-rule) 1.5px, transparent 0) 0 0 / 100% 20%;
+}
+/* A label stub per 30px row, the axis just right of the label column. */
+#rating-chart:empty::before,
+#decade-chart:empty::before,
+#format-chart:empty::before,
+#venue-chart:empty::before {
+  --plate-axis-x: 64px;
+  inset: 0 0 6px;
+  background:
+    linear-gradient(var(--plate-axis), var(--plate-axis)) var(--plate-axis-x) 0 / 1.5px 100% no-repeat,
+    repeating-linear-gradient(var(--plate-rule) 0 10px, transparent 10px 30px) 4px 7px / calc(var(--plate-axis-x) - 20px) 100% no-repeat;
+}
+#rating-chart:empty::before { --plate-axis-x: 76px; }
+#format-chart:empty::before { --plate-axis-x: 55px; bottom: auto; height: 114px; }
+/* Two columns, each with its own axis, until the venue chart stacks. */
+#venue-chart:empty::before {
+  background:
+    linear-gradient(var(--plate-axis), var(--plate-axis)) var(--plate-axis-x) 0 / 1.5px 100% no-repeat,
+    linear-gradient(var(--plate-axis), var(--plate-axis)) calc(50% + 16px + var(--plate-axis-x)) 0 / 1.5px 100% no-repeat,
+    repeating-linear-gradient(var(--plate-rule) 0 10px, transparent 10px 30px) 4px 7px / calc(var(--plate-axis-x) - 20px) 100% no-repeat,
+    repeating-linear-gradient(var(--plate-rule) 0 10px, transparent 10px 30px) calc(50% + 20px) 7px / calc(var(--plate-axis-x) - 20px) 100% no-repeat;
+}
+#runtime-chart:empty::before {
+  inset: auto 0 0;
+  height: 1.5px;
+  background: var(--plate-axis);
+}
+.film-table-shell:has(tbody:empty) .film-table-stack::before {
+  --plate-head: 64px;
+  inset: 0;
+  background:
+    linear-gradient(var(--plate-axis), var(--plate-axis)) 0 calc(var(--plate-head) - 1px) / 100% 1px no-repeat,
+    repeating-linear-gradient(transparent 0 42px, var(--plate-rule) 42px 43px) 0 var(--plate-head) / 100% calc(100% - var(--plate-head)) no-repeat;
+}
+.series-table-shell:has(tbody:empty) .film-table-stack::before { --plate-head: 43px; }
+@media (max-width: 1199px) {
+  #heatmap:empty {
+    min-height: calc(var(--cal-rows-3, 4) * 308px - 28px);
+    background-image: var(--cal-plate), var(--cal-plate), var(--cal-plate);
+    background-position: calc(50% - 308px) 0, 50% 0, calc(50% + 308px) 0;
+  }
+}
+@media (max-width: 899px) {
+  #heatmap:empty {
+    min-height: calc(var(--cal-rows-2, 5) * 308px - 28px);
+    background-image: var(--cal-plate), var(--cal-plate);
+    background-position: calc(50% - 154px) 0, calc(50% + 154px) 0;
+  }
+}
+@media (max-width: 800px) {
+  #venue-chart:empty { min-height: 660px; }
+  #venue-chart:empty::before {
+    background:
+      linear-gradient(var(--plate-axis), var(--plate-axis)) var(--plate-axis-x) 0 / 1.5px 100% no-repeat,
+      repeating-linear-gradient(var(--plate-rule) 0 10px, transparent 10px 30px) 4px 7px / calc(var(--plate-axis-x) - 20px) 100% no-repeat;
+  }
+}
+@media (max-width: 599px) {
+  #heatmap:empty {
+    min-height: calc(var(--cal-rows-1, 10) * 308px - 28px);
+    background-image: var(--cal-plate);
+    background-position: 50% 0;
+  }
+}
+
+/* CHART BUILDS
+   Each chart draws itself the first time it scrolls into view (the script
+   adds .is-built): bars grow from the axis row by row, histogram columns rise
+   left to right, counts and the format legend fade in behind them, and
+   calendar days take their colours in date order. The cumulative line draws
+   left to right under its own clip. Until then a chart waits at its starting
+   line, with its frame (labels, axes) already in place. Rows and columns
+   carry --i, calendar days --d; .is-building spaces them out for the first
+   build, and toggles later move them a few milliseconds apart. Print and
+   reduced motion skip straight to the finished chart. */
+.chart-body { --stagger: 16ms; --stagger-col: 7ms; --sweep: 1.2ms; }
+.chart-body.is-building { --stagger: 45ms; --stagger-col: 16ms; --sweep: 3ms; }
+@media screen and (prefers-reduced-motion: no-preference) {
+  .chart-body:not(.is-built) .bar-fill,
+  .chart-body:not(.is-built) .format-bar-track { width: 0 !important; min-width: 0 !important; }
+  .chart-body:not(.is-built) .hist-bar { height: 0 !important; }
+  .chart-body:not(.is-built) .bar-count,
+  .chart-body:not(.is-built) .hist-count,
+  .chart-body:not(.is-built) .format-legend { opacity: 0; }
+  .chart-body:not(.is-built) .heatmap-cell:not(.empty):not(.future) {
+    background-color: #ded8c8 !important;
+    color: var(--text-dimmer) !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chart-body,
+  .chart-body.is-building { --stagger: 0ms; --stagger-col: 0ms; --sweep: 0ms; }
+}
+/* Printing before a chart has been seen finishes its build (beforeprint);
+   the page must print the end state, not a frame of the way there. */
+@media print {
+  .chart-body * { transition: none !important; }
+}
+
+/* PAGE TRANSITIONS
+   Moving between years, or to and from the definition page, runs as a
+   cross-document view transition where the browser has them; others just
+   navigate. The shell script's pageswap and pagereveal handlers name what
+   carries across (the masthead, which holds still, and between years the
+   headline's year) and set data-vt to the variant. Reduced motion opts out. */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition { navigation: auto; }
+}
+.headline-year { display: inline-block; }
+::view-transition-group(*) {
+  animation-duration: 0.45s;
+  animation-timing-function: cubic-bezier(0.22,1,0.36,1);
+}
+/* Named on one side only (out of view on the other): it just fades, fast. */
+::view-transition-old(*):only-child,
+::view-transition-new(*):only-child { animation-duration: 0.15s; }
+/* Between years the year rolls over like a counter, up to a later year and
+   down to an earlier one, clipped to the band its digits fill (about 10% to
+   88% of its line) so the roll stays clear of the date line tucked under
+   it. The rest of the page crossfades, all but the headline itself, which
+   switches outright: years differ in width by a pixel or two, enough to
+   ghost "in cinema" in a crossfade. */
+::view-transition-group(headline-year) { clip-path: inset(10% 0 12% 0); }
+::view-transition-old(headline-year),
+::view-transition-new(headline-year) { mix-blend-mode: normal; }
+::view-transition-old(headline) { animation: none; opacity: 0; }
+::view-transition-new(headline) { animation: none; }
+html[data-vt="year-up"]::view-transition-old(headline-year) { animation-name: vt-roll-out-up; }
+html[data-vt="year-up"]::view-transition-new(headline-year) { animation-name: vt-roll-in-up; }
+html[data-vt="year-down"]::view-transition-old(headline-year) { animation-name: vt-roll-out-down; }
+html[data-vt="year-down"]::view-transition-new(headline-year) { animation-name: vt-roll-in-down; }
+@keyframes vt-roll-out-up { to { transform: translateY(-100%); } }
+@keyframes vt-roll-in-up { from { transform: translateY(100%); } }
+@keyframes vt-roll-out-down { to { transform: translateY(100%); } }
+@keyframes vt-roll-in-down { from { transform: translateY(-100%); } }
+/* Back from the definition page: its white sheet slides off to the right,
+   uncovering the dashboard as it eases back in from the left. */
+html[data-vt="turn-back"]::view-transition-old(root) {
+  animation-name: vt-sheet-out;
+  mix-blend-mode: normal;
+  z-index: 1;
+}
+html[data-vt="turn-back"]::view-transition-new(root) {
+  animation-name: vt-under-in;
+  mix-blend-mode: normal;
+}
+@keyframes vt-sheet-out { to { transform: translateX(100%); } }
+@keyframes vt-under-in { from { transform: translateX(-12%); } }
 
 @media (max-width: 1160px) {
   .stats-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 6px; row-gap: 0; }
@@ -1842,12 +2102,316 @@ footer img.footer-favicon {
       <span class="header-pride-stripes" aria-hidden="true"><span class="header-pride-stripe"></span><span class="header-pride-stripe"></span><span class="header-pride-stripe"></span><span class="header-pride-stripe"></span><span class="header-pride-stripe"></span></span>
     </a>
     <div class="header-label">Year in Cinema</div>
-    <h1>Year in Cinema</h1>
+    <h1></h1>
     <div class="header-divider"><span class="header-diamond"></span></div>
     <div class="header-date" id="date-range"></div>
   </header>
+  <script>
+// ====== PAGE SHELL ======
+// Runs as soon as the header has been parsed, long before the main script at
+// the end of the page has arrived: it names the year in the headline, title
+// and year menu from the URL and manifest.js, so the first frame never shows
+// a placeholder, and starts fetching the manifest and the year's data while
+// the rest of the page is still downloading.
+if (window.location.pathname.endsWith('/index.html')) {
+  const cleanPath = window.location.pathname.slice(0, -'index.html'.length) || '/';
+  window.history.replaceState(null, '', `${cleanPath}${window.location.search}${window.location.hash}`);
+}
 
-  <div class="stats-row animate delay-1" id="stats-row"></div>
+// ====== ALL-YEARS MODE (?all) ======
+// Hidden aggregate of every logged year, reachable only by typing /?all: no
+// page links here. It reuses the single-year dashboard with the calendar and
+// log dropped, comparisons and forecast off, and the cumulative chart showing
+// the cross-year average over each year's own curve.
+const IS_ALL_MODE = new URLSearchParams(window.location.search).has('all');
+if (IS_ALL_MODE) document.documentElement.classList.add('all-years');
+
+const DASHBOARD_START_YEAR = 2023;
+let DATA_FILES_BY_YEAR = {};
+let DEFAULT_DASHBOARD_YEAR = null;
+const getCurrentYearInNewYork = () => Number(new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/New_York',
+  year: 'numeric',
+}).format(new Date()));
+const dataFileForYear = year => `data/data-${year}.json`;
+const getUrlDashboardYear = () => {
+  const params = new URLSearchParams(window.location.search);
+  const paramYear = params.get('year') || params.get('y');
+  const bareYear = window.location.search.match(/^\?(\d{4})$/)?.[1];
+  const requestedYear = paramYear || bareYear;
+  return /^\d{4}$/.test(requestedYear || '') ? requestedYear : null;
+};
+const yearMenuUrlForYear = year => year === DEFAULT_DASHBOARD_YEAR ? './' : `?${year}`;
+const setDashboardYearShell = year => {
+  if (IS_ALL_MODE) {
+    document.title = 'Jim’s Cinema Log';
+    document.querySelector('h1').textContent = 'Jim’s Cinema Log';
+    return;
+  }
+  const isDefaultYear = DEFAULT_DASHBOARD_YEAR ? year === DEFAULT_DASHBOARD_YEAR : !getUrlDashboardYear();
+  document.title = `Jim’s ${year} Cinema Log`;
+  document.querySelector('meta[property="og:title"]')?.setAttribute('content', `Jim’s ${year} Cinema Log`);
+  document.querySelector('meta[name="twitter:title"]')?.setAttribute('content', `Jim’s ${year} Cinema Log`);
+  document.querySelector('meta[property="og:url"]')?.setAttribute('content', isDefaultYear ? 'https://jimsfilms.nyc/' : `https://jimsfilms.nyc/?${year}`);
+  // The year gets a span of its own so a page transition can roll it in
+  // place while "in cinema" holds still. Later calls (the data confirming
+  // the year) update that span rather than replace it: taking a named
+  // element out mid-transition would cut the transition short.
+  const headline = document.querySelector('h1');
+  let yearEl = headline.querySelector('.headline-year');
+  if (!yearEl) {
+    yearEl = document.createElement('span');
+    yearEl.className = 'headline-year';
+    headline.replaceChildren(yearEl, ' in cinema');
+  }
+  if (yearEl.textContent !== year) yearEl.textContent = year;
+};
+const setCurrentYearMenuItem = year => {
+  if (IS_ALL_MODE) return;
+  document.querySelectorAll('.year-menu-panel a').forEach(a => {
+    if (a.dataset.year === year) a.setAttribute('aria-current', 'page');
+    else a.removeAttribute('aria-current');
+  });
+};
+const normalizeDashboardManifest = manifest => {
+  const years = manifest?.years && typeof manifest.years === 'object' ? manifest.years : null;
+  if (!years) throw new Error('Invalid dashboard manifest');
+  const normalizedYears = Object.fromEntries(Object.entries(years)
+    .filter(([year, file]) => /^\d{4}$/.test(year) && typeof file === 'string'));
+  const sortedYears = Object.keys(normalizedYears).sort((a, b) => Number(a) - Number(b));
+  if (!sortedYears.length) throw new Error('Dashboard manifest has no years');
+  const defaultYear = normalizedYears[manifest.defaultYear] ? String(manifest.defaultYear) : sortedYears[sortedYears.length - 1];
+  return { defaultYear, years: normalizedYears };
+};
+const getInitialDashboardYear = () => {
+  const manifestYear = window.DASHBOARD_MANIFEST?.defaultYear;
+  return getUrlDashboardYear() || (/^\d{4}$/.test(manifestYear || '') ? manifestYear : String(getCurrentYearInNewYork()));
+};
+function getRequestedDashboardYear() {
+  const requestedYear = getUrlDashboardYear();
+  return DATA_FILES_BY_YEAR[requestedYear] ? requestedYear : DEFAULT_DASHBOARD_YEAR;
+}
+let requestedDashboardYear = null;
+let dataFile = null;
+let dashboardYears = [];
+let earliestDashboardYear = null;
+let previousDashboardYear = null;
+const yearMenuButton = document.getElementById('year-menu-button');
+const yearMenuPanel = document.getElementById('year-menu-panel');
+const applyDashboardManifest = manifest => {
+  DATA_FILES_BY_YEAR = manifest.years;
+  DEFAULT_DASHBOARD_YEAR = manifest.defaultYear;
+  requestedDashboardYear = getRequestedDashboardYear();
+  dataFile = DATA_FILES_BY_YEAR[requestedDashboardYear];
+  dashboardYears = Object.keys(DATA_FILES_BY_YEAR).sort((a, b) => Number(a) - Number(b));
+  earliestDashboardYear = dashboardYears[0];
+  previousDashboardYear = dashboardYears[dashboardYears.indexOf(requestedDashboardYear) - 1];
+  // Built node by node: the shell runs mid-parse, and Chromium takes any
+  // fragment parse (innerHTML) as the end of parsing, releasing the head's
+  // render-blocking rel=expect early and warning that its target is missing.
+  yearMenuPanel.replaceChildren(...[...dashboardYears].reverse().map(year => {
+    const link = document.createElement('a');
+    link.href = yearMenuUrlForYear(year);
+    link.dataset.year = year;
+    link.textContent = year;
+    return link;
+  }));
+  setDashboardYearShell(requestedDashboardYear);
+  setCurrentYearMenuItem(requestedDashboardYear);
+};
+const getScriptDashboardManifest = () => {
+  try {
+    return window.DASHBOARD_MANIFEST ? normalizeDashboardManifest(window.DASHBOARD_MANIFEST) : null;
+  } catch (error) {
+    console.warn('Ignoring invalid script dashboard manifest:', error);
+    return null;
+  }
+};
+const fetchJsonIfAvailable = file => fetch(file, { cache: 'no-store' })
+  .then(r => r.ok ? r.json() : null)
+  .catch(() => null);
+const buildFallbackDashboardManifest = async () => {
+  const requestedYear = getUrlDashboardYear();
+  const currentYear = getCurrentYearInNewYork();
+  const maxYear = Math.max(currentYear, Number(requestedYear) || currentYear);
+  const years = [];
+  for (let year = DASHBOARD_START_YEAR; year <= maxYear; year += 1) {
+    const data = await fetchJsonIfAvailable(dataFileForYear(year));
+    if (Array.isArray(data?.films)) years.push(String(year));
+  }
+  if (!years.length) throw new Error('No dashboard data files available');
+  const defaultYear = [String(currentYear), String(currentYear - 1)].find(year => years.includes(year)) || years[years.length - 1];
+  return {
+    defaultYear,
+    years: Object.fromEntries(years.map(year => [year, dataFileForYear(year)])),
+  };
+};
+const scriptDashboardManifest = getScriptDashboardManifest();
+if (scriptDashboardManifest) applyDashboardManifest(scriptDashboardManifest);
+else setDashboardYearShell(getInitialDashboardYear());
+// The calendar runs from January through today, or through December for an
+// archived year, so its height is known before the data lands: one count of
+// month-grid rows per column layout, for the loading CSS.
+(() => {
+  const year = Number(requestedDashboardYear || getInitialDashboardYear());
+  const nyParts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date());
+  const nyPart = type => Number(nyParts.find(p => p.type === type).value);
+  const months = year < nyPart('year') ? 12 : nyPart('month');
+  [4, 3, 2, 1].forEach(cols => document.documentElement.style.setProperty(`--cal-rows-${cols}`, Math.ceil(months / cols)));
+  // The cumulative chart's forecast switch (current year, from March, with
+  // earlier years to draw on) takes room in its header, so when it's expected
+  // it holds its place from the first frame, inert until the data decides.
+  const yesterday = new Date(Date.UTC(nyPart('year'), nyPart('month') - 1, nyPart('day') - 1));
+  if (!IS_ALL_MODE && String(year) === DEFAULT_DASHBOARD_YEAR && yesterday.toISOString().slice(0, 10) >= `${year}-03-01`
+      && dashboardYears.some(y => Number(y) < year)) {
+    document.documentElement.classList.add('forecast-pending');
+  }
+})();
+const dashboardConfigPromise = fetch('data/manifest.json', { cache: 'no-store' })
+  .then(r => {
+    if (!r.ok) throw new Error(`Dashboard manifest request failed: ${r.status}`);
+    return r.json();
+  })
+  .then(normalizeDashboardManifest)
+  .catch(error => {
+    console.warn('Using fallback dashboard manifest path:', error);
+    return buildFallbackDashboardManifest().catch(fallbackError => {
+      if (scriptDashboardManifest) return scriptDashboardManifest;
+      throw fallbackError;
+    });
+  })
+  .then(manifest => {
+    applyDashboardManifest(manifest);
+    return manifest;
+  });
+
+// ====== PAGE TRANSITIONS ======
+// Moving between years, or to and from the definition page, runs as a
+// cross-document view transition where the browser has them (see PAGE
+// TRANSITIONS in the CSS). The page being left records what it was and names
+// what can carry across (pageswap); the page arriving reads that record,
+// names its own side and sets the variant (pagereveal), which has to be
+// registered before the first frame, hence here. Only elements fully in view
+// on both sides are named, so nothing sails in from off screen. The
+// definition page runs the same exchange.
+const VT_RECORD_KEY = 'vt-from';
+const isFullyInView = el => {
+  const r = el?.getBoundingClientRect();
+  return !!r && r.top >= 0 && r.bottom <= window.innerHeight;
+};
+// The year a dashboard URL opens on (as getRequestedDashboardYear resolves
+// it), or null for the definition page, the all-years view or another site.
+const dashboardYearForUrl = href => {
+  const url = new URL(href, window.location.href);
+  if (url.origin !== window.location.origin || /\/definition\/?$/.test(url.pathname) || url.searchParams.has('all')) return null;
+  const year = url.searchParams.get('year') || url.searchParams.get('y') || url.search.match(/^\?(\d{4})$/)?.[1];
+  return DATA_FILES_BY_YEAR[year] ? year : DEFAULT_DASHBOARD_YEAR;
+};
+// A page restored whole from the back/forward cache comes back scrolled where
+// it was left; a fresh load only gets its scroll back once the data has
+// filled it, well after the first frame.
+let restoredFromBfcache = false;
+window.addEventListener('pageshow', e => { restoredFromBfcache = e.persisted; });
+window.addEventListener('pageswap', e => {
+  if (!e.viewTransition) return;
+  // Kept with this history entry, so a return to it can tell whether the
+  // browser will scroll it back down.
+  try { history.replaceState({ ...history.state, vtScrollY: Math.round(window.scrollY) }, ''); } catch (_) {}
+  const masthead = document.querySelector('.header-masthead');
+  const yearEl = document.querySelector('.headline-year');
+  const record = { page: 'dashboard', year: yearEl?.textContent || null };
+  if (isFullyInView(masthead)) {
+    masthead.style.viewTransitionName = 'masthead';
+    record.masthead = true;
+  }
+  // The year rolls only into a different year's dashboard, which only the
+  // Navigation API (activation) can name ahead of time.
+  const toYear = e.activation?.entry?.url ? dashboardYearForUrl(e.activation.entry.url) : null;
+  if (yearEl && toYear && toYear !== record.year && isFullyInView(yearEl)) {
+    yearEl.style.viewTransitionName = 'headline-year';
+    yearEl.parentElement.style.viewTransitionName = 'headline';
+    record.headline = true;
+  }
+  try { sessionStorage.setItem(VT_RECORD_KEY, JSON.stringify(record)); } catch (_) {}
+});
+window.addEventListener('pagereveal', e => {
+  let from = null;
+  try {
+    from = JSON.parse(sessionStorage.getItem(VT_RECORD_KEY));
+    sessionStorage.removeItem(VT_RECORD_KEY);
+  } catch (_) {}
+  if (!e.viewTransition || !from) return;
+  // Freshly loaded back into a scrolled entry, the first frame shows the top
+  // of the page and the restored scroll would jump it mid-transition; such a
+  // return just appears.
+  if (!restoredFromBfcache && history.state?.vtScrollY > 0) {
+    e.viewTransition.skipTransition();
+    return;
+  }
+  const root = document.documentElement;
+  const masthead = document.querySelector('.header-masthead');
+  const yearEl = document.querySelector('.headline-year');
+  const named = [];
+  const nameFor = (el, name) => {
+    el.style.viewTransitionName = name;
+    named.push(el);
+  };
+  if (from.masthead && isFullyInView(masthead)) nameFor(masthead, 'masthead');
+  if (from.page === 'definition') {
+    root.dataset.vt = 'turn-back';
+  } else if (from.headline && yearEl && isFullyInView(yearEl)) {
+    nameFor(yearEl, 'headline-year');
+    nameFor(yearEl.parentElement, 'headline');
+    root.dataset.vt = Number(yearEl.textContent) > Number(from.year) ? 'year-up' : 'year-down';
+  }
+  e.viewTransition.finished.finally(() => {
+    delete root.dataset.vt;
+    named.forEach(el => { el.style.viewTransitionName = ''; });
+  });
+});
+
+// ====== DATA ======
+// manifest.js has already named the requested year's file, so its fetch
+// starts now, alongside the manifest.json check above rather than after it;
+// the check only sets it aside when the fresh manifest names another file.
+const earlyDataFile = IS_ALL_MODE || !scriptDashboardManifest ? null : dataFile;
+const earlyDataPromise = earlyDataFile ? fetchJsonIfAvailable(earlyDataFile) : null;
+// The previous year's file only feeds the stats row's same-date comparisons
+// and the forecast, so the page renders without waiting for it.
+let previousYearDataPromise = Promise.resolve(null);
+// All-years mode keeps each year's film list around (keyed pairs in year
+// order) for the cumulative chart's per-year curves.
+let allYearsFilmsByYear = null;
+const dashboardDataPromise = dashboardConfigPromise.then(() => {
+  if (IS_ALL_MODE) {
+    return Promise.all(dashboardYears.map(year =>
+      fetch(DATA_FILES_BY_YEAR[year], { cache: 'no-store' }).then(r => r.json()).then(data => [year, data])
+    )).then(pairs => {
+      allYearsFilmsByYear = pairs.map(([year, data]) => [year, data.films]);
+      return {
+        films: pairs.flatMap(([, data]) => data.films),
+        membershipFees: pairs.reduce((sum, [, data]) => sum + (data.membershipFees || 0), 0)
+      };
+    });
+  }
+  if (previousDashboardYear) previousYearDataPromise = fetchJsonIfAvailable(DATA_FILES_BY_YEAR[previousDashboardYear]);
+  const fetchCurrentData = () => fetch(dataFile, { cache: 'no-store' }).then(r => r.json());
+  return dataFile === earlyDataFile
+    ? earlyDataPromise.then(data => data || fetchCurrentData())
+    : fetchCurrentData();
+});
+  </script>
+
+  <!-- Six blank cards hold the row's height at every breakpoint, and show as
+       plates on a slow load, until the data replaces them -->
+  <div class="stats-row" id="stats-row">
+    <div class="stat-card stat-card-plate"><div class="stat-val">&nbsp;</div><div class="stat-label">&nbsp;</div></div>
+    <div class="stat-card stat-card-plate"><div class="stat-val">&nbsp;</div><div class="stat-label">&nbsp;</div></div>
+    <div class="stat-card stat-card-plate"><div class="stat-val">&nbsp;</div><div class="stat-label">&nbsp;</div></div>
+    <div class="stat-card stat-card-plate"><div class="stat-val">&nbsp;</div><div class="stat-label">&nbsp;</div></div>
+    <div class="stat-card stat-card-plate"><div class="stat-val">&nbsp;</div><div class="stat-label">&nbsp;</div></div>
+    <div class="stat-card stat-card-plate"><div class="stat-val">&nbsp;</div><div class="stat-label">&nbsp;</div></div>
+  </div>
   <div class="stats-compare-toggle animate delay-1" id="stats-compare-toggle-wrap">
     <label class="switch-toggle">
       <input type="checkbox" id="stats-compare-toggle" aria-label="Show year comparisons">
@@ -1863,7 +2427,7 @@ footer img.footer-favicon {
   </div>
 
   <div class="charts-grid">
-    <div class="chart-card full animate delay-2" id="sec-cumulative">
+    <div class="chart-card full" id="sec-cumulative">
       <div class="chart-label with-subtitle">Cumulative screenings
         <span class="chart-dedup cum-forecast-toggle" id="cum-forecast-wrap">
           <label class="switch-toggle">
@@ -1875,9 +2439,9 @@ footer img.footer-favicon {
         <span class="chart-num">1</span>
       </div>
       <div class="chart-subtitle"><span class="chart-subtitle-hover">Hover</span><span class="chart-subtitle-click">Tap</span> on chart for number of screenings as of any date</div>
-      <div id="cumulative-chart"></div>
+      <div id="cumulative-chart" class="chart-body"></div>
     </div>
-    <div class="chart-card animate delay-2" id="sec-ratings">
+    <div class="chart-card" id="sec-ratings">
       <div class="chart-label rating-header">
         <span>Rating</span>
         <span class="cal-toggle-wrap rating-filter-toggle">
@@ -1894,9 +2458,9 @@ footer img.footer-favicon {
         </span>
         <span class="chart-num">2</span>
       </div>
-      <div id="rating-chart"></div>
+      <div id="rating-chart" class="chart-body"></div>
     </div>
-    <div class="chart-card animate delay-2" id="sec-decades">
+    <div class="chart-card" id="sec-decades">
       <div class="chart-label" style="display:flex;align-items:center;gap:18px;min-height:29px;">Production decade
         <span class="chart-dedup" style="display:flex;align-items:center;gap:6px;">
           <label class="switch-toggle">
@@ -1907,14 +2471,14 @@ footer img.footer-favicon {
         </span>
         <span class="chart-num">3</span>
       </div>
-      <div id="decade-chart"></div>
+      <div id="decade-chart" class="chart-body"></div>
     </div>
-    <div class="chart-card full animate delay-3" id="sec-formats">
+    <div class="chart-card full" id="sec-formats">
       <div class="chart-label with-subtitle">Screening format<span class="chart-num">4</span></div>
       <div class="chart-subtitle"><span class="chart-subtitle-hover">Hover</span><span class="chart-subtitle-click">Tap</span> on bars for category breakdown</div>
-      <div id="format-chart"></div>
+      <div id="format-chart" class="chart-body"></div>
     </div>
-    <div class="chart-card full animate delay-3" id="sec-runtimes">
+    <div class="chart-card full" id="sec-runtimes">
       <div class="chart-label with-subtitle" style="display:flex;align-items:center;gap:18px;">Runtime distribution
         <span class="chart-dedup" style="display:flex;align-items:center;gap:6px;">
           <label class="switch-toggle">
@@ -1927,15 +2491,15 @@ footer img.footer-favicon {
       </div>
       <div class="chart-subtitle">Minutes, each range includes the lower end</div>
       <div style="overflow-x:auto;padding:12px 18px 22px;">
-        <div id="runtime-chart" style="display:flex;align-items:flex-end;gap:2px;height:160px;padding-top:12px;width:100%;"></div>
+        <div id="runtime-chart" class="chart-body" style="display:flex;align-items:flex-end;gap:2px;height:160px;padding-top:12px;width:100%;"></div>
       </div>
     </div>
-    <div class="chart-card full animate delay-3" id="sec-venues">
+    <div class="chart-card full" id="sec-venues">
       <div class="chart-label with-subtitle">Screening venue<span class="chart-num">6</span></div>
       <div class="chart-subtitle"><span class="chart-subtitle-hover">Hover</span><span class="chart-subtitle-click">Tap</span> on labels for full venue names</div>
-      <div id="venue-chart" class="venue-grid"></div>
+      <div id="venue-chart" class="venue-grid chart-body"></div>
     </div>
-    <div class="chart-card full animate delay-4" id="sec-calendar">
+    <div class="chart-card full" id="sec-calendar">
       <div class="chart-label calendar-header">
         <span>Screening calendar</span>
         <div class="chart-subtitle calendar-subtitle"><span class="chart-subtitle-hover">Hover</span><span class="chart-subtitle-click">Tap</span> on dates for lists of screenings</div>
@@ -1979,11 +2543,11 @@ footer img.footer-favicon {
           </span>
         </span>
       </div>
-      <div id="heatmap" class="heatmap-wrap"></div>
+      <div id="heatmap" class="heatmap-wrap chart-body"></div>
     </div>
   </div>
 
-  <div class="section animate delay-4" id="sec-series">
+  <div class="section" id="sec-series">
     <div class="chart-label">Festivals &amp; series<span class="chart-num">8</span></div>
     <div class="film-table-shell series-table-shell">
       <div class="film-table-wrap">
@@ -2010,7 +2574,7 @@ footer img.footer-favicon {
     </div>
   </div>
 
-  <div class="section animate delay-5" id="sec-log">
+  <div class="section" id="sec-log">
     <div class="chart-label">Complete log<span class="chart-num">9</span></div>
     <div class="film-table-shell">
       <div class="film-table-wrap">
@@ -2042,149 +2606,17 @@ footer img.footer-favicon {
   <footer><img class="footer-favicon" src="assets/favicon-192.png" alt=""></footer>
 </div>
 
-<script src="data/manifest.js"></script>
 <script>
-if (window.location.pathname.endsWith('/index.html')) {
-  const cleanPath = window.location.pathname.slice(0, -'index.html'.length) || '/';
-  window.history.replaceState(null, '', `${cleanPath}${window.location.search}${window.location.hash}`);
-}
-
 // ====== ALL-YEARS MODE (?all) ======
-// Hidden aggregate of every logged year, reachable only by typing /?all: no
-// page links here. It reuses the single-year dashboard with the calendar and
-// log dropped, comparisons and forecast off, and the cumulative chart showing
-// the cross-year average over each year's own curve.
-const IS_ALL_MODE = new URLSearchParams(window.location.search).has('all');
+// The shell script after the header defines IS_ALL_MODE; the sections it
+// drops are only parsed by now.
 if (IS_ALL_MODE) {
-  document.documentElement.classList.add('all-years');
   document.getElementById('sec-calendar').remove();
   document.getElementById('sec-log').remove();
   document.querySelectorAll('.chart-nav-link[href="#sec-calendar"], .chart-nav-link[href="#sec-log"]').forEach(a => a.remove());
   document.querySelector('#sec-series .chart-num').textContent = '7';
 }
 
-const DASHBOARD_START_YEAR = 2023;
-let DATA_FILES_BY_YEAR = {};
-let DEFAULT_DASHBOARD_YEAR = null;
-const getCurrentYearInNewYork = () => Number(new Intl.DateTimeFormat('en-US', {
-  timeZone: 'America/New_York',
-  year: 'numeric',
-}).format(new Date()));
-const dataFileForYear = year => `data/data-${year}.json`;
-const getUrlDashboardYear = () => {
-  const params = new URLSearchParams(window.location.search);
-  const paramYear = params.get('year') || params.get('y');
-  const bareYear = window.location.search.match(/^\?(\d{4})$/)?.[1];
-  const requestedYear = paramYear || bareYear;
-  return /^\d{4}$/.test(requestedYear || '') ? requestedYear : null;
-};
-const yearMenuUrlForYear = year => year === DEFAULT_DASHBOARD_YEAR ? './' : `?${year}`;
-const setDashboardYearShell = year => {
-  if (IS_ALL_MODE) {
-    document.title = 'Jim’s Cinema Log';
-    document.querySelector('h1').textContent = 'Jim’s Cinema Log';
-    return;
-  }
-  const isDefaultYear = DEFAULT_DASHBOARD_YEAR ? year === DEFAULT_DASHBOARD_YEAR : !getUrlDashboardYear();
-  document.title = `Jim’s ${year} Cinema Log`;
-  document.querySelector('meta[property="og:title"]')?.setAttribute('content', `Jim’s ${year} Cinema Log`);
-  document.querySelector('meta[name="twitter:title"]')?.setAttribute('content', `Jim’s ${year} Cinema Log`);
-  document.querySelector('meta[property="og:url"]')?.setAttribute('content', isDefaultYear ? 'https://jimsfilms.nyc/' : `https://jimsfilms.nyc/?${year}`);
-  document.querySelector('h1').textContent = `${year} in cinema`;
-};
-const setCurrentYearMenuItem = year => {
-  if (IS_ALL_MODE) return;
-  document.querySelectorAll('.year-menu-panel a').forEach(a => {
-    if (a.dataset.year === year) a.setAttribute('aria-current', 'page');
-    else a.removeAttribute('aria-current');
-  });
-};
-const normalizeDashboardManifest = manifest => {
-  const years = manifest?.years && typeof manifest.years === 'object' ? manifest.years : null;
-  if (!years) throw new Error('Invalid dashboard manifest');
-  const normalizedYears = Object.fromEntries(Object.entries(years)
-    .filter(([year, file]) => /^\d{4}$/.test(year) && typeof file === 'string'));
-  const sortedYears = Object.keys(normalizedYears).sort((a, b) => Number(a) - Number(b));
-  if (!sortedYears.length) throw new Error('Dashboard manifest has no years');
-  const defaultYear = normalizedYears[manifest.defaultYear] ? String(manifest.defaultYear) : sortedYears[sortedYears.length - 1];
-  return { defaultYear, years: normalizedYears };
-};
-const getInitialDashboardYear = () => {
-  const manifestYear = window.DASHBOARD_MANIFEST?.defaultYear;
-  return getUrlDashboardYear() || (/^\d{4}$/.test(manifestYear || '') ? manifestYear : String(getCurrentYearInNewYork()));
-};
-function getRequestedDashboardYear() {
-  const requestedYear = getUrlDashboardYear();
-  return DATA_FILES_BY_YEAR[requestedYear] ? requestedYear : DEFAULT_DASHBOARD_YEAR;
-}
-let requestedDashboardYear = null;
-let dataFile = null;
-let dashboardYears = [];
-let earliestDashboardYear = null;
-let previousDashboardYear = null;
-const yearMenuButton = document.getElementById('year-menu-button');
-const yearMenuPanel = document.getElementById('year-menu-panel');
-const applyDashboardManifest = manifest => {
-  DATA_FILES_BY_YEAR = manifest.years;
-  DEFAULT_DASHBOARD_YEAR = manifest.defaultYear;
-  requestedDashboardYear = getRequestedDashboardYear();
-  dataFile = DATA_FILES_BY_YEAR[requestedDashboardYear];
-  dashboardYears = Object.keys(DATA_FILES_BY_YEAR).sort((a, b) => Number(a) - Number(b));
-  earliestDashboardYear = dashboardYears[0];
-  previousDashboardYear = dashboardYears[dashboardYears.indexOf(requestedDashboardYear) - 1];
-  yearMenuPanel.innerHTML = [...dashboardYears].reverse()
-    .map(year => `<a href="${yearMenuUrlForYear(year)}" data-year="${year}">${year}</a>`)
-    .join('');
-  setDashboardYearShell(requestedDashboardYear);
-  setCurrentYearMenuItem(requestedDashboardYear);
-};
-const getScriptDashboardManifest = () => {
-  try {
-    return window.DASHBOARD_MANIFEST ? normalizeDashboardManifest(window.DASHBOARD_MANIFEST) : null;
-  } catch (error) {
-    console.warn('Ignoring invalid script dashboard manifest:', error);
-    return null;
-  }
-};
-const fetchJsonIfAvailable = file => fetch(file, { cache: 'no-store' })
-  .then(r => r.ok ? r.json() : null)
-  .catch(() => null);
-const buildFallbackDashboardManifest = async () => {
-  const requestedYear = getUrlDashboardYear();
-  const currentYear = getCurrentYearInNewYork();
-  const maxYear = Math.max(currentYear, Number(requestedYear) || currentYear);
-  const years = [];
-  for (let year = DASHBOARD_START_YEAR; year <= maxYear; year += 1) {
-    const data = await fetchJsonIfAvailable(dataFileForYear(year));
-    if (Array.isArray(data?.films)) years.push(String(year));
-  }
-  if (!years.length) throw new Error('No dashboard data files available');
-  const defaultYear = [String(currentYear), String(currentYear - 1)].find(year => years.includes(year)) || years[years.length - 1];
-  return {
-    defaultYear,
-    years: Object.fromEntries(years.map(year => [year, dataFileForYear(year)])),
-  };
-};
-const scriptDashboardManifest = getScriptDashboardManifest();
-if (scriptDashboardManifest) applyDashboardManifest(scriptDashboardManifest);
-else setDashboardYearShell(getInitialDashboardYear());
-const dashboardConfigPromise = fetch('data/manifest.json', { cache: 'no-store' })
-  .then(r => {
-    if (!r.ok) throw new Error(`Dashboard manifest request failed: ${r.status}`);
-    return r.json();
-  })
-  .then(normalizeDashboardManifest)
-  .catch(error => {
-    console.warn('Using fallback dashboard manifest path:', error);
-    return buildFallbackDashboardManifest().catch(fallbackError => {
-      if (scriptDashboardManifest) return scriptDashboardManifest;
-      throw fallbackError;
-    });
-  })
-  .then(manifest => {
-    applyDashboardManifest(manifest);
-    return manifest;
-  });
 let yearMenuCloseTimer;
 const setYearMenuOpen = open => {
   clearTimeout(yearMenuCloseTimer);
@@ -2231,8 +2663,8 @@ document.addEventListener('keydown', e => {
 // backdrop-filter for everything inside them (table header pane, venue tips).
 // Remove the classes once done; the end state equals the default style.
 document.addEventListener('animationend', e => {
-  if (e.animationName === 'fadeUp' && e.target.classList?.contains('animate')) {
-    e.target.classList.remove('animate', 'delay-1', 'delay-2', 'delay-3', 'delay-4', 'delay-5');
+  if ((e.animationName === 'fadeUp' || e.animationName === 'fadeIn') && e.target.classList?.contains('animate')) {
+    e.target.classList.remove('animate', 'animate-fade', 'delay-1', 'delay-2', 'delay-3', 'delay-4', 'delay-5');
   }
 });
 
@@ -2361,32 +2793,8 @@ document.addEventListener('animationend', e => {
   update();
 })();
 
-// All-years mode keeps each year's film list around (keyed pairs in year
-// order) for the cumulative chart's per-year curves.
-let allYearsFilmsByYear = null;
-const dashboardDataPromise = dashboardConfigPromise.then(() => {
-  if (IS_ALL_MODE) {
-    return Promise.all(dashboardYears.map(year =>
-      fetch(DATA_FILES_BY_YEAR[year], { cache: 'no-store' }).then(r => r.json()).then(data => [year, data])
-    )).then(pairs => {
-      allYearsFilmsByYear = pairs.map(([year, data]) => [year, data.films]);
-      return [{
-        films: pairs.flatMap(([, data]) => data.films),
-        membershipFees: pairs.reduce((sum, [, data]) => sum + (data.membershipFees || 0), 0)
-      }, null];
-    });
-  }
-  const currentDataPromise = fetch(dataFile, { cache: 'no-store' }).then(r => r.json());
-  const previousDataPromise = previousDashboardYear
-    ? fetch(DATA_FILES_BY_YEAR[previousDashboardYear], { cache: 'no-store' })
-        .then(r => r.ok ? r.json() : null)
-        .catch(() => null)
-    : Promise.resolve(null);
-  return Promise.all([currentDataPromise, previousDataPromise]);
-});
-
 dashboardDataPromise
-  .then(([{ films: FILMS, membershipFees: MEMBERSHIP_FEES = 0 }, previousYearData]) => {
+  .then(({ films: FILMS, membershipFees: MEMBERSHIP_FEES = 0 }) => {
 
 // ====== DATE RANGE HEADER ======
 const filmDatesForRange = FILMS.map(f => f.date).sort();
@@ -2426,9 +2834,11 @@ const dataDayDate = new Date(yearStartForStats.getTime() + dataDayIdxForStats * 
 const endDate = `${dataDayDate.getFullYear()}-${String(dataDayDate.getMonth()+1).padStart(2,'0')}-${String(dataDayDate.getDate()).padStart(2,'0')}`;
 const subtitleEndDate = isCurrentDashboardYear ? endDate : lastDate;
 
-document.getElementById('date-range').innerHTML = IS_ALL_MODE
+const dateRangeEl = document.getElementById('date-range');
+dateRangeEl.innerHTML = IS_ALL_MODE
   ? `${dashboardYears[0]}–${dashboardYears[dashboardYears.length - 1]}&nbsp;&nbsp;·&nbsp;&nbsp;New York City`
   : `${fmtDate(firstDate)}–${fmtDate(subtitleEndDate)}&nbsp;&nbsp;·&nbsp;&nbsp;New York City`;
+dateRangeEl.classList.add('animate', 'animate-fade', 'delay-1');
 
 // ====== STATS ======
 const normalizeYearPoint = ds => ds.slice(5,10) === '02-29' ? '02-28' : ds.slice(5,10);
@@ -2469,34 +2879,38 @@ function formatStatDelta(value, { decimals = 0, prefix = '', suffix = '' } = {})
   };
 }
 const currentStats = getHeroStats(FILMS, MEMBERSHIP_FEES);
-const previousFilmsAtCutoff = previousYearData?.films?.filter(f => isOnOrBeforeYearPoint(f.date, endDate)) || [];
-const previousYear = previousYearData?.films?.[0]?.date.slice(0,4) || previousDashboardYear;
-// Membership fees split two ways for the same-date comparison. An annual
-// membership payment carries its payment date and counts in full once the
-// comparison date reaches that date, and not at all before. The undated
-// remainder (the AMC subscription, billed monthly across the year) prorates
-// by elapsed days instead.
-const previousYearMembershipFees = previousYearData?.membershipFees || 0;
-const previousMembershipPayments = previousYearData?.membershipPayments || [];
-const previousUndatedFees = previousYearMembershipFees - previousMembershipPayments.reduce((s, p) => s + p.amount, 0);
-const previousPaymentsByCutoff = previousMembershipPayments
-  .filter(p => isOnOrBeforeYearPoint(p.date, endDate))
-  .reduce((s, p) => s + p.amount, 0);
-const previousYearDays = previousYear ? countDaysThroughYearPoint(previousYear, `${previousYear}-12-31`) : 0;
-const previousMembershipFeesAtCutoff = previousPaymentsByCutoff + (previousYearDays
-  ? previousUndatedFees * (countDaysThroughYearPoint(previousYear, endDate) / previousYearDays)
-  : 0);
-const previousStats = dashYear !== earliestDashboardYear && previousFilmsAtCutoff.length
-  ? getHeroStats(previousFilmsAtCutoff, previousMembershipFeesAtCutoff)
-  : null;
-const statComparisons = previousStats ? {
-  totalFilms: formatStatDelta(currentStats.totalFilms - previousStats.totalFilms),
-  daysAtCinema: formatStatDelta(currentStats.daysAtCinema - previousStats.daysAtCinema),
-  avgRating: currentStats.avgRating == null || previousStats.avgRating == null ? null : formatStatDelta(currentStats.avgRating - previousStats.avgRating, { decimals: 2 }),
-  totalRuntimeHours: formatStatDelta(currentStats.totalRuntimeHours - previousStats.totalRuntimeHours, { decimals: 1, suffix: 'h' }),
-  totalSpent: formatStatDelta(currentStats.totalSpent - previousStats.totalSpent, { prefix: '$' }),
-  uniqueVenues: formatStatDelta(currentStats.uniqueVenues - previousStats.uniqueVenues)
-} : {};
+// Worked out once the previous year's file lands, which the page doesn't wait
+// for; null when there is nothing logged by this date to compare against.
+function getStatComparisons(previousYearData) {
+  const previousFilmsAtCutoff = previousYearData?.films?.filter(f => isOnOrBeforeYearPoint(f.date, endDate)) || [];
+  const previousYear = previousYearData?.films?.[0]?.date.slice(0,4) || previousDashboardYear;
+  // Membership fees split two ways for the same-date comparison. An annual
+  // membership payment carries its payment date and counts in full once the
+  // comparison date reaches that date, and not at all before. The undated
+  // remainder (the AMC subscription, billed monthly across the year) prorates
+  // by elapsed days instead.
+  const previousYearMembershipFees = previousYearData?.membershipFees || 0;
+  const previousMembershipPayments = previousYearData?.membershipPayments || [];
+  const previousUndatedFees = previousYearMembershipFees - previousMembershipPayments.reduce((s, p) => s + p.amount, 0);
+  const previousPaymentsByCutoff = previousMembershipPayments
+    .filter(p => isOnOrBeforeYearPoint(p.date, endDate))
+    .reduce((s, p) => s + p.amount, 0);
+  const previousYearDays = previousYear ? countDaysThroughYearPoint(previousYear, `${previousYear}-12-31`) : 0;
+  const previousMembershipFeesAtCutoff = previousPaymentsByCutoff + (previousYearDays
+    ? previousUndatedFees * (countDaysThroughYearPoint(previousYear, endDate) / previousYearDays)
+    : 0);
+  const previousStats = dashYear !== earliestDashboardYear && previousFilmsAtCutoff.length
+    ? getHeroStats(previousFilmsAtCutoff, previousMembershipFeesAtCutoff)
+    : null;
+  return previousStats ? {
+    totalFilms: formatStatDelta(currentStats.totalFilms - previousStats.totalFilms),
+    daysAtCinema: formatStatDelta(currentStats.daysAtCinema - previousStats.daysAtCinema),
+    avgRating: currentStats.avgRating == null || previousStats.avgRating == null ? null : formatStatDelta(currentStats.avgRating - previousStats.avgRating, { decimals: 2 }),
+    totalRuntimeHours: formatStatDelta(currentStats.totalRuntimeHours - previousStats.totalRuntimeHours, { decimals: 1, suffix: 'h' }),
+    totalSpent: formatStatDelta(currentStats.totalSpent - previousStats.totalSpent, { prefix: '$' }),
+    uniqueVenues: formatStatDelta(currentStats.uniqueVenues - previousStats.uniqueVenues)
+  } : null;
+}
 const totalFilms = currentStats.totalFilms;
 const avgRating = currentStats.avgRating == null ? '—' : currentStats.avgRating.toFixed(2);
 const totalRuntime = currentStats.totalRuntimeHours * 60;
@@ -2541,17 +2955,38 @@ const membershipMark = footnoteMark('membership', FILMS.some(f => f.currency)
 const statsRowEl = document.getElementById('stats-row');
 const statsCompareToggleWrap = document.getElementById('stats-compare-toggle-wrap');
 const statsCompareToggle = document.getElementById('stats-compare-toggle');
-statsRowEl.innerHTML = [
-  { val: totalFilms, label: totalFilms === 1 ? 'Screening' : 'Screenings', compare: statComparisons.totalFilms },
-  { val: `${daysAtCinema}<span class="stat-val-slash">/</span>${daysElapsed}`, label: daysAtCinema === 1 ? 'Day at the cinema' : 'Days at the cinema', compare: statComparisons.daysAtCinema },
-  { val: avgRating, label: 'Average rating', compare: statComparisons.avgRating },
-  { val: `${(totalRuntime/60).toFixed(1)}h`, label: 'Total runtime', compare: statComparisons.totalRuntimeHours },
-  { val: `$${totalSpent.toFixed(0)}`, label: 'Total spending' + membershipMark, compare: statComparisons.totalSpent },
-  { val: uniqueVenues, label: uniqueVenues === 1 ? 'NYC venue visited' : 'NYC venues visited', compare: statComparisons.uniqueVenues }
-].map(s => `<div class="stat-card${s.compare ? ' stat-card-compare-ready' : ''}"><div class="stat-val">${s.val}</div><div class="stat-label">${s.label}</div>${s.compare ? `<div class="stat-compare"><span class="stat-compare-badge${s.compare.isIncrease ? '' : ' is-muted'}">${s.compare.text}</span></div>` : ''}</div>`).join('');
-if (previousStats) {
+const statCards = [
+  { key: 'totalFilms', val: totalFilms, label: totalFilms === 1 ? 'Screening' : 'Screenings' },
+  { key: 'daysAtCinema', val: `${daysAtCinema}<span class="stat-val-slash">/</span>${daysElapsed}`, label: daysAtCinema === 1 ? 'Day at the cinema' : 'Days at the cinema' },
+  { key: 'avgRating', val: avgRating, label: 'Average rating' },
+  { key: 'totalRuntimeHours', val: `${(totalRuntime/60).toFixed(1)}h`, label: 'Total runtime' },
+  { key: 'totalSpent', val: `$${totalSpent.toFixed(0)}`, label: 'Total spending' + membershipMark },
+  { key: 'uniqueVenues', val: uniqueVenues, label: uniqueVenues === 1 ? 'NYC venue visited' : 'NYC venues visited' }
+];
+statsRowEl.innerHTML = statCards.map((s, i) => `<div class="stat-card animate" style="animation-delay:${0.05 + i * 0.04}s"><div class="stat-val">${s.val}</div><div class="stat-label">${s.label}</div></div>`).join('');
+// The switch shows whenever an earlier year exists to compare against, so the
+// row lays out once; it drops out again only if that year turns out to have
+// nothing logged by this date. Each card's comparison joins it when the
+// previous year's file lands.
+if (!IS_ALL_MODE && previousDashboardYear && dashYear !== earliestDashboardYear) {
   statsCompareToggleWrap.classList.add('is-visible');
   statsCompareToggle.checked = false;
+  previousYearDataPromise.then(attachStatComparisons);
+}
+// The data is in: the date line and stats row start their entrance.
+document.documentElement.classList.add('is-ready');
+function attachStatComparisons(previousYearData) {
+  const statComparisons = getStatComparisons(previousYearData);
+  if (!statComparisons) {
+    statsCompareToggleWrap.classList.remove('is-visible');
+    return;
+  }
+  statsRowEl.querySelectorAll('.stat-card').forEach((card, i) => {
+    const compare = statComparisons[statCards[i].key];
+    if (!compare) return;
+    card.classList.add('stat-card-compare-ready');
+    card.insertAdjacentHTML('beforeend', `<div class="stat-compare"><span class="stat-compare-badge${compare.isIncrease ? '' : ' is-muted'}">${compare.text}</span></div>`);
+  });
   let statCardMoveCleanup = null;
   let statComparisonCollapseTimer = null;
   const statCardMoveDuration = 650;
@@ -2631,6 +3066,8 @@ if (previousStats) {
   statsCompareToggle.addEventListener('change', () => {
     setStatComparisonsVisible(statsCompareToggle.checked);
   });
+  // A flip made before the comparisons arrived takes effect now.
+  if (statsCompareToggle.checked) setStatComparisonsVisible(true);
 }
 
 // ====== SPARSE MODE (fewer than 5 films) ======
@@ -2643,6 +3080,7 @@ if (FILMS.length < 5) {
   note.className = 'sparse-note animate delay-2';
   note.textContent = 'Visualisations will display when there are more film entries.';
   document.querySelector('.charts-grid').insertAdjacentElement('afterend', note);
+  document.documentElement.classList.remove('forecast-pending');
   return;
 }
 
@@ -2715,6 +3153,10 @@ let cumForecast = null;
 let cumForecastLoad = null;
 let cumForecastAnimId = null;
 let cumForecastP = 0;
+// How much of the plotted line is drawn, 0 to 1: the chart builds on first
+// view by widening a clip across the plot (revealCumulativeLine below).
+// Reduced motion starts it drawn.
+let cumRevealP = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : 0;
 const cumForecastInput = document.getElementById('cum-forecast');
 const cumForecastWrap = document.getElementById('cum-forecast-wrap');
 
@@ -3080,6 +3522,11 @@ function renderCumulativeChart(anim) {
   const clipTop = anim ? MT - 2 : -20;
   const clipBottom = anim ? MT + innerH + 2 : H + 20;
   const plotClip = `<clipPath id="cum-plot-clip"><rect x="${ML}" y="${clipTop}" width="${innerW}" height="${clipBottom - clipTop}"/></clipPath>`;
+  // The build's clip: from just left of the plot (the line's start cap) to
+  // just past its right edge once fully drawn. The data-day marker sits
+  // under it too, so it lands when the line does.
+  const revealFullW = innerW + 8;
+  const revealClip = `<clipPath id="cum-reveal-clip"><rect class="cum-reveal-rect" data-full-width="${revealFullW}" x="${ML - 4}" y="-20" width="${(revealFullW * cumRevealP).toFixed(1)}" height="${H + 40}"/></clipPath>`;
   // All-years mode: each year's own curve in muted paper grey under the
   // average line, plus the average's past-years continuation after the
   // one-day break at the data day.
@@ -3088,7 +3535,7 @@ function renderCumulativeChart(anim) {
         `<path d="${pts.map((pt, i) => `${i === 0 ? 'M' : 'L'}${xScale(pt.x).toFixed(1)},${yScale(pt.y).toFixed(1)}`).join(' ')}" fill="none" stroke="rgb(189,189,175)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`
       ).join('')}</g>`
     : '';
-  container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;overflow:visible;">${plotClip}${yAxis}${xAxis}${todayMark}${forecastLayer}${yearLayer}<g clip-path="url(#cum-plot-clip)"><path d="${pathD}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>${pastPathD ? `<path d="${pastPathD}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>` : ''}</g>${hoverLine}${ringMask}${hoverDot}${hoverRing}${hoverZone}</svg>`;
+  container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;overflow:visible;">${plotClip}${revealClip}${yAxis}${xAxis}<g clip-path="url(#cum-reveal-clip)">${todayMark}</g>${forecastLayer}<g clip-path="url(#cum-reveal-clip)">${yearLayer}<g clip-path="url(#cum-plot-clip)"><path d="${pathD}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>${pastPathD ? `<path d="${pastPathD}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>` : ''}</g></g>${hoverLine}${ringMask}${hoverDot}${hoverRing}${hoverZone}</svg>`;
 
   const svg = container.querySelector('svg');
   const lineEl = svg.querySelector('.cum-hover-line');
@@ -3179,6 +3626,25 @@ window.addEventListener('resize', () => {
   cumulativeResizeTimer = setTimeout(renderCumulativeChart, 120);
 });
 
+// Draws the line on the chart's first view: the reveal clip widens across
+// the plot, fast at first and settling as it reaches the data day. Each
+// frame updates whichever SVG is current, so a resize mid-draw just carries
+// on, and later renders read the finished cumRevealP.
+function revealCumulativeLine() {
+  const startTime = performance.now();
+  const duration = 1100;
+  const easeOut = t => 1 - Math.pow(1 - t, 3);
+  const stepFrame = now => {
+    // A frame's timestamp can predate the start time taken above.
+    const raw = Math.max(0, Math.min(1, (now - startTime) / duration));
+    cumRevealP = easeOut(raw);
+    const rect = document.querySelector('#cumulative-chart .cum-reveal-rect');
+    if (rect) rect.setAttribute('width', (Number(rect.dataset.fullWidth) * cumRevealP).toFixed(1));
+    if (raw < 1) requestAnimationFrame(stepFrame);
+  };
+  requestAnimationFrame(stepFrame);
+}
+
 // Animates the forecast toggle between its states: the axes rescale while
 // the forecast layer, incoming ticks, and month labels fade, easing out
 // like the bar charts' toggle transitions (their CSS
@@ -3223,19 +3689,18 @@ function animateCumForecast() {
 // already-fetched previous year is reused rather than fetched again.
 const cumForecastYears = Object.keys(DATA_FILES_BY_YEAR || {}).filter(y => y < dashYear).sort();
 const cumForecastSeasonOpen = endDate >= dashYear + '-03-01';
+// The shell may have held the switch's place; from here .is-visible decides.
+document.documentElement.classList.remove('forecast-pending');
 if (!IS_ALL_MODE && isCurrentDashboardYear && cumForecastSeasonOpen && cumForecastYears.length && FILMS.length) {
   cumForecastWrap.classList.add('is-visible');
   document.querySelector('label[for="cum-forecast"]').textContent =
     'Show forecast' + footnoteMark('forecast', 'Estimates based on screening counts since 2017, excluding 2020 and 2021; band represents 95% probability');
   cumForecastInput.addEventListener('change', () => {
     if (cumForecastInput.checked && !cumForecast && !cumForecastLoad) {
-      const archiveFetches = cumForecastYears.map(y => {
-        if (y === previousDashboardYear && previousYearData?.films) return Promise.resolve(previousYearData.films);
-        return fetch(DATA_FILES_BY_YEAR[y], { cache: 'no-store' })
-          .then(r => r.ok ? r.json() : null)
-          .then(d => d?.films || null)
-          .catch(() => null);
-      });
+      const fetchArchiveFilms = y => fetchJsonIfAvailable(DATA_FILES_BY_YEAR[y]).then(d => d?.films || null);
+      const archiveFetches = cumForecastYears.map(y => y === previousDashboardYear
+        ? previousYearDataPromise.then(d => d?.films || fetchArchiveFilms(y))
+        : fetchArchiveFilms(y));
       const historyFetch = fetch('data/history-counts.json', { cache: 'no-store' })
         .then(r => r.ok ? r.json() : null)
         .then(counts => {
@@ -3338,31 +3803,34 @@ function renderRatingChart(filter) {
   ratingCounts['unrated'] = 0;
   subset.forEach(f => { if (f.rating != null) ratingCounts[f.rating]++; else ratingCounts['unrated']++; });
   const container = document.getElementById('rating-chart');
-  if (!container.dataset.init) {
-    container.innerHTML = Object.keys(ratingCounts).filter(r => r !== 'unrated').map(r =>
-      `<div class="bar-row" data-rating="${r}">
-        <div class="bar-label">${ratingLabel(Number(r))}</div>
-        <div class="bar-track"><div class="bar-fill rating-${r}" style="width:0"></div></div>
-        <div class="bar-count">0</div>
-      </div>`
-    ).join('') + (allRatingCounts['unrated'] ? `<div class="bar-row" data-rating="unrated">
-        <div class="bar-label">Unrated</div>
-        <div class="bar-track"><div class="bar-fill rating-unrated" style="width:0"></div></div>
-        <div class="bar-count">0</div>
-      </div>` : '');
-    container.dataset.init = '1';
-  }
-  syncBarLabelColumn(container);
   const allSubset = dedup ? dedupFilms(FILMS) : FILMS;
   const allCounts = {};
   for (let i=1;i<=10;i++) allCounts[i] = 0;
   allCounts['unrated'] = 0;
   allSubset.forEach(f => { if (f.rating != null) allCounts[f.rating]++; else allCounts['unrated']++; });
   const maxRating = Math.max(...Object.values(allCounts), 1);
+  const barWidth = r => (ratingCounts[r] / maxRating) * 100 + '%';
+  // The first render lays the bars out at their widths (growing them is the
+  // build's job, on first view); later renders animate from there.
+  if (!container.dataset.init) {
+    container.innerHTML = Object.keys(ratingCounts).filter(r => r !== 'unrated').map((r, i) =>
+      `<div class="bar-row" data-rating="${r}" style="--i:${i}">
+        <div class="bar-label">${ratingLabel(Number(r))}</div>
+        <div class="bar-track"><div class="bar-fill rating-${r}" style="width:${barWidth(r)}"></div></div>
+        <div class="bar-count">${ratingCounts[r]}</div>
+      </div>`
+    ).join('') + (allRatingCounts['unrated'] ? `<div class="bar-row" data-rating="unrated" style="--i:10">
+        <div class="bar-label">Unrated</div>
+        <div class="bar-track"><div class="bar-fill rating-unrated" style="width:${barWidth('unrated')}"></div></div>
+        <div class="bar-count">${ratingCounts['unrated']}</div>
+      </div>` : '');
+    container.dataset.init = '1';
+  }
+  syncBarLabelColumn(container);
   for (const [r, c] of Object.entries(ratingCounts)) {
     const row = container.querySelector(`.bar-row[data-rating="${r}"]`);
     if (!row) continue;
-    row.querySelector('.bar-fill').style.width = (c / maxRating) * 100 + '%';
+    row.querySelector('.bar-fill').style.width = barWidth(r);
     row.querySelector('.bar-count').textContent = c;
   }
 }
@@ -3493,7 +3961,7 @@ function renderRuntimeChart() {
       const nextIsBar = idx < items.length-1 && items[idx+1].type === 'bar';
       const lo = prevIsBar ? halfGap : 8;
       const ro = nextIsBar ? halfGap : 8;
-      barsHtml += `<div data-bin="${it.bin}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:24px;position:relative;">
+      barsHtml += `<div data-bin="${it.bin}" style="--i:${idx};flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:24px;position:relative;">
         <div class="hist-count" style="font-family:'Dashboard Sans',sans-serif;font-size:0.9rem;font-weight:350;color:${c ? 'var(--text)' : 'var(--text-dim)'};margin-bottom:4px;">${c || ''}</div>
         <div class="hist-bar" style="width:100%;height:${h}px;background:var(--accent);border-radius:0;${c ? '' : 'visibility:hidden;'}"></div>
         <div style="position:absolute;left:-${lo}px;right:-${ro}px;bottom:-1.5px;height:1.5px;background:var(--text);pointer-events:none;"></div>
@@ -3537,9 +4005,9 @@ const venueFullNames = {
   LENFE:'Lenfest Center for the Arts',
   SKIR:'NYU Skirball Center', OTHER:'Non-NYC or non-standard venues'
 };
-const venueCol = arr => arr.map(([v,c]) => {
+const venueCol = arr => arr.map(([v,c], i) => {
   const venueTip = venueFullNames[v] ? `<span class="venue-tip">${escapeHtml(venueFullNames[v])}</span>` : '';
-  return `<div class="bar-row venue-has-tip">
+  return `<div class="bar-row venue-has-tip" style="--i:${i}">
     <div class="bar-label">${escapeHtml(v)}${venueTip}</div>
     <div class="bar-track"><div class="bar-fill venue-bar${v === 'OTHER' ? ' venue-bar-other' : ''}" style="width:${(c/maxVenue)*100}%"></div></div>
     <div class="bar-count">${c}</div>
@@ -3577,12 +4045,14 @@ function renderDecadeChart() {
         ? 'Shorts programmes whose production years span multiple decades'
         : 'Shorts programme whose production years span multiple decades')
     : '';
+  // As in the rating chart, the first render lays the bars out at their
+  // widths for the build to grow.
   if (!container.dataset.init) {
-    container.innerHTML = decadeArr.map(d =>
-      `<div class="bar-row" data-decade="${d}">
+    container.innerHTML = decadeArr.map((d, i) =>
+      `<div class="bar-row" data-decade="${d}" style="--i:${i}">
         <div class="bar-label">${d === 'various' ? 'Various' + variousMark : d + 's'}</div>
-        <div class="bar-track"><div class="bar-fill venue-bar" style="width:0"></div></div>
-        <div class="bar-count">0</div>
+        <div class="bar-track"><div class="bar-fill venue-bar" style="width:${((decadeCounts[d] || 0) / maxDecade) * 100}%"></div></div>
+        <div class="bar-count">${decadeCounts[d] || 0}</div>
       </div>`
     ).join('');
     container.dataset.init = '1';
@@ -3693,7 +4163,7 @@ function formatTrackMinWidth(base) {
     .sort((a, b) => a - b)[0];
   return nextMoreNumerous && nextMoreNumerous > currentTotal * 8 ? 6 : 3;
 }
-const rowsHtml = bases.map(b => {
+const rowsHtml = bases.map((b, rowIdx) => {
   const data = formatBreakdown[b];
   const trackPct = (data.total / maxBaseTotal) * 100;
   const trackMinWidth = formatTrackMinWidth(b);
@@ -3719,7 +4189,7 @@ const rowsHtml = bases.map(b => {
     }
     return out;
   }).join('');
-  return `<div class="format-row">
+  return `<div class="format-row" style="--i:${rowIdx}">
     <div class="bar-label">${escapeHtml(b === 'DCP' ? 'DCP' + footnoteMark('dcp', 'DCP includes other digital') : b)}</div>
     <div class="format-bar-outer"><div class="format-bar-track" style="width:${trackPct}%;min-width:${trackMinWidth}px;">${segs}</div></div>
     <div class="bar-count">${data.total}</div>
@@ -4009,6 +4479,8 @@ if (!IS_ALL_MODE) {
   const calRow = document.createElement('div');
   calRow.className = 'calendars-row';
   let hasUnratedCalendarDay = false;
+  // Day of the year, for the colour sweep's order.
+  let dayOfYear = 0;
   months.forEach(m => {
     const div = document.createElement('div');
     div.className = 'heatmap-month';
@@ -4016,7 +4488,7 @@ if (!IS_ALL_MODE) {
     dayNames.forEach(dn => { html += `<div class="cal-dayname">${dn}</div>`; });
     const startDay = new Date(m.year, m.month, 1).getDay();
     for (let i = 0; i < startDay; i++) html += `<div class="heatmap-cell empty"></div>`;
-    for (let d = 1; d <= m.days; d++) {
+    for (let d = 1; d <= m.days; d++, dayOfYear++) {
       const ds = `${m.year}-${String(m.month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
       const films = filmsByDate[ds] || [];
       const isFuture = ds > todayStr;
@@ -4028,7 +4500,7 @@ if (!IS_ALL_MODE) {
         const dayRuntime = films.reduce((sum,f) => sum + (f.runtime || 0), 0);
         const filmTitlesJson = escapeHtml(JSON.stringify(films.map(f => splitTitleParts(f.title).primary)));
         const filmRatingsJson = escapeHtml(JSON.stringify(films.map(f => f.rating)));
-        html += `<div class="heatmap-cell ${cls}" data-date="${ds}" data-runtime="${dayRuntime}" data-films='${filmTitlesJson}' data-ratings='${filmRatingsJson}'>${d}</div>`;
+        html += `<div class="heatmap-cell ${cls}" style="--d:${dayOfYear}" data-date="${ds}" data-runtime="${dayRuntime}" data-films='${filmTitlesJson}' data-ratings='${filmRatingsJson}'>${d}</div>`;
       }
     }
     html += '</div>';
@@ -4786,6 +5258,38 @@ function renderSeriesTable() {
 renderSeriesTable();
 
 if (!IS_ALL_MODE) renderTable();
+
+// ====== CHART BUILDS ======
+// Each chart draws itself the first time it scrolls into view, here taken as
+// its top passing 88% of the way down the viewport (see CHART BUILDS in the
+// CSS); charts already in view build at once. Reduced motion, and printing
+// before a chart has been seen, get the finished charts straight away.
+const chartBodies = [...document.querySelectorAll('.chart-body')];
+const finishChartBuilds = () => {
+  chartBodies.forEach(body => body.classList.add('is-built'));
+  if (cumRevealP < 1) {
+    cumRevealP = 1;
+    renderCumulativeChart();
+  }
+};
+if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) {
+  finishChartBuilds();
+} else {
+  const buildObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const body = entry.target;
+      buildObserver.unobserve(body);
+      // .is-building spaces rows and days out for this first build; once it
+      // has played out, toggles get the tighter spacing.
+      body.classList.add('is-built', 'is-building');
+      setTimeout(() => body.classList.remove('is-building'), 1500);
+      if (body.id === 'cumulative-chart') revealCumulativeLine();
+    });
+  }, { rootMargin: '0px 0px -12% 0px' });
+  chartBodies.forEach(body => buildObserver.observe(body));
+}
+window.addEventListener('beforeprint', finishChartBuilds);
 
 // Re-anchor to the URL fragment now that the charts exist. The browser
 // honored #sec-… (or restored a pixel offset) against the placeholder
