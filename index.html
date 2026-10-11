@@ -610,9 +610,13 @@ h1 {
   grid-template-columns: repeat(auto-fill, 180px);
 }
 /* Two full-size months need 416px, wider than most phones, so phones keep two
-   columns and let them shrink rather than stack a single narrow one. */
+   columns rather than stack a single narrow one. The gap between them gives
+   way first, down to 8px; only then do the months themselves shrink. */
 @media (max-width: 415px) {
-  .calendars-row { grid-template-columns: repeat(2, minmax(0, 180px)); }
+  .calendars-row {
+    grid-template-columns: repeat(2, minmax(0, 180px));
+    column-gap: clamp(8px, 100% - 360px, 24px);
+  }
 }
 @media (max-width: 359px) {
   .calendars-row { grid-template-columns: minmax(0, 180px); }
