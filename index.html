@@ -667,9 +667,6 @@ h1 {
   outline: 1px solid transparent;
   outline-offset: -1px;
 }
-/* Day numbers sit slightly back from the tile colour. Opacity rides on a span
-   so the tile background stays solid whichever colour class sets the text. */
-.heatmap-day { opacity: 0.8; }
 .heatmap-cell:hover { outline-color: var(--text); z-index: 2; }
 .heatmap-cell.empty { background: transparent; pointer-events: none; }
 .heatmap-cell.future { background: transparent; outline: 1px solid var(--border); opacity: 0.4; pointer-events: none; }
@@ -786,7 +783,7 @@ h1 {
 .calendar-legend-unrated-swatch {
   width: 48px;
   height: 10px;
-  background: rgb(var(--rating-unrated) / 0.75);
+  background: rgb(var(--rating-unrated) / 0.9);
 }
 .calendar-legend-unrated-label {
   font-family: 'Dashboard Sans', sans-serif;
@@ -4030,14 +4027,14 @@ if (!IS_ALL_MODE) {
       const films = filmsByDate[ds] || [];
       const isFuture = ds > todayStr;
       if (isFuture) {
-        html += `<div class="heatmap-cell future"><span class="heatmap-day">${d}</span></div>`;
+        html += `<div class="heatmap-cell future">${d}</div>`;
       } else {
         if (films.length > 0 && films.every(f => f.rating == null)) hasUnratedCalendarDay = true;
         const cls = films.length >= 5 ? 'watched-5' : films.length === 4 ? 'watched-4' : films.length === 3 ? 'watched-3' : films.length === 2 ? 'watched-2' : films.length === 1 ? 'watched-1' : '';
         const dayRuntime = films.reduce((sum,f) => sum + (f.runtime || 0), 0);
         const filmTitlesJson = escapeHtml(JSON.stringify(films.map(f => splitTitleParts(f.title).primary)));
         const filmRatingsJson = escapeHtml(JSON.stringify(films.map(f => f.rating)));
-        html += `<div class="heatmap-cell ${cls}" data-date="${ds}" data-runtime="${dayRuntime}" data-films='${filmTitlesJson}' data-ratings='${filmRatingsJson}'><span class="heatmap-day">${d}</span></div>`;
+        html += `<div class="heatmap-cell ${cls}" data-date="${ds}" data-runtime="${dayRuntime}" data-films='${filmTitlesJson}' data-ratings='${filmRatingsJson}'>${d}</div>`;
       }
     }
     html += '</div>';
@@ -4093,7 +4090,7 @@ if (!IS_ALL_MODE) {
     for (let i = 0; i <= stopCount; i++) {
       const pct = (i / stopCount) * 100;
       const rating = 1 + (9 * i / stopCount);
-      ratingStops.push(`${rgbaString(avgRatingColor(rating), 0.75)} ${pct}%`);
+      ratingStops.push(`${rgbaString(avgRatingColor(rating), 0.9)} ${pct}%`);
     }
     calendarRatingLegendScale.style.background = `linear-gradient(to right, ${ratingStops.join(',')})`;
   }
@@ -4135,11 +4132,11 @@ if (!IS_ALL_MODE) {
         if (rated.length > 0) {
           const avg = rated.reduce((a,b) => a+b, 0) / rated.length;
           const [r,g,b] = avgRatingColor(avg);
-          cell.style.background = `rgba(${r},${g},${b},0.75)`;
+          cell.style.background = `rgba(${r},${g},${b},0.9)`;
           cell.classList.add('rating-colored');
           if (avg <= 3 || avg >= 8) cell.classList.add('rating-colored-dark');
         } else if (ratings.length > 0) {
-          cell.style.background = `rgba(${unratedColor.join(',')},0.75)`;
+          cell.style.background = `rgba(${unratedColor.join(',')},0.9)`;
           cell.classList.add('rating-colored', 'rating-colored-unrated');
         } else {
           cell.style.background = '';
