@@ -96,6 +96,20 @@
   --rating-unrated: 126 127 113;
   --rating-unrated-color: rgb(var(--rating-unrated));
   --rating-unrated-text: #ECEAE2;
+
+  /* CALENDAR COLORS: the screening calendar's red scale, palest (1) to
+     darkest (7). Number of screenings uses color 1, the midpoint of colors
+     2 and 3, then colors 4-6 for 1 to 5+ films; total runtime uses colors
+     1-7. Space-separated RGB like the rating colors; the JS runtime palette
+     is read from these. */
+  --calendar-1: 247 207 185;
+  --calendar-2: 241 174 149;
+  --calendar-2-3-mid: 237 154 128;
+  --calendar-3: 233 134 107;
+  --calendar-4: 226 96 73;
+  --calendar-5: 216 35 42;
+  --calendar-6: 156 29 35;
+  --calendar-7: 80 11 14;
 }
 
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -669,11 +683,11 @@ h1 {
 .heatmap-cell:hover { outline-color: var(--text); z-index: 2; }
 .heatmap-cell.empty { background: transparent; pointer-events: none; }
 .heatmap-cell.future { background: transparent; outline: 1px solid var(--border); opacity: 0.4; pointer-events: none; }
-.heatmap-cell.watched-1 { background: #f0c4b4; color: var(--text); }
-.heatmap-cell.watched-2 { background: #e68f79; color: var(--text); }
-.heatmap-cell.watched-3 { background: #dc5a3e; color: #fff; }
-.heatmap-cell.watched-4 { background: #d8232a; color: #fff; }
-.heatmap-cell.watched-5 { background: #9c1d23; color: #fff; }
+.heatmap-cell.watched-1 { background: rgb(var(--calendar-1)); color: var(--text); }
+.heatmap-cell.watched-2 { background: rgb(var(--calendar-2-3-mid)); color: var(--text); }
+.heatmap-cell.watched-3 { background: rgb(var(--calendar-4)); color: #fff; }
+.heatmap-cell.watched-4 { background: rgb(var(--calendar-5)); color: #fff; }
+.heatmap-cell.watched-5 { background: rgb(var(--calendar-6)); color: #fff; }
 .heatmap-cell.runtime-colored { color: var(--text); }
 .heatmap-cell.runtime-colored-dark { color: #fff; }
 .heatmap-cell.rating-colored { color: var(--text); }
@@ -720,11 +734,11 @@ h1 {
 .calendar-legend-block {
   flex: 1 1 0;
 }
-.calendar-legend-block:nth-child(1) { background: #f0c4b4; }
-.calendar-legend-block:nth-child(2) { background: #e68f79; }
-.calendar-legend-block:nth-child(3) { background: #dc5a3e; }
-.calendar-legend-block:nth-child(4) { background: #d8232a; }
-.calendar-legend-block:nth-child(5) { background: #9c1d23; }
+.calendar-legend-block:nth-child(1) { background: rgb(var(--calendar-1)); }
+.calendar-legend-block:nth-child(2) { background: rgb(var(--calendar-2-3-mid)); }
+.calendar-legend-block:nth-child(3) { background: rgb(var(--calendar-4)); }
+.calendar-legend-block:nth-child(4) { background: rgb(var(--calendar-5)); }
+.calendar-legend-block:nth-child(5) { background: rgb(var(--calendar-6)); }
 .calendar-legend-runtime-scale {
   opacity: 0;
 }
@@ -756,12 +770,12 @@ h1 {
 .calendar-legend-labels span:first-child { margin-left: -0.04em; }
 .calendar-legend-labels span:last-child { margin-right: -0.04em; }
 .calendar-legend-screenings-labels span:first-child { color: #b98c7f; }
-.calendar-legend-screenings-labels span:last-child { color: #9c1d23; }
+.calendar-legend-screenings-labels span:last-child { color: rgb(var(--calendar-6)); }
 .calendar-legend-runtime-labels {
   opacity: 0;
 }
 .calendar-legend-runtime-labels span:first-child { color: #b98c7f; }
-.calendar-legend-runtime-labels span:last-child { color: #9c1d23; }
+.calendar-legend-runtime-labels span:last-child { color: rgb(var(--calendar-7)); }
 .calendar-legend-rating-labels {
   opacity: 0;
 }
@@ -4043,26 +4057,42 @@ if (!IS_ALL_MODE) {
   heatmapEl.appendChild(calRow);
 
   // ====== CALENDAR TOGGLE ======
-  // Total daily runtime reuses the # of screenings palette, but interpolated
-  // into a continuous spectrum. The domain is fixed so the color-to-runtime
-  // mapping stays consistent across years: 1h or shorter gets the lightest
-  // color, 7h or longer the darkest, and anything outside clamps to the ends.
+  // Total daily runtime uses all seven calendar colors on a fixed domain, so
+  // the color-to-runtime mapping stays consistent across years: 1.5h or
+  // shorter gets color 1, 6h or longer color 7, and the minutes in between
+  // (91 to 359) interpolate continuously across colors 2-6.
   // (Daily totals across all years span ~24 to ~510 minutes.)
-  const runtimePalette = [
-    [240, 196, 180], // #f0c4b4
-    [230, 143, 121], // #e68f79
-    [220, 90, 62],   // #dc5a3e
-    [216, 35, 42],   // #d8232a
-    [156, 29, 35],   // #9c1d23
-  ];
-  const RUNTIME_MIN = 60;
-  const RUNTIME_MAX = 420;
+  const runtimePalette = (() => {
+    const rootStyle = getComputedStyle(document.documentElement);
+    return [1, 2, 3, 4, 5, 6, 7].map(i =>
+      rootStyle.getPropertyValue(`--calendar-${i}`).trim().split(/\s+/).map(Number));
+  })();
+  const runtimeRamp = runtimePalette.slice(1, -1);
+  const RUNTIME_MIN = 90;
+  const RUNTIME_MAX = 360;
+  // The runtimes at which tiles reach colors 2-6, spaced on a log scale
+  // (each about 1.41 times the one before, rounded to 5 minutes). The gaps
+  // widen as runtimes grow, so the color darkens fastest through the shorter
+  // runtimes where most days cluster and flattens out toward 6h. (Half of
+  // all days run between ~100 and ~190 minutes.)
+  const RUNTIME_RAMP_PINS = [RUNTIME_MIN + 1, 130, 180, 255, RUNTIME_MAX - 1];
+  // Fractional index into runtimeRamp, from 0 at color 2 to 4 at color 6,
+  // linear between neighboring pins.
+  function runtimeRampIndex(total) {
+    const pins = RUNTIME_RAMP_PINS;
+    if (total <= pins[0]) return 0;
+    for (let i = 1; i < pins.length; i++) {
+      if (total <= pins[i]) return i - 1 + (total - pins[i - 1]) / (pins[i] - pins[i - 1]);
+    }
+    return pins.length - 1;
+  }
   function runtimeColor(total) {
-    const t = Math.max(0, Math.min(1, (total - RUNTIME_MIN) / (RUNTIME_MAX - RUNTIME_MIN)));
-    const seg = t * (runtimePalette.length - 1);
-    const lo = Math.floor(seg), hi = Math.min(lo + 1, runtimePalette.length - 1);
+    if (total <= RUNTIME_MIN) return runtimePalette[0];
+    if (total >= RUNTIME_MAX) return runtimePalette[runtimePalette.length - 1];
+    const seg = runtimeRampIndex(total);
+    const lo = Math.floor(seg), hi = Math.min(lo + 1, runtimeRamp.length - 1);
     const f = seg - lo;
-    return runtimePalette[lo].map((v, i) => Math.round(lerp(v, runtimePalette[hi][i], f)));
+    return runtimeRamp[lo].map((v, i) => Math.round(lerp(v, runtimeRamp[hi][i], f)));
   }
 
   const calendarHeader = document.querySelector('.calendar-header');
@@ -4070,18 +4100,17 @@ if (!IS_ALL_MODE) {
   const rgbaString = (rgb, alpha) => `rgba(${rgb.join(',')},${alpha})`;
   const calendarRuntimeLegendScale = document.querySelector('.calendar-legend-runtime-scale');
   if (calendarRuntimeLegendScale) {
-    const runtimeStops = [];
-    const stopCount = 36;
-    for (let i = 0; i <= stopCount; i++) {
-      const pct = (i / stopCount) * 100;
-      const total = RUNTIME_MIN + (RUNTIME_MAX - RUNTIME_MIN) * i / stopCount;
-      runtimeStops.push(`rgb(${runtimeColor(total).join(',')}) ${pct}%`);
-    }
+    // The legend blends all seven colors as one continuum, with the steps
+    // from color 1 to 2 and from 6 to 7 at half the width of the others. It
+    // shows the color order, not a runtime axis; the pins above set where
+    // tiles reach each color.
+    const runtimeLegendPositions = [0, 10, 30, 50, 70, 90, 100];
+    const runtimeStops = runtimePalette.map((rgb, i) => `rgb(${rgb.join(',')}) ${runtimeLegendPositions[i]}%`);
     calendarRuntimeLegendScale.style.background = `linear-gradient(to right, ${runtimeStops.join(',')})`;
     const minLabel = document.querySelector('.calendar-legend-runtime-min');
     const maxLabel = document.querySelector('.calendar-legend-runtime-max');
-    if (minLabel) minLabel.textContent = '1h or shorter';
-    if (maxLabel) maxLabel.textContent = '7h or longer';
+    if (minLabel) minLabel.textContent = '1.5h or shorter';
+    if (maxLabel) maxLabel.textContent = '6h or longer';
   }
   if (calendarRatingLegendScale) {
     const ratingStops = [];
@@ -4117,8 +4146,8 @@ if (!IS_ALL_MODE) {
           const [r,g,b] = runtimeColor(total);
           cell.style.background = `rgb(${r},${g},${b})`;
           cell.classList.add('runtime-colored');
-          const t = (total - RUNTIME_MIN) / (RUNTIME_MAX - RUNTIME_MIN);
-          cell.classList.toggle('runtime-colored-dark', t >= 0.5);
+          // White day numbers from color 4 on (as for 3+ screenings).
+          cell.classList.toggle('runtime-colored-dark', runtimeRampIndex(total) >= 2);
         } else {
           cell.style.background = '';
           cell.classList.remove('runtime-colored', 'runtime-colored-dark');
