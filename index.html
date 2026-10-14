@@ -30,6 +30,12 @@
     month: 'numeric'
   }).format(new Date());
   document.documentElement.classList.toggle('is-pride-month', Number(nyMonth) === 6);
+  // Home Screen web apps (iOS 26+) blur a strip under the status bar that
+  // browser tabs don't. iOS has reported standalone, fullscreen and the legacy
+  // navigator.standalone flag across versions, so anything but a browser tab
+  // counts.
+  document.documentElement.classList.toggle('is-web-app',
+    navigator.standalone === true || matchMedia('not all and (display-mode: browser)').matches);
 })();
 </script>
 <style>
@@ -1543,8 +1549,9 @@ footer img.footer-favicon {
    tier is solid; the liquid-glass block below upgrades it wherever
    backdrop-filter works. */
 .chart-nav {
+  --chart-nav-drop: 0px;
   position: fixed;
-  top: max(10px, env(safe-area-inset-top));
+  top: calc(max(10px, env(safe-area-inset-top)) + var(--chart-nav-drop));
   left: 0;
   right: 0;
   z-index: 500;
@@ -1564,7 +1571,7 @@ footer img.footer-favicon {
   box-shadow: 0 2px 6px rgba(0,0,0,0.08);
   opacity: 0;
   visibility: hidden;
-  transform: translate3d(0, calc(-100% - 14px), 0);
+  transform: translate3d(0, calc(-100% - 14px - var(--chart-nav-drop)), 0);
   will-change: opacity, transform;
   /* visibility flips only after the slide-out finishes, and makes the hidden
      pill genuinely free: Chromium keeps paying for a fixed backdrop-filter
@@ -1577,6 +1584,10 @@ footer img.footer-favicon {
   transform: translate3d(0, 0, 0);
   transition-delay: 0s;
 }
+/* Home Screen web apps blur the top of the viewport under the status bar,
+   which softened the pill's upper edge; drop it clear of the blur there.
+   Browser tabs keep the tighter fit. */
+.is-web-app .chart-nav { --chart-nav-drop: 14px; }
 .chart-nav-scroll {
   display: flex;
   align-items: center;
@@ -1633,6 +1644,7 @@ footer img.footer-favicon {
 }
 /* Anchor jumps land clear of the floating nav */
 .chart-card, .section { scroll-margin-top: 78px; }
+.is-web-app :is(.chart-card, .section) { scroll-margin-top: 92px; }
 @media (prefers-reduced-motion: reduce) {
   .chart-nav-glass, .chart-nav-link { transition: none; }
 }
