@@ -635,6 +635,11 @@ h1 {
 @media (max-width: 359px) {
   .calendars-row { grid-template-columns: minmax(0, 180px); }
 }
+/* Three full-size months need 620px; below that the calendar is in its phone
+   layout, two (or one) to a row, and leaves out months that haven't started. */
+@media (max-width: 619px) {
+  .heatmap-month.future { display: none; }
+}
 .heatmap-month { min-width: 0; }
 .heatmap-month-label {
   font-family: 'Dashboard Sans', sans-serif;
@@ -683,6 +688,10 @@ h1 {
 .heatmap-cell:hover { outline-color: var(--text); z-index: 2; }
 .heatmap-cell.empty { background: transparent; pointer-events: none; }
 .heatmap-cell.future { background: transparent; outline: 1px solid var(--border); opacity: 0.4; pointer-events: none; }
+/* A month that hasn't started yet fades its name and weekday letters to match
+   its future dates. */
+.heatmap-month.future .heatmap-month-label,
+.heatmap-month.future .cal-dayname { color: var(--text-dimmer); opacity: 0.4; }
 .heatmap-cell.watched-1 { background: rgb(var(--calendar-1)); color: var(--text); }
 .heatmap-cell.watched-2 { background: rgb(var(--calendar-2-3-mid)); color: var(--text); }
 .heatmap-cell.watched-3 { background: rgb(var(--calendar-4)); color: #fff; }
@@ -4010,13 +4019,11 @@ if (!IS_ALL_MODE) {
     if (!filmsByDate[f.date]) filmsByDate[f.date] = [];
     filmsByDate[f.date].push(f);
   });
-  // Calendar caps at the actual current date during the dashboard year, then at
-  // Dec. 31 once the year has ended.
-  const actualCalendarEnd = new Date(todayStr+'T12:00:00');
-  const ed = actualCalendarEnd > yearEndForStats ? yearEndForStats : actualCalendarEnd;
+  // Calendar always spans the whole dashboard year, Jan. through Dec.; days
+  // after today in New York render as faded future tiles.
   const months = [];
   let cursor = new Date(parseInt(dashYear), 0, 1);
-  while (cursor <= ed) {
+  while (cursor <= yearEndForStats) {
     const y = cursor.getFullYear();
     const m = cursor.getMonth();
     const daysInMonth = new Date(y, m+1, 0).getDate();
@@ -4031,6 +4038,7 @@ if (!IS_ALL_MODE) {
   months.forEach(m => {
     const div = document.createElement('div');
     div.className = 'heatmap-month';
+    if (`${m.year}-${String(m.month+1).padStart(2,'0')}-01` > todayStr) div.classList.add('future');
     let html = `<div class="heatmap-month-label">${m.name}</div><div class="cal-grid">`;
     dayNames.forEach(dn => { html += `<div class="cal-dayname">${dn}</div>`; });
     const startDay = new Date(m.year, m.month, 1).getDay();
