@@ -31,7 +31,8 @@
   }).format(new Date());
   document.documentElement.classList.toggle('is-pride-month', Number(nyMonth) === 6);
   // Home Screen web apps (iOS 26+) blur a strip under the status bar that
-  // browser tabs don't. iOS has reported standalone, fullscreen and the legacy
+  // browser tabs don't; this class swaps in a solid top edge there (see
+  // .web-app-top-edge). iOS has reported standalone, fullscreen and the legacy
   // navigator.standalone flag across versions, so anything but a browser tab
   // counts.
   document.documentElement.classList.toggle('is-web-app',
@@ -1549,9 +1550,8 @@ footer img.footer-favicon {
    tier is solid; the liquid-glass block below upgrades it wherever
    backdrop-filter works. */
 .chart-nav {
-  --chart-nav-drop: 0px;
   position: fixed;
-  top: calc(max(10px, env(safe-area-inset-top)) + var(--chart-nav-drop));
+  top: max(10px, env(safe-area-inset-top));
   left: 0;
   right: 0;
   z-index: 500;
@@ -1571,9 +1571,12 @@ footer img.footer-favicon {
   box-shadow: 0 2px 6px rgba(0,0,0,0.08);
   opacity: 0;
   visibility: hidden;
-  transform: translate3d(0, calc(-100% - 14px - var(--chart-nav-drop)), 0);
+  /* Drops in a few px rather than sliding from off-screen: Safari 26+ probes
+     4px below the top edge for a fixed bar to colour the status bar area, and
+     a pill passing through that line could latch a solid band there. */
+  transform: translate3d(0, -4px, 0);
   will-change: opacity, transform;
-  /* visibility flips only after the slide-out finishes, and makes the hidden
+  /* visibility flips only after the fade-out finishes, and makes the hidden
      pill genuinely free: Chromium keeps paying for a fixed backdrop-filter
      even at opacity 0. */
   transition: opacity 0.27s ease, transform 0.33s cubic-bezier(0.22,1,0.36,1), visibility 0s linear 0.33s;
@@ -1584,10 +1587,25 @@ footer img.footer-favicon {
   transform: translate3d(0, 0, 0);
   transition-delay: 0s;
 }
-/* Home Screen web apps blur the top of the viewport under the status bar,
-   which softened the pill's upper edge; drop it clear of the blur there.
-   Browser tabs keep the tighter fit. */
-.is-web-app .chart-nav { --chart-nav-drop: 14px; }
+/* Home Screen web apps blur the top of the page under the status bar, which
+   softened the pill. A full-width opaque fixed strip at the top edge makes
+   Safari treat it as a top bar instead: solid page colour behind the status
+   bar, crisp edge, no blur. It is a real element (pseudo-elements have been
+   reported to slip past Safari's probe) and taller than 10px, below which
+   WebKit ignores a box's own background colour. Browser tabs keep the
+   see-through status bar. */
+.web-app-top-edge {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 12px;
+  z-index: 499;
+  background: var(--bg);
+  pointer-events: none;
+}
+.is-web-app .web-app-top-edge { display: block; }
 .chart-nav-scroll {
   display: flex;
   align-items: center;
@@ -1644,7 +1662,6 @@ footer img.footer-favicon {
 }
 /* Anchor jumps land clear of the floating nav */
 .chart-card, .section { scroll-margin-top: 78px; }
-.is-web-app :is(.chart-card, .section) { scroll-margin-top: 92px; }
 @media (prefers-reduced-motion: reduce) {
   .chart-nav-glass, .chart-nav-link { transition: none; }
 }
@@ -1859,6 +1876,7 @@ footer img.footer-favicon {
   </nav>
 </div>
 
+<div class="web-app-top-edge" aria-hidden="true"></div>
 <nav class="chart-nav" id="chart-nav" aria-label="Jump to a chart" aria-hidden="true" inert>
   <div class="chart-nav-glass" id="chart-nav-glass">
     <div class="chart-nav-scroll" id="chart-nav-scroll">
