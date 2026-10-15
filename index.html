@@ -1570,19 +1570,19 @@ footer img.footer-favicon {
   border: 1px solid var(--border-strong);
   box-shadow: 0 2px 6px rgba(0,0,0,0.08);
 }
-/* Red J roundel to the left of the pill, built to match it: the same height
-   (link line box + link and scroller padding, inside the same border on each
-   tier) and the same frost below, tinted favicon red. The favicon's J, cut
-   out on transparency, stands about half the disc's height. Clicking it
-   returns to the top of the page (JS below). */
+/* Red J roundel to the left of the pill: 90% of the pill's height (link line
+   box + link and scroller padding, inside the same border on each tier),
+   centred on it, with the same frost below, tinted favicon red. The
+   favicon's J, cut out on transparency, stands about half the disc's height.
+   Clicking it returns to the top of the page (JS below). */
 .chart-nav-logo {
   pointer-events: auto;
   flex-shrink: 0;
   align-self: center;
   position: relative;
   box-sizing: content-box;
-  width: calc(1.2rem + 24px);
-  height: calc(1.2rem + 24px);
+  width: calc(0.9 * (1.2rem + 24px));
+  height: calc(0.9 * (1.2rem + 24px));
   margin-right: 8px;
   display: flex;
   align-items: center;
@@ -1598,7 +1598,7 @@ footer img.footer-favicon {
 }
 .chart-nav-logo img {
   display: block;
-  height: 1.4rem;
+  height: 1.26rem;
   width: auto;
   user-select: none;
   -webkit-user-select: none;
@@ -1683,6 +1683,10 @@ footer img.footer-favicon {
   color: var(--text);
   text-decoration: none;
   white-space: nowrap;
+  /* Labels and the lit chip sit at 90%. Fading the whole element takes chip
+     and label down as one, so the chip never shows through its own
+     lettering. */
+  opacity: 0.9;
   transition: color 0.2s, background-color 0.2s;
 }
 @media (hover: hover) and (pointer: fine) {
@@ -1759,7 +1763,7 @@ footer img.footer-favicon {
   }
   /* The roundel shares the pill's frost and drops the same border, but white
      glare reads as a sticker on red, so it is lit like coloured glass: a
-     deep red tint, 30% see-through so the page and whatever scrolls beneath
+     deep red tint, 20% see-through so the page and whatever scrolls beneath
      show through (a touch lighter than the favicon red over the bare page),
      a faint sheen falling from the top, a thin pale-red lip catching the
      light and a darker red underside for thickness. */
@@ -1767,7 +1771,7 @@ footer img.footer-favicon {
     border: none;
     background:
       linear-gradient(180deg, rgb(255 255 255 / 0.12), rgb(255 255 255 / 0) 55%),
-      rgb(206 0 8 / 0.7);
+      rgb(206 0 8 / 0.8);
     box-shadow:
       0 8px 24px rgb(var(--lg-shadow) / 0.16),
       inset 0 1px 1px rgb(255 205 200 / 0.4),
@@ -1850,6 +1854,7 @@ footer img.footer-favicon {
     background: rgb(255 254 250 / 0.92);
   }
   .chart-nav-logo { background: var(--red); }
+  .chart-nav-link { opacity: 1; }
 }
 @media (prefers-reduced-transparency: reduce) {
   .tooltip, .seg-tooltip, .venue-tip, .col-filter-menu, .year-menu-panel, .chart-nav-glass,
@@ -1862,6 +1867,7 @@ footer img.footer-favicon {
   .year-menu-panel { background: rgba(235, 233, 220, 0.95); }
   .chart-nav-glass { background: rgba(235, 233, 220, 0.97); border: 1px solid var(--border-strong); }
   .chart-nav-logo { background: var(--red); border: 1px solid var(--red); }
+  .chart-nav-link { opacity: 1; }
   th, .filter-row-tr td { background: var(--bg); }
   .film-table-head { background: var(--bg); }
   .tooltip::before, .tooltip::after,
