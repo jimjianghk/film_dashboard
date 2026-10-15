@@ -26,7 +26,7 @@ Six summary cards cover total screenings, days at the cinema, average rating, to
 
 ### Chart navigation
 
-A floating liquid-glass pill, fixed top-center of the viewport, holds one short tab per chart section. It slides in once the charts reach the upper third of the viewport, i.e. once the title and stats row have scrolled past, and slides away again above that point. A scroll-spy lights the tab for the chart currently in view, and clicking a tab scrolls to its chart and records the section in the URL fragment, so refreshing or sharing the link returns to the same chart.
+A floating liquid-glass pill, fixed top-center of the viewport with a matching red glass "J" badge to its left, holds one short tab per chart section. Pill and badge slide in once the charts reach the upper third of the viewport, i.e. once the title and stats row have scrolled past, and slide away again above that point. A scroll-spy lights the tab for the chart currently in view, and clicking a tab scrolls to its chart and records the section in the URL fragment, so refreshing or sharing the link returns to the same chart. Clicking the badge returns to the top of the page.
 
 ### Cumulative screenings
 
