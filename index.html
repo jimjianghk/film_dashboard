@@ -2196,7 +2196,7 @@ if (IS_ALL_MODE) {
   document.querySelector('#sec-series .chart-num').textContent = '7';
 }
 
-const DASHBOARD_START_YEAR = 2021;
+const DASHBOARD_START_YEAR = 2020;
 let DATA_FILES_BY_YEAR = {};
 let DEFAULT_DASHBOARD_YEAR = null;
 const getCurrentYearInNewYork = () => Number(new Intl.DateTimeFormat('en-US', {
@@ -2657,9 +2657,10 @@ const previousYear = previousYearData?.films?.[0]?.date.slice(0,4) || previousDa
 // membership payment carries its payment date and counts in full once the
 // comparison date reaches that date, and not at all before. The undated
 // remainder (the AMC subscription, billed monthly across the year) prorates
-// by elapsed days instead, counted from the subscription's first day when
-// the year file names one (2021's started March 1, after the theater
-// closures, so its ten monthly fees spread over March through December).
+// by elapsed days instead, over just the subscription's months when the
+// year file bounds them: 2020's three monthly fees cover January through
+// March, until the theater closures, and 2021's ten cover March through
+// December.
 const previousYearMembershipFees = previousYearData?.membershipFees || 0;
 const previousMembershipPayments = previousYearData?.membershipPayments || [];
 const previousUndatedFees = previousYearMembershipFees - previousMembershipPayments.reduce((s, p) => s + p.amount, 0);
@@ -2670,9 +2671,12 @@ const previousYearDays = previousYear ? countDaysThroughYearPoint(previousYear, 
 const previousDaysBeforeSubscription = previousYear && previousYearData?.subscriptionStart
   ? countDaysThroughYearPoint(previousYear, previousYearData.subscriptionStart) - 1
   : 0;
-const previousSubscriptionDays = previousYearDays - previousDaysBeforeSubscription;
+const previousDaysThroughSubscription = previousYear && previousYearData?.subscriptionEnd
+  ? countDaysThroughYearPoint(previousYear, previousYearData.subscriptionEnd)
+  : previousYearDays;
+const previousSubscriptionDays = previousDaysThroughSubscription - previousDaysBeforeSubscription;
 const previousMembershipFeesAtCutoff = previousPaymentsByCutoff + (previousSubscriptionDays > 0
-  ? previousUndatedFees * (Math.max(0, countDaysThroughYearPoint(previousYear, endDate) - previousDaysBeforeSubscription) / previousSubscriptionDays)
+  ? previousUndatedFees * (Math.max(0, Math.min(countDaysThroughYearPoint(previousYear, endDate), previousDaysThroughSubscription) - previousDaysBeforeSubscription) / previousSubscriptionDays)
   : 0);
 const previousStats = dashYear !== earliestDashboardYear && previousFilmsAtCutoff.length
   ? getHeroStats(previousFilmsAtCutoff, previousMembershipFeesAtCutoff)
@@ -3411,9 +3415,8 @@ function animateCumForecast() {
 // which survive only as daily cumulative counts (data/history-counts.json)
 // expanded at load into bare {date} stubs that flow through the same
 // fraction, total, and month-share sums as the archives; 2020 and 2021
-// sit out as covid-distorted (2021 has an archive view but stays out of
-// the pool), and a missing history file degrades to the archive years
-// alone. Past-year data loads on first use; the already-fetched previous
+// sit out as covid-distorted (both have archive views but stay out of the
+// pool), and a missing history file degrades to the archive years alone. Past-year data loads on first use; the already-fetched previous
 // year is reused rather than fetched again.
 const cumForecastYears = Object.keys(DATA_FILES_BY_YEAR || {})
   .filter(y => y < dashYear && !CUM_COVID_YEARS.includes(y))
@@ -3730,7 +3733,7 @@ const venueFullNames = {
   LOOK:'Look Dine-In Cinemas W57th', AMC84:'AMC 84th Street', AMC11:'AMC Village',
   WHITBY:'Whitby Hotel', BEACON:'Beacon Theatre',
   ALAMOM:'Alamo Drafthouse Lower Manhattan', SYMPH:'Symphony Space',
-  LENFE:'Lenfest Center for the Arts', TC:'Teachers College',
+  LENFE:'Lenfest Center for the Arts', TC:'Teachers College', LAND:'Landmark at 57 West',
   SKIR:'NYU Skirball Center', OTHER:'Non-NYC or non-standard venues'
 };
 const venueCol = arr => arr.map(([v,c]) => {

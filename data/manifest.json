@@ -1,6 +1,7 @@
 {
   "defaultYear": "2026",
   "years": {
+    "2020": "data/data-2020.json",
     "2021": "data/data-2021.json",
     "2022": "data/data-2022.json",
     "2023": "data/data-2023.json",
