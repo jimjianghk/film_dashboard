@@ -2990,18 +2990,23 @@ function computeCumForecast(pastFilmsLists) {
 // average drawn on top. The average includes the current year through its
 // data day; past that day it continues on the previous years alone, with a
 // one-day break where the basis changes. Each year's own curve runs to its
-// end.
+// end. The covid-distorted years stay off this chart and out of its
+// average, as they stay out of the forecast pool, though the rest of the
+// all-years page still counts their screenings.
 const CUM_REF_YEAR = '2023';
+const CUM_COVID_YEARS = ['2020', '2021'];
 function buildAllYearsCum() {
   const refStart = new Date(CUM_REF_YEAR + '-01-01T12:00:00');
   const refDayIdx = ds => Math.round((new Date(CUM_REF_YEAR + '-' + normalizeYearPoint(ds) + 'T12:00:00') - refStart) / dayMsForStats);
   const dataDayIdx = refDayIdx(endDate);
-  const years = allYearsFilmsByYear.map(([year, films]) => {
-    const cum = new Array(365).fill(0);
-    films.forEach(f => { cum[refDayIdx(f.date)]++; });
-    for (let i = 1; i < 365; i++) cum[i] += cum[i - 1];
-    return { year, cum, endIdx: year === dashYear ? dataDayIdx : 364 };
-  });
+  const years = allYearsFilmsByYear
+    .filter(([year]) => !CUM_COVID_YEARS.includes(year))
+    .map(([year, films]) => {
+      const cum = new Array(365).fill(0);
+      films.forEach(f => { cum[refDayIdx(f.date)]++; });
+      for (let i = 1; i < 365; i++) cum[i] += cum[i - 1];
+      return { year, cum, endIdx: year === dashYear ? dataDayIdx : 364 };
+    });
   const avg = [];
   for (let i = 0; i <= dataDayIdx; i++) {
     avg[i] = years.reduce((sum, y) => sum + y.cum[i], 0) / years.length;
@@ -3410,9 +3415,8 @@ function animateCumForecast() {
 // the pool), and a missing history file degrades to the archive years
 // alone. Past-year data loads on first use; the already-fetched previous
 // year is reused rather than fetched again.
-const CUM_FORECAST_COVID_YEARS = ['2020', '2021'];
 const cumForecastYears = Object.keys(DATA_FILES_BY_YEAR || {})
-  .filter(y => y < dashYear && !CUM_FORECAST_COVID_YEARS.includes(y))
+  .filter(y => y < dashYear && !CUM_COVID_YEARS.includes(y))
   .sort();
 const cumForecastSeasonOpen = endDate >= dashYear + '-03-01';
 if (!IS_ALL_MODE && isCurrentDashboardYear && cumForecastSeasonOpen && cumForecastYears.length && FILMS.length) {
