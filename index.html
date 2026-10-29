@@ -2374,12 +2374,12 @@ const setYearMenuOpen = open => {
     else link.setAttribute('tabindex', '-1');
   });
   if (open) {
-    // Opening scrolls the highlighted year clear of the bottom fade (three
-    // quarters of a row, per the CSS), so it never sits faded; the newer
-    // years stay on top whenever they leave it room.
+    // Opening centres the highlighted year as far as the list's ends allow,
+    // which keeps it and its neighbours clear of both fades; an end the
+    // scroll reaches shows no fade at all.
     const current = yearMenuList.querySelector('a[aria-current="page"]');
     yearMenuList.scrollTop = current
-      ? current.offsetTop + 1.75 * current.offsetHeight - yearMenuList.clientHeight
+      ? current.offsetTop + (current.offsetHeight - yearMenuList.clientHeight) / 2
       : 0;
     updateYearMenuFades();
     yearMenuPanel.classList.remove('open', 'closing');
