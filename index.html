@@ -3094,7 +3094,7 @@ const cumClosureSpan = (() => {
 })();
 // The closure label's wrappings, one to three lines, tried widest first, and
 // a canvas to measure them in the label's face.
-const CLOSURE_LABEL_WRAPS = [['Covid cinema closure'], ['Covid cinema', 'closure'], ['Covid', 'cinema', 'closure']];
+const CLOSURE_LABEL_WRAPS = [['Covid-19 cinema closure'], ['Covid-19 cinema', 'closure'], ['Covid-19', 'cinema', 'closure']];
 let closureLabelCtx = null;
 const measureClosureLabel = (text, fontPx) => {
   if (!closureLabelCtx) closureLabelCtx = document.createElement('canvas').getContext('2d');
@@ -3328,7 +3328,7 @@ function renderCumulativeChart(anim) {
 
   // The covid closure band takes the forecast band's grey and gridline
   // repaint (and joins the hover halo's backdrop). As with the forecast
-  // label, its "Covid cinema closure" label sits in the band when it fits
+  // label, its "Covid-19 cinema closure" label sits in the band when it fits
   // there with 8px to spare each side, centred on the plot's vertical middle,
   // and otherwise goes beside the band, here on the roomier side, at the
   // forecast label's height between the top two gridlines. In either spot it
