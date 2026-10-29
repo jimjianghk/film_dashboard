@@ -1491,7 +1491,7 @@ footer img.footer-favicon {
   right: -12px;
   z-index: 1;
   width: max-content;
-  padding: 4px 10px 6px;
+  padding: 4px 0 6px;
   background: rgba(235, 233, 220, 0.9);
   border: none;
   opacity: 0;
@@ -1520,6 +1520,35 @@ footer img.footer-favicon {
   pointer-events: none;
   transform: translate3d(0, 0, 0);
   transition: opacity 0.27s ease;
+}
+/* Past four and three-quarter rows of links (3.2rem at line-height 1.18) the
+   list scrolls inside the panel, so the glass and its rim stay put. Whichever
+   end has more years fades out over three quarters of a row, just the part
+   of the cut-off year still showing, so it reads as more to come. */
+.year-menu-list {
+  --year-row: calc(3.2rem * 1.18);
+  --year-fade: calc(var(--year-row) * 0.75);
+  position: relative;
+  max-height: calc(var(--year-row) * 4.75);
+  padding: 0 10px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.year-menu-list::-webkit-scrollbar {
+  display: none;
+}
+.year-menu-list.more-below {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - var(--year-fade)), transparent);
+          mask-image: linear-gradient(to bottom, #000 calc(100% - var(--year-fade)), transparent);
+}
+.year-menu-list.more-above {
+  -webkit-mask-image: linear-gradient(to top, #000 calc(100% - var(--year-fade)), transparent);
+          mask-image: linear-gradient(to top, #000 calc(100% - var(--year-fade)), transparent);
+}
+.year-menu-list.more-above.more-below {
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 var(--year-fade), #000 calc(100% - var(--year-fade)), transparent);
+          mask-image: linear-gradient(to bottom, transparent, #000 var(--year-fade), #000 calc(100% - var(--year-fade)), transparent);
 }
 .year-menu-panel a {
   position: relative;
@@ -1947,6 +1976,7 @@ footer img.footer-favicon {
     <span>year</span>
   </button>
   <nav class="year-menu-panel" id="year-menu-panel" aria-label="Cinema log archive" aria-hidden="true" inert>
+    <div class="year-menu-list" id="year-menu-list"></div>
   </nav>
 </div>
 
@@ -2257,6 +2287,13 @@ let earliestDashboardYear = null;
 let previousDashboardYear = null;
 const yearMenuButton = document.getElementById('year-menu-button');
 const yearMenuPanel = document.getElementById('year-menu-panel');
+const yearMenuList = document.getElementById('year-menu-list');
+const updateYearMenuFades = () => {
+  const { scrollTop, scrollHeight, clientHeight } = yearMenuList;
+  yearMenuList.classList.toggle('more-above', scrollTop > 1);
+  yearMenuList.classList.toggle('more-below', scrollTop + clientHeight < scrollHeight - 1);
+};
+yearMenuList.addEventListener('scroll', updateYearMenuFades, { passive: true });
 const applyDashboardManifest = manifest => {
   DATA_FILES_BY_YEAR = manifest.years;
   DEFAULT_DASHBOARD_YEAR = manifest.defaultYear;
@@ -2265,11 +2302,12 @@ const applyDashboardManifest = manifest => {
   dashboardYears = Object.keys(DATA_FILES_BY_YEAR).sort((a, b) => Number(a) - Number(b));
   earliestDashboardYear = dashboardYears[0];
   previousDashboardYear = dashboardYears[dashboardYears.indexOf(requestedDashboardYear) - 1];
-  yearMenuPanel.innerHTML = [...dashboardYears].reverse()
+  yearMenuList.innerHTML = [...dashboardYears].reverse()
     .map(year => `<a href="${yearMenuUrlForYear(year)}" data-year="${year}">${year}</a>`)
     .join('');
   setDashboardYearShell(requestedDashboardYear);
   setCurrentYearMenuItem(requestedDashboardYear);
+  updateYearMenuFades();
 };
 const getScriptDashboardManifest = () => {
   try {
@@ -2330,6 +2368,14 @@ const setYearMenuOpen = open => {
     else link.setAttribute('tabindex', '-1');
   });
   if (open) {
+    // Opening scrolls the highlighted year clear of the bottom fade (three
+    // quarters of a row, per the CSS), so it never sits faded; the newer
+    // years stay on top whenever they leave it room.
+    const current = yearMenuList.querySelector('a[aria-current="page"]');
+    yearMenuList.scrollTop = current
+      ? current.offsetTop + 1.75 * current.offsetHeight - yearMenuList.clientHeight
+      : 0;
+    updateYearMenuFades();
     yearMenuPanel.classList.remove('open', 'closing');
     yearMenuPanel.classList.add('pre-open');
     yearMenuPanel.offsetHeight;

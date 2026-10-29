@@ -10,7 +10,7 @@ The dashboard is driven by the film log and membership fees exported from the so
 
 ### Archive views
 
-Past years are data archives, not design archives. A year menu in the top-right corner links between every year listed in the data manifest. The dashboard year is inferred from the loaded film data, so archive views keep current-year behavior while capping time-based chart, calendar, and stat views at December 31 of the archived year.
+Past years are data archives, not design archives. A year menu in the top-right corner links between every year listed in the data manifest; when the years outgrow the menu, the list scrolls, and a fade at its cut-off edge signals more years beyond. The dashboard year is inferred from the loaded film data, so archive views keep current-year behavior while capping time-based chart, calendar, and stat views at December 31 of the archived year.
 
 ### Masthead
 
