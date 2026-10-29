@@ -695,6 +695,12 @@ h1 {
 .heatmap-cell:hover { outline-color: var(--text); z-index: 2; }
 .heatmap-cell.empty { background: transparent; pointer-events: none; }
 .heatmap-cell.future { background: transparent; outline: 1px solid var(--border); opacity: 0.4; pointer-events: none; }
+/* Days the cinemas sat closed for covid take a faint hatch, in the format
+   chart's 3D stripe rhythm, over the cumulative chart's closure grey, so they
+   read apart from both no-screening and future days. */
+.heatmap-cell.covid-closed {
+  background: repeating-linear-gradient(-45deg, transparent 0 2px, rgba(0,0,0,0.07) 2px 4px), rgb(210,209,198);
+}
 /* A month that hasn't started yet fades its name and weekday letters to match
    its future dates. */
 .heatmap-month.future .heatmap-month-label,
@@ -3069,6 +3075,32 @@ function buildAllYearsCum() {
   return { years, avg, pastAvg, hoverAvg, dataDayIdx };
 }
 const allYearsCum = IS_ALL_MODE ? buildAllYearsCum() : null;
+
+// New York's cinemas sat closed for covid from March 17, 2020 through March
+// 4, 2021: the 2020 and 2021 cumulative charts shade those days and their
+// calendars hatch them. On the step line a day's rise runs from the previous
+// day's x to its own, so the span opens on the eve of its first day, as the
+// forecast band opens on the data day.
+const COVID_CLOSURE = { first: '2020-03-17', last: '2021-03-04' };
+const cumClosureSpan = (() => {
+  if (IS_ALL_MODE) return null;
+  const yearFirst = `${dashYear}-01-01`;
+  const yearLast = `${dashYear}-12-31`;
+  const first = COVID_CLOSURE.first > yearFirst ? COVID_CLOSURE.first : yearFirst;
+  const last = COVID_CLOSURE.last < yearLast ? COVID_CLOSURE.last : yearLast;
+  if (first > last) return null;
+  const dayIdx = ds => Math.round((new Date(ds + 'T12:00:00') - new Date(yearFirst + 'T12:00:00')) / dayMsForStats);
+  return { startIdx: Math.max(0, dayIdx(first) - 1), endIdx: dayIdx(last) };
+})();
+// The closure label's wrappings, one to three lines, tried widest first, and
+// a canvas to measure them in the label's face.
+const CLOSURE_LABEL_WRAPS = [['Covid cinema closure'], ['Covid cinema', 'closure'], ['Covid', 'cinema', 'closure']];
+let closureLabelCtx = null;
+const measureClosureLabel = (text, fontPx) => {
+  if (!closureLabelCtx) closureLabelCtx = document.createElement('canvas').getContext('2d');
+  closureLabelCtx.font = `400 ${fontPx}px 'Dashboard Sans', sans-serif`;
+  return closureLabelCtx.measureText(text).width;
+};
 // Step points from a per-day cumulative array, matching the single-year
 // build: the line starts at the day before the first screening, rises over
 // one day at each jump, and runs flat to endIdx. A nonzero startIdx anchors
@@ -3241,19 +3273,20 @@ function renderCumulativeChart(anim) {
   // they are re-drawn across it as-is; the salmon area reads
   // rgb(216,172,149) over the band and tints the gridlines it crosses
   // rgb(203,163,141), so those segments are re-drawn clipped to the fan.
+  const gridAcross = (x1, x2, axis, stroke) => {
+    let lines = '';
+    for (let v = axis.step; v <= axis.max; v += axis.step) {
+      const gy = Math.max(MT, yScale(v));
+      lines += `<line x1="${x1.toFixed(1)}" x2="${x2.toFixed(1)}" y1="${gy}" y2="${gy}" stroke="${stroke}" stroke-width="1.5"/>`;
+    }
+    return lines;
+  };
   let forecastLayer = '';
   let ringBackdropLayers = '';
   if (fcst) {
     const bandX = xScale(fcst.startIdx);
     const bandW = xScale(endIdx) - bandX;
-    const bandGrid = stroke => {
-      let lines = '';
-      for (let v = onAxis.step; v <= onAxis.max; v += onAxis.step) {
-        const gy = Math.max(MT, yScale(v));
-        lines += `<line x1="${bandX.toFixed(1)}" x2="${(bandX + bandW).toFixed(1)}" y1="${gy}" y2="${gy}" stroke="${stroke}" stroke-width="1.5"/>`;
-      }
-      return lines;
-    };
+    const bandGrid = stroke => gridAcross(bandX, bandX + bandW, onAxis, stroke);
     const fcstPt = (v, k) => `${xScale(fcst.startIdx + k).toFixed(1)},${yScale(v).toFixed(1)}`;
     const fanD = `M${fcst.hi.map(fcstPt).join(' L')} L${fcst.lo.map(fcstPt).reverse().join(' L')} Z`;
     const centralD = fcst.central.map((v, k) => `${k === 0 ? 'M' : 'L'}${fcstPt(v, k)}`).join(' ');
@@ -3291,6 +3324,68 @@ function renderCumulativeChart(anim) {
       runningCum += (dateCounts[ds] || 0);
       cumByDay[i] = runningCum;
     }
+  }
+
+  // The covid closure band takes the forecast band's grey and gridline
+  // repaint (and joins the hover halo's backdrop). As with the forecast
+  // label, its "Covid cinema closure" label sits in the band when it fits
+  // there with 8px to spare each side, centred on the plot's vertical middle,
+  // and otherwise goes beside the band, here on the roomier side, at the
+  // forecast label's height between the top two gridlines. In either spot it
+  // wraps onto up to three lines as needed to fit and to stay clear of the
+  // screening line. A gridline that would cross the label is cleared behind
+  // it by a patch of whatever lies beneath, band or paper.
+  let closureLayer = '';
+  if (cumClosureSpan) {
+    const bandX = xScale(cumClosureSpan.startIdx);
+    const bandW = xScale(cumClosureSpan.endIdx) - bandX;
+    const bandRect = `<rect x="${bandX.toFixed(1)}" y="${MT}" width="${bandW.toFixed(1)}" height="${innerH - 0.75}" fill="rgb(210,209,198)"/>`;
+    ringBackdropLayers += `<g clip-path="url(#cum-plot-clip)">${bandRect}</g>`;
+    closureLayer = `<g clip-path="url(#cum-plot-clip)">${bandRect}${gridAcross(bandX, bandX + bandW, offAxis, 'rgb(192,192,191)')}</g>`;
+    const fontPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const gap = 8;
+    const lineH = fontPx * 1.2;
+    const topGapY = (Math.max(MT, yScale(offAxis.max)) + Math.max(MT, yScale(offAxis.max - offAxis.step))) / 2;
+    const before = bandX - ML >= ML + innerW - (bandX + bandW);
+    const spots = [
+      { anchor: 'middle', x: bandX + bandW / 2, lo: bandX + gap, hi: bandX + bandW - gap, cy: MT + innerH / 2 },
+      before
+        ? { anchor: 'end', x: bandX - gap, lo: ML + gap, hi: bandX - gap, cy: topGapY }
+        : { anchor: 'start', x: bandX + bandW + gap, lo: bandX + bandW + gap, hi: ML + innerW - gap, cy: topGapY },
+    ];
+    const layouts = spots.flatMap(spot => CLOSURE_LABEL_WRAPS.map(lines => {
+      const textW = Math.max(...lines.map(text => measureClosureLabel(text, fontPx)));
+      const left = spot.anchor === 'middle' ? spot.x - textW / 2 : spot.anchor === 'end' ? spot.x - textW : spot.x;
+      const halfInk = ((lines.length - 1) * lineH + fontPx * 0.75) / 2;
+      return { ...spot, lines, textW, left, top: spot.cy - halfInk - 4, bottom: spot.cy + halfInk + 4 };
+    }));
+    // Whether the screening line runs through a label's patch, read off the
+    // day totals: each day's rise spans the previous day's total to its own.
+    const lineCrosses = ({ left, textW, top, bottom }) => {
+      const vLow = (MT + innerH - bottom) / innerH * niceMax;
+      const vHigh = (MT + innerH - top) / innerH * niceMax;
+      const d0 = Math.max(0, Math.floor((left - 4 - ML) / innerW * endIdx));
+      const d1 = Math.min(cumByDay.length - 1, Math.ceil((left + textW + 4 - ML) / innerW * endIdx));
+      for (let d = d0; d <= d1; d++) {
+        const prev = cumByDay[Math.max(0, d - 1)];
+        if (Math.min(prev, cumByDay[d]) <= vHigh && Math.max(prev, cumByDay[d]) >= vLow) return true;
+      }
+      return false;
+    };
+    const label = layouts.find(l => l.left >= l.lo && l.left + l.textW <= l.hi && !lineCrosses(l))
+      || layouts[layouts.length - 1];
+    let crossesGrid = false;
+    for (let v = 0; v <= offAxis.max; v += offAxis.step) {
+      const gy = Math.max(MT, yScale(v));
+      if (gy + 0.75 >= label.top && gy - 0.75 <= label.bottom) crossesGrid = true;
+    }
+    if (crossesGrid) {
+      closureLayer += `<rect x="${(label.left - 4).toFixed(1)}" y="${label.top.toFixed(1)}" width="${(label.textW + 8).toFixed(1)}" height="${(label.bottom - label.top).toFixed(1)}" fill="${label.anchor === 'middle' ? 'rgb(210,209,198)' : 'var(--bg)'}"/>`;
+    }
+    const firstBaseline = label.cy - (label.lines.length - 1) * lineH / 2 + fontPx * 5 / 16;
+    closureLayer += label.lines.map((line, i) =>
+      `<text x="${label.x.toFixed(1)}" y="${(firstBaseline + i * lineH).toFixed(1)}" text-anchor="${label.anchor}" font-family="'Dashboard Sans',sans-serif" font-size="1rem" font-weight="400" fill="rgb(89,89,89)">${line}</text>`
+    ).join('');
   }
 
   const hoverLine = `<line class="cum-hover-line" x1="0" x2="0" y1="${MT}" y2="${MT+innerH}" stroke="var(--text)" stroke-width="1" visibility="hidden" pointer-events="none"/>`;
@@ -3331,7 +3426,7 @@ function renderCumulativeChart(anim) {
         `<path d="${pts.map((pt, i) => `${i === 0 ? 'M' : 'L'}${xScale(pt.x).toFixed(1)},${yScale(pt.y).toFixed(1)}`).join(' ')}" fill="none" stroke="rgb(189,189,175)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`
       ).join('')}</g>`
     : '';
-  container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;overflow:visible;">${plotClip}${yAxis}${xAxis}${todayMark}${forecastLayer}${yearLayer}<g clip-path="url(#cum-plot-clip)"><path d="${pathD}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>${pastPathD ? `<path d="${pastPathD}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>` : ''}</g>${hoverLine}${ringMask}${hoverDot}${hoverRing}${hoverZone}</svg>`;
+  container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;overflow:visible;">${plotClip}${yAxis}${xAxis}${todayMark}${closureLayer}${forecastLayer}${yearLayer}<g clip-path="url(#cum-plot-clip)"><path d="${pathD}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>${pastPathD ? `<path d="${pastPathD}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>` : ''}</g>${hoverLine}${ringMask}${hoverDot}${hoverRing}${hoverZone}</svg>`;
 
   const svg = container.querySelector('svg');
   const lineEl = svg.querySelector('.cum-hover-line');
@@ -3851,6 +3946,8 @@ if (document.fonts && document.fonts.ready) {
     syncBarLabelColumn(document.getElementById('format-chart'));
     applyFormatSegmentWidths();
     syncTableLayouts();
+    // The closure label wraps by measured width, so redo it in the real face.
+    if (cumClosureSpan) renderCumulativeChart();
   });
 }
 
@@ -4269,10 +4366,11 @@ if (!IS_ALL_MODE) {
       } else {
         if (films.length > 0 && films.every(f => f.rating == null)) hasUnratedCalendarDay = true;
         const cls = films.length >= 5 ? 'watched-5' : films.length === 4 ? 'watched-4' : films.length === 3 ? 'watched-3' : films.length === 2 ? 'watched-2' : films.length === 1 ? 'watched-1' : '';
+        const closed = !films.length && ds >= COVID_CLOSURE.first && ds <= COVID_CLOSURE.last;
         const dayRuntime = films.reduce((sum,f) => sum + (f.runtime || 0), 0);
         const filmTitlesJson = escapeHtml(JSON.stringify(films.map(f => splitTitleParts(f.title).primary)));
         const filmRatingsJson = escapeHtml(JSON.stringify(films.map(f => f.rating)));
-        html += `<div class="heatmap-cell ${cls}" data-date="${ds}" data-runtime="${dayRuntime}" data-films='${filmTitlesJson}' data-ratings='${filmRatingsJson}'>${d}</div>`;
+        html += `<div class="heatmap-cell ${cls}${closed ? ' covid-closed' : ''}" data-date="${ds}" data-runtime="${dayRuntime}" data-films='${filmTitlesJson}' data-ratings='${filmRatingsJson}'>${d}</div>`;
       }
     }
     html += '</div>';
@@ -4483,7 +4581,8 @@ document.querySelectorAll('.heatmap-cell').forEach(cell => {
     const films = JSON.parse(cell.dataset.films || '[]');
     const ratings = JSON.parse(cell.dataset.ratings || '[]');
     if (films.length === 0) {
-      document.getElementById('tt-title').innerHTML = '<span class="tooltip-empty" style="color:var(--text-dim)">' + (date === todayStr ? 'Awaiting data' : 'No screenings') + '</span>';
+      const emptyNote = date === todayStr ? 'Awaiting data' : cell.classList.contains('covid-closed') ? 'Cinemas closed' : 'No screenings';
+      document.getElementById('tt-title').innerHTML = '<span class="tooltip-empty" style="color:var(--text-dim)">' + emptyNote + '</span>';
       document.getElementById('tt-meta').textContent = new Date(date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
     } else {
       document.getElementById('tt-title').innerHTML = `<span class="tooltip-films">${films.map((f,i) => {
