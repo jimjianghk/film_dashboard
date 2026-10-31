@@ -36,7 +36,7 @@ On the current year's dashboard, an off-by-default "Show forecast" switch in the
 
 On the 2020 and 2021 archive views, a band in the forecast's grey shades the covid cinema closure, March 17, 2020 to March 4, 2021, under a "Covid-19 cinema closure" label.
 
-A cursor trace reveals the cumulative count for any day from January 1 through the data day. A thin vertical line and a small accent-colored dot snap to the nearest day, and a single-line thin-border tooltip shows the date and the screening count. On desktop the trace follows the mouse and disappears when the cursor leaves the chart. On touch, a press-and-drag traces; releasing leaves the tooltip in place until the user taps elsewhere. Hovering or tapping past the data-day marker is treated as outside the chart and hides the trace, but if a continuous touch drag crosses past the marker the tooltip clamps to the data day and persists, including after the finger lifts. With the forecast on, the trace keeps working across the forecast span, where the tooltip shows the forecast screening count instead.
+A cursor trace reveals the cumulative count for any day from January 1 through the end data day. A thin vertical line and a small accent-colored dot snap to the nearest day, and a single-line thin-border tooltip shows the date and the screening count. On desktop the trace follows the mouse and disappears when the cursor leaves the chart. On touch, a press-and-drag traces; releasing leaves the tooltip in place until the user taps elsewhere. Hovering or tapping past the end data day marker is treated as outside the chart and hides the trace, but if a continuous touch drag crosses past the marker the tooltip clamps to the end data day and persists, including after the finger lifts. With the forecast on, the trace keeps working across the forecast span, where the tooltip shows the forecast screening count instead.
 
 ### Rating chart
 
@@ -62,7 +62,7 @@ Two-column horizontal bar chart sorted by count. Hovering a venue code reveals t
 
 ### Screening calendar
 
-Monthly heatmap grid covering the whole dashboard year, January through December, with days after today in New York shown as faded outlines; phones leave out months that haven't started yet. Rows hold up to six months, wrapping to fewer per row on narrower screens. Hovering a tile with screenings shows a tooltip with film titles and color-coded rating badges (see the log table section below). Hovering an empty past tile shows "No screenings"; today's tile (when no film is logged yet) shows "Awaiting data" instead: unlike the subtitle and cumulative chart, the calendar treats today in New York as a live day whether or not a film has been logged, so the current day's tile is interactive even when empty. On the 2020 and 2021 views, days of the covid cinema closure are faintly hatched and show "Cinemas closed". Three text modes are toggled with an underline/faded inactive treatment and an animated legend:
+Monthly heatmap grid covering the whole dashboard year, January through December, with days after today in New York shown as faded outlines; phones leave out months that haven't started yet. Rows hold up to six months, wrapping to fewer per row on narrower screens. Hovering a tile with screenings shows a tooltip with film titles and color-coded rating badges (see the log table section below). Hovering an empty past tile shows "No screenings"; today's tile (when no film is logged yet) shows "Awaiting data" instead: unlike the subtitle and cumulative chart, the calendar treats today in New York as a live day whether or not a film has been logged, so the current day's tile is interactive even when empty. On the 2020 and 2021 views, days of the covid cinema closure are faintly hatched and show "Cinemas closed". Three text modes, each with its own legend:
 
 - **Number of screenings**: tile color darkens with count across five discrete steps, from pale peach through red to deep crimson for 1–5+ films. The legend shows five adjacent blocks labeled from "1 screening" to "5 or more".
 - **Total runtime**: tile color follows the day's combined runtime on a fixed scale, so the color-to-runtime mapping stays consistent across years. Days of 1.5 hours or shorter take the palest color and days of 6 hours or longer the darkest; in between, the color shades continuously, darkening fastest through the shorter runtimes where most days fall and leveling off toward 6 hours. The legend shows the full color range as a continuous spectrum, labeled from "1.5h or shorter" to "6h or longer".
@@ -92,11 +92,11 @@ A row of small notes between the log table and the footer carries the symbol cal
 
 ### Screening definition page
 
-The `/definition` page explains the counting rules behind the screening totals. It is reached from a dotted-underline "What's a screening?" link that sits beside the year-on-year comparison toggle below the stats row. The page keeps the shared masthead and "Go back" navigation, then switches to a white article-style page.
+The `/definition` page explains the counting rules behind the screening totals. It is reached from a "What's a screening?" link that sits beside the year-on-year comparison toggle below the stats row. The page keeps the shared masthead and "Go back" navigation, then switches to a white article-style page.
 
 ### Sparse mode
 
-When the year has fewer than 5 logged films, the masthead and stats row render as usual but the charts grid, every chart and table section, and the Format and Price column footnotes are hidden. In their place, a large sans font note reads "Visualizations will display when there are more film entries." so the page stays presentable early in the year.
+When the year has fewer than 5 logged films, the masthead and stats row render as usual but the charts grid, every chart and table section, and the Format and Price column footnotes are hidden. In their place, a short note says the charts will appear once more films are logged, so the page stays presentable early in the year.
 
 ## Design
 
