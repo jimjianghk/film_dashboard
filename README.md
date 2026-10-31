@@ -36,7 +36,7 @@ On the current year's dashboard, an off-by-default "Show forecast" switch in the
 
 On the 2020 and 2021 archive views, a band in the forecast's grey shades the covid cinema closure, March 17, 2020 to March 4, 2021, under a "Covid-19 cinema closure" label.
 
-A cursor trace reveals the cumulative count for any day from January 1 through the end data day. A thin vertical line and a small accent-colored dot snap to the nearest day, and a single-line thin-border tooltip shows the date and the screening count. On desktop the trace follows the mouse and disappears when the cursor leaves the chart. On touch, a press-and-drag traces; releasing leaves the tooltip in place until the user taps elsewhere. Hovering or tapping past the end data day marker is treated as outside the chart and hides the trace, but if a continuous touch drag crosses past the marker the tooltip clamps to the end data day and persists, including after the finger lifts. With the forecast on, the trace keeps working across the forecast span, where the tooltip shows the forecast screening count instead.
+A cursor trace reveals the cumulative count for any day from January 1 through the end data day: it snaps to the nearest day, and a tooltip shows the date and the screening count. On desktop the trace follows the mouse and disappears when the cursor leaves the chart. On touch, a press-and-drag traces; releasing leaves the tooltip in place until the user taps elsewhere. Hovering or tapping past the end data day marker is treated as outside the chart and hides the trace, but if a continuous touch drag crosses past the marker the tooltip clamps to the end data day and persists, including after the finger lifts. With the forecast on, the trace keeps working across the forecast span, where the tooltip shows the forecast screening count instead.
 
 ### Rating chart
 
@@ -80,10 +80,10 @@ Sortable, filterable table of every screening. Nine columns: date, title, year, 
 - A shorts program's Year cell lists each production year on its own line.
 - A "Rewatches only" switch in the Title header filters the table to rewatches.
 - Chinese-language films are logged bilingually, with an English title in gray after the original title in Chinese, an en space apart, wrapping as if the pair were one title; sorting by title places these rows by their English titles.
-- Dropdown filters on date (by month), year (by decade), rating (1–10 plus N/A), format, venue, and series. A shorts program appears under every decade at least one of its production years belongs to. Menus align visually with their trigger, size to their options, avoid widening the page, and close when the page or table scrolls.
+- Dropdown filters on date (by month), year (by decade), rating (1–10 plus N/A), format, venue, and series. A shorts program appears under every decade at least one of its production years belongs to.
 - Free-text search on title that works with CJK input methods and finds a bilingually logged film by either title.
-- When the table overflows horizontally, edge fades and an opacity-rippling `>>>` cue indicate additional columns; clicking the cue advances the table to the right, and both fade away after the user scrolls horizontally past a small threshold.
-- Rating badges are color-coded circles matching the bar chart palette, with text colors picked from within the same palette family for legible contrast. Unrated films show a grey badge with a horizontally narrowed em dash.
+- When the table overflows horizontally, a `>>>` cue marks more columns; clicking it scrolls right.
+- Rating badges are color-coded circles matching the bar chart palette. Unrated films show a grey badge.
 - A screening paid in a foreign currency shows its original local price in the Price cell (e.g. CN¥50 or €14.50), while sorting on the column uses the USD-converted value so every row orders on one scale.
 
 ### Page footnotes
