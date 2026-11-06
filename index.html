@@ -3823,6 +3823,15 @@ const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].to
       let corner = gi === 0 ? 'tr' : 'br';
       const edge = !stack ? null : corner === 'tr' ? 'top' : 'bottom';
       let { block, tiles } = others.length ? placeBlock(others, gr, corner, dominant.standard, edge) : { block: null, tiles: [] };
+      // Once premium formats reach a third of the group, an L would leave Standard a thin strip, so the group splits into
+      // two straight rectangles that both reach the labels: Standard on top beside a gutter, on the left on phones.
+      const premiumCount = sum(others), split = hasStd && premiumCount / (premiumCount + dominant.value) >= 1 / 3;
+      if (split) {
+        const frac = premiumCount / (premiumCount + dominant.value);
+        if (stack) { const w = gr.w * frac; block = { x: gr.x + gr.w - w, y: gr.y, w, h: gr.h }; corner = 'br'; }
+        else { const h = gr.h * frac; block = { x: gr.x, y: gr.y + gr.h - h, w: gr.w, h }; corner = 'bl'; }
+        tiles = squarify(others, block);
+      }
       // Format label, top left, with the standard count on a second line when it fits; clear of the corner block.
       const domLine = hasStd ? `${dominant.label} ${dominant.value}` : null;
       const head = `${g.name} ${g.total}`, headW = tw(head, 700, FS), domW = domLine ? tw(domLine, 400, FS) : 0;
@@ -3842,9 +3851,9 @@ const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].to
       // Labelled from outside, standard gets its own pointer: the premium block moves to the bottom-left so
       // standard runs down the format's right-hand side, next to the labels.
       const touchesBottom = near(gr.y + gr.h, H), touchesTop = near(gr.y, 0);
-      const stdPointer = !inside && hasStd && (stack ? (touchesBottom || touchesTop) : touchesRight && corner === 'br');
-      if (stdPointer && !stack) { corner = 'bl'; ({ block, tiles } = placeBlock(others, gr, corner, true)); }
-      if (stdPointer && stack && touchesBottom) { corner = 'tr'; ({ block, tiles } = placeBlock(others, gr, corner, true, null)); }
+      const stdPointer = !inside && hasStd && (stack ? (touchesBottom || touchesTop) : touchesRight && (corner === 'br' || split));
+      if (stdPointer && !stack && !split) { corner = 'bl'; ({ block, tiles } = placeBlock(others, gr, corner, true)); }
+      if (stdPointer && stack && touchesBottom && !split) { corner = 'tr'; ({ block, tiles } = placeBlock(others, gr, corner, true, null)); }
       shapes.push({ poly: lShape(r, block, gr), fill: dominant.fill });
       if (dominant.threeD) {
         let right = block && corner === 'br' ? block.x - G / 2 : r.x + r.w;
@@ -3889,7 +3898,7 @@ const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].to
         // Standard wraps round the premium formats: a column on their right and a strip above them. Its dot goes in
         // whichever has more room.
         const room = q => Math.min(q.w, q.h) / 2;
-        if (strip.h >= 10 && room(strip) > room(col)) {
+        if (split || (strip.h >= 10 && room(strip) > room(col))) {
           callouts.push({ cx: strip.x + strip.w / 2, cy: strip.y + strip.h / 2, r: strip, text: domLine, lines: [{ t: domLine, w: 400 }], gi, rank: 1, fill: dominant.fill });
         } else {
           callouts.push({ cx: col.x + col.w / 2, cy: col.y + col.h / 2, r: col, topStrip: strip.h >= 10 ? strip : null,
@@ -4411,16 +4420,19 @@ const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].to
     const labelY = c => (c.zone === 'top' ? -(ZG + tb + c.off) : H + ZG + bb + c.off);
     // One curve from the end of a label to its tile: it leaves the label level and arrives at the tile vertically.
     const curve = (x0, y0, x1, y1) => `M${f2(x0)},${f2(y0)} Q${f2(x1)},${f2(y0)} ${f2(x1)},${f2(y1)}`;
-    // The format's curve meets its bracket at least 2px from the corner and 3px left of where the next curve passes the
-    // bracket line. On a narrow bracket the next curve moves right, as far as its tile allows, to make that room.
+    // The format's line meets its bracket at least 2px from the corner and 3px left of where the next line passes the
+    // bracket. Where curves leave too little room, the block's lines turn square instead: each runs level from its label,
+    // then straight to its tile, so they nest without crossing, except where that level run would hit another group's
+    // label. If even that leaves no room, the format's line runs up into the end of the bracket.
     [topZ, botZ].forEach(Z => Z.units.filter(u => u.block && u.items.length > 1).forEach(u => {
-      const head = u.items[0], nxt = u.items[1];
+      const head = u.items[0], nxt = u.items[1], corner = head.r.x + 0.5;
       const yl = labelY(nxt), xs = nxt.L + nxt.w + 4, denom = yl - nxt.ty;
-      if (Math.abs(denom) < 1e-6) return;
-      const tt = Math.sqrt(Math.max(0, Math.min(1, (yl - head.ty) / denom))), share = 1 - (1 - tt) * (1 - tt);
-      const corner = head.r.x + 0.5, room = xs + (corner + 5 - xs) / share;
-      nxt.tx = Math.max(nxt.tx, Math.min(room, nxt.r.x + nxt.r.w - 3, (u.items[2] ? u.items[2].tx : Infinity) - 3));
-      head.tx = Math.max(corner + 2, Math.min(head.tx, xs + (nxt.tx - xs) * share - 3));
+      const tt = Math.abs(denom) < 1e-6 ? 1 : Math.sqrt(Math.max(0, Math.min(1, (yl - head.ty) / denom)));
+      const xAt = xs + (nxt.tx - xs) * (1 - (1 - tt) * (1 - tt));
+      if (xAt - corner >= 5) { head.tx = Math.max(corner + 2, Math.min(head.tx, xAt - 3)); return; }
+      const others = Z.units.filter(v => v !== u).flatMap(v => v.items);
+      u.items.forEach(c => { c.elbow = !others.some(o => o.row === c.row && o.L < c.tx + 4 && o.L + o.w > c.L + c.w); });
+      head.tx = (nxt.elbow ? nxt.tx : xAt) - corner >= 5 ? corner + 2 : corner;
     }));
     const top = topZ.units.flatMap(u => u.items), bottom = botZ.units.flatMap(u => u.items);
     // The chart drops below its usual place only as far as the highest label above it needs.
@@ -4446,7 +4458,8 @@ const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].to
     [...top, ...bottom].forEach(c => {
       const ly = labelY(c);
       const lineEnd = c.zone === 'bottom' ? ly - 0.35 * FS - 3 : ly + 0.35 * FS + 4;
-      const d = c.curved ? curve(c.L + c.w + 4, ly, c.tx, c.ty) : `M${f2(c.tx)},${f2(c.ty)} V${f2(lineEnd)}`;
+      const d = c.elbow ? `M${f2(c.L + c.w + 4)},${f2(ly)} H${f2(c.tx)} V${f2(c.ty)}`
+        : c.curved ? curve(c.L + c.w + 4, ly, c.tx, c.ty) : `M${f2(c.tx)},${f2(c.ty)} V${f2(lineEnd)}`;
       if (c.bracket) {
         const x0 = c.r.x + 0.5, x1 = c.r.x + c.r.w - 0.5, e = c.zone === 'bottom' ? H : 0, sgn = c.zone === 'bottom' ? 1 : -1;
         g += `<polyline points="${pts([[x0, e + sgn], [x0, e + sgn * BD], [x1, e + sgn * BD], [x1, e + sgn]])}" fill="none" stroke="${DARK}" stroke-width="1"/>`;

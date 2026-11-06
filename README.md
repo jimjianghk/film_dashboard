@@ -40,7 +40,7 @@ A cursor trace reveals the cumulative count for any day from January 1 through t
 
 ### Screening format chart
 
-Treemap with one group per base projection format (DCP / 35mm / 70mm / 16mm), where area is proportional to the number of screenings. Within each group, Standard forms the outline and premium formats sit together in a corner block. A tile too small to hold its label is labelled outside the chart and joined to it by a line: in a column to the right on larger screens, in rows above and below on phones. Each 3D screening is a striped square inside its format's tile, and hovering or tapping one shows the format's full name and 3D count. A key in the chart header gives the total number of 3D screenings.
+Treemap with one group per base projection format (DCP / 35mm / 70mm / 16mm), where area is proportional to the number of screenings. Within each group, Standard forms the outline and premium formats sit together in a corner block; where premium formats make up a large share of a group, it splits into two plain rectangles instead. A tile too small to hold its label is labelled outside the chart and joined to it by a line: in a column to the right on larger screens, in rows above and below on phones. Each 3D screening is a striped square inside its format's tile, and hovering or tapping one shows the format's full name and 3D count. A key in the chart header gives the total number of 3D screenings.
 
 ### Rating chart
 
