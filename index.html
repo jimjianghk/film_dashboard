@@ -3848,11 +3848,9 @@ const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].to
       else if (!domLine && boxFree(Math.max(tw(g.name, 700, FS), tw(String(g.total), 700, FS)), 2 * LH, r.y + PAD - 1)) {
         inside = { x: r.x + PAD, y: r.y + PAD - 1, color: dominant.text, lines: [{ t: g.name, w: 700 }, { t: String(g.total), w: 700 }] };
       }
-      // Labelled from outside, standard gets its own pointer: the premium block moves to the bottom-left so
-      // standard runs down the format's right-hand side, next to the labels.
+      // Labelled from outside, standard gets its own pointer.
       const touchesBottom = near(gr.y + gr.h, H), touchesTop = near(gr.y, 0);
       const stdPointer = !inside && hasStd && (stack ? (touchesBottom || touchesTop) : touchesRight && (corner === 'br' || split));
-      if (stdPointer && !stack && !split) { corner = 'bl'; ({ block, tiles } = placeBlock(others, gr, corner, true)); }
       shapes.push({ poly: lShape(r, block, gr), fill: dominant.fill });
       if (dominant.threeD) {
         let right = block && corner === 'br' ? block.x - G / 2 : r.x + r.w;
@@ -3891,18 +3889,9 @@ const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].to
         }
         callouts.push({ std: true, zone, cx, cy, r: strip, text: domLine, lines: [{ t: domLine, w: 400 }], gi, rank: 1, gcx: r.x + r.w / 2, fill: dominant.fill });
       } else if (stdPointer) {
-        const colX = block.x + block.w + G / 2;
-        const col = { x: colX, y: r.y, w: r.x + r.w - colX, h: r.h };
+        // Standard wraps round the premium formats; its dot goes in the strip above them, so its line stays clear of them.
         const strip = { x: r.x, y: r.y, w: r.w, h: block.y - G / 2 - r.y };
-        // Standard wraps round the premium formats: a column on their right and a strip above them. Its dot goes in
-        // whichever has more room.
-        const room = q => Math.min(q.w, q.h) / 2;
-        if (split || (strip.h >= 10 && room(strip) > room(col))) {
-          callouts.push({ cx: strip.x + strip.w / 2, cy: strip.y + strip.h / 2, r: strip, text: domLine, lines: [{ t: domLine, w: 400 }], gi, rank: 1, fill: dominant.fill });
-        } else {
-          callouts.push({ cx: col.x + col.w / 2, cy: col.y + col.h / 2, r: col, topStrip: strip.h >= 10 ? strip : null,
-            prefY: strip.h >= 10 ? strip.y + strip.h / 2 : null, text: domLine, lines: [{ t: domLine, w: 400 }], gi, rank: 1, fill: dominant.fill });
-        }
+        callouts.push({ cx: strip.x + strip.w / 2, cy: strip.y + strip.h / 2, r: strip, text: domLine, lines: [{ t: domLine, w: 400 }], gi, rank: 1, fill: dominant.fill });
       }
       const own = labels.slice(labelStart).map(l => {
         const lines = l.inline ? [l.inline.join('   ')] : l.lines.map(x => x.t);
@@ -4094,7 +4083,7 @@ const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].to
       c.h = c.lines.length * LH;
       // A format's label sits level with its bracket's vertical line, at least 6px clear of the corners.
       if (c.bracket) { [c.lo, c.hi] = c.r.h >= 13 ? [c.r.y + 6.5, c.r.y + c.r.h - 6.5] : [c.r.y + c.r.h / 2, c.r.y + c.r.h / 2]; c.pref = c.lo; c.wt = 0.5; }
-      else { [c.lo, c.hi] = dotRange(c); c.pref = c.prefY ?? (c.lo + c.hi) / 2; c.wt = c.hi - c.lo < 8 ? 10 : 1; }
+      else { [c.lo, c.hi] = dotRange(c); c.pref = (c.lo + c.hi) / 2; c.wt = c.hi - c.lo < 8 ? 10 : 1; }
     });
     callouts.sort((a, b) => a.pref - b.pref || (a.bracket ? -1 : 1));
     // Within a format the labels read: the format itself, then standard, then its premium formats.
@@ -4186,7 +4175,6 @@ const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].to
       c.labelY = ys[i];
       if (c.bracket) return;
       c.cy = dotAt(ys[i], c.lo, c.hi);
-      if (c.topStrip) { const [a, z] = band(c.topStrip.y, c.topStrip.h); if (c.cy >= a && c.cy <= z) c.cx = c.topStrip.x + c.topStrip.w / 2; }
     });
     // Where a label's leader crosses the bracket's vertical line.
     const crossY = c => {
