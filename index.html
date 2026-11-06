@@ -541,6 +541,7 @@ h1 {
 #format-chart { display: flow-root; }
 .tm-key { margin-left: 6px; font-size: 1rem; font-weight: 400; line-height: 1.25; letter-spacing: 0; align-items: baseline; }
 .tm-key .legend-swatch { align-self: center; }
+.tm-key .legend-count { margin-left: calc(0.4em - 6px); } /* 0.4em from "3D", after the chip's 6px gap */
 .legend-chip { display: inline-flex; align-items: center; gap: 6px; }
 .legend-swatch { width: 12px; height: 12px; display: inline-block; flex-shrink: 0; position: relative; overflow: hidden; }
 .legend-swatch.swatch-3d { background: var(--surface3); }
@@ -3721,8 +3722,16 @@ const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].to
   let bumped = new Set();
 
   const ctx = document.createElement('canvas').getContext('2d');
-  const tw = (text, weight, size) => { ctx.font = `${weight} ${size}px "Dashboard Sans"`; return ctx.measureText(text).width; };
+  // A count sits 0.3em from its name.
+  const COUNT_GAP = 0.3;
+  const tw = (text, weight, size) => {
+    ctx.font = `${weight} ${size}px "Dashboard Sans"`;
+    const named = String(text).match(/^(.*) (\d+)$/);
+    return named ? ctx.measureText(named[1]).width + COUNT_GAP * size + ctx.measureText(named[2]).width : ctx.measureText(text).width;
+  };
   const esc = s => escapeHtml(String(s));
+  // A label's count is also a little lighter than its name, though a format's bold total is not.
+  const labelText = (t, w = 400) => esc(t).replace(/( ?)(\d+)$/, (m, space, n) => `<tspan${space ? ` dx="${COUNT_GAP}em"` : ''}${w === 400 ? ' font-weight="350"' : ''}>${n}</tspan>`);
 
   function scene(W, H, layout, FS, mode = 'side') {
     const stack = mode === 'stack';
@@ -3986,9 +3995,9 @@ const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].to
     const best = W => topLayouts(W, H).map(l => ({ sc: scene(W, H, l, FS), aspect: worstAspect(l) }))
       .sort((a, b) => (a.sc.callouts.length + 10 * a.sc.blockedBrackets) - (b.sc.callouts.length + 10 * b.sc.blockedBrackets) || a.sc.internals.length - b.sc.internals.length || a.aspect - b.aspect)[0].sc;
     // The label column is as wide as the labels of the layout actually drawn: narrowing the treemap can push more tiles out
-    // to the column, so widen it until every label fits. The longest may hang 12px past the card's right edge, where the
-    // page's margin leaves at least that much again before the edge of the screen.
-    const hang = document.documentElement.clientWidth - host.getBoundingClientRect().right >= 24 ? 12 : 0;
+    // to the column, so widen it until every label fits. The longest may hang past the card's right edge where the page's
+    // margin is wide enough for it; on narrower margins it ends at that edge.
+    const hang = document.documentElement.clientWidth - host.getBoundingClientRect().right >= 24 ? 13 : 0;
     // A pointer line may not run through a label inside another tile: that label moves out too, and the chart is laid out again.
     for (let tries = 0; tries < 5; tries++) {
       let W = Math.round(cardW), sc = best(W);
@@ -4049,8 +4058,8 @@ const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].to
       else if (s.hatch) svg += `<rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" fill="url(#${uid}-hatch)"${tipAttrs(s)}/>`;
     });
     labels.forEach(l => {
-      if (l.inline) { svg += `<text x="${l.x}" y="${l.y + FS}" font-size="${FS}" fill="${l.color}"><tspan font-weight="700">${esc(l.inline[0])}</tspan><tspan dx="10">${esc(l.inline[1])}</tspan></text>`; return; }
-      l.lines.forEach((ln, i) => { svg += `<text x="${l.x}" y="${l.y + FS + i * LH}" font-size="${FS}" font-weight="${ln.w}" fill="${l.color}">${esc(ln.t)}</text>`; });
+      if (l.inline) { svg += `<text x="${l.x}" y="${l.y + FS}" font-size="${FS}" fill="${l.color}"><tspan font-weight="700">${labelText(l.inline[0], 700)}</tspan><tspan dx="10">${labelText(l.inline[1])}</tspan></text>`; return; }
+      l.lines.forEach((ln, i) => { svg += `<text x="${l.x}" y="${l.y + FS + i * LH}" font-size="${FS}" font-weight="${ln.w}" fill="${l.color}">${labelText(ln.t, ln.w)}</text>`; });
     });
     const f2 = v => +v.toFixed(2);
     // A leader from a label end (x0, y0) to its dot (x1, y1): straight when level; otherwise one arc that
@@ -4076,7 +4085,7 @@ const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].to
       const [lo, hi] = dotRange(c);
       c.cy = dotAt(c.ly, lo, hi);
       svg += pointer(leader(x0 + 2, c.ly, c.cx, c.cy), c.cx, c.cy, c.fill);
-      svg += `<text x="${x0 - 3}" y="${c.ly + FS / 2 - 2}" font-size="${FS}" fill="${c.color}" text-anchor="end">${esc(c.text)}</text>`;
+      svg += `<text x="${x0 - 3}" y="${c.ly + FS / 2 - 2}" font-size="${FS}" fill="${c.color}" text-anchor="end">${labelText(c.text)}</text>`;
     });
     // Each label wants to sit level with the middle of its dot's tile (brackets: the top of their group).
     // Place them in order, 3px apart, as close to those heights as possible (weighted least squares via
@@ -4238,7 +4247,7 @@ const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].to
         svg += pointer(Math.abs(c.cy - ly) < 0.5 ? leader(LX - 4, ly, c.cx, c.cy) : `M${f2(LX - 4)},${f2(ly)} Q${f2(qx)},${f2(qy)} ${f2(c.cx)},${f2(c.cy)}`, c.cx, c.cy, c.fill);
       }
       c.lines.forEach((ln, j) => {
-        svg += `<text x="${LX}" y="${c.top + FS - 1 + j * LH}" font-size="${FS}" font-weight="${ln.w}" fill="${DARK}">${esc(ln.t)}</text>`;
+        svg += `<text x="${LX}" y="${c.top + FS - 1 + j * LH}" font-size="${FS}" font-weight="${ln.w}" fill="${DARK}">${labelText(ln.t, ln.w)}</text>`;
       });
     });
     const svgH = Math.ceil(Math.max(H + 8, ...callouts.map(c => c.top + c.lines.length * LH + 4)));
@@ -4483,15 +4492,15 @@ const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].to
       else if (s.hatch) g += `<rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" fill="url(#${uid}-hatch)"${tipAttrs(s)}/>`;
     });
     labels.forEach(l => {
-      if (l.inline) { g += `<text x="${l.x}" y="${l.y + FS}" font-size="${FS}" fill="${l.color}"><tspan font-weight="700">${esc(l.inline[0])}</tspan><tspan dx="10">${esc(l.inline[1])}</tspan></text>`; return; }
-      l.lines.forEach((ln, i) => { g += `<text x="${l.x}" y="${l.y + FS + i * LH}" font-size="${FS}" font-weight="${ln.w}" fill="${l.color}">${esc(ln.t)}</text>`; });
+      if (l.inline) { g += `<text x="${l.x}" y="${l.y + FS}" font-size="${FS}" fill="${l.color}"><tspan font-weight="700">${labelText(l.inline[0], 700)}</tspan><tspan dx="10">${labelText(l.inline[1])}</tspan></text>`; return; }
+      l.lines.forEach((ln, i) => { g += `<text x="${l.x}" y="${l.y + FS + i * LH}" font-size="${FS}" font-weight="${ln.w}" fill="${l.color}">${labelText(ln.t, ln.w)}</text>`; });
     });
     internals.forEach(c => {
       const x0 = c.r.x - 16;
       const [lo, hi] = band(c.r.y, c.r.h);
       c.cy = Math.min(Math.max(c.ly, lo), hi);
       g += pointer(leader(x0 + 2, c.ly, c.cx, c.cy), c.cx, c.cy, c.fill);
-      g += `<text x="${x0 - 3}" y="${c.ly + FS / 2 - 2}" font-size="${FS}" fill="${c.color}" text-anchor="end">${esc(c.text)}</text>`;
+      g += `<text x="${x0 - 3}" y="${c.ly + FS / 2 - 2}" font-size="${FS}" fill="${c.color}" text-anchor="end">${labelText(c.text)}</text>`;
     });
     [...top, ...bottom].forEach(c => {
       const ly = labelY(c);
@@ -4505,7 +4514,7 @@ const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].to
       } else {
         g += pointer(d, c.tx, c.ty, c.fill);
       }
-      g += `<text x="${f2(c.L)}" y="${f2(ly + FS * 0.35)}" font-size="${FS}" font-weight="${c.lines[0].w}" fill="${DARK}">${esc(c.lines[0].t)}</text>`;
+      g += `<text x="${f2(c.L)}" y="${f2(ly + FS * 0.35)}" font-size="${FS}" font-weight="${c.lines[0].w}" fill="${DARK}">${labelText(c.lines[0].t, c.lines[0].w)}</text>`;
     });
     const svg = defs + `<g transform="translate(0, ${f2(topH)})">${g}</g>`;
     // The chart ends at the treemap, not its lowest label: labels hang into the usual 78px gap before the next chart
@@ -4526,7 +4535,7 @@ const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].to
     tip.style.top = Math.max(8, Math.min(r.top - tip.offsetHeight - 6, window.innerHeight - tip.offsetHeight - 8)) + 'px';
   };
   const showTip = (cell, x) => {
-    tip.textContent = `${cell.dataset.tip} ${cell.dataset.count}`;
+    tip.innerHTML = `${esc(cell.dataset.tip)}<span style="font-weight:350;margin-left:${COUNT_GAP}em">${esc(cell.dataset.count)}</span>`;
     tip.style.fontSize = (cell.ownerSVGElement?.dataset.fs || 14) + 'px';
     tip.style.display = 'block';
     tipCell = cell;
