@@ -65,6 +65,7 @@
   --text-dim: #5a564d;
   --text-dimmer: #8a867a;
   --accent: #d8232a;
+  --chart-red: #de4939; /* Cumulative line, decade, runtime and venue bars. */
   --accent-bright: #b21d23;
   --accent-dim: rgba(216,35,42,0.12);
   --accent-glow: rgba(216,35,42,0.18);
@@ -437,8 +438,7 @@ h1 {
 }
 #rating-chart .bar-row::before,
 #decade-chart .bar-row::before,
-#venue-chart .bar-row::before,
-.format-row::before {
+#venue-chart .bar-row::before {
   content: '';
   position: absolute;
   top: -6px;
@@ -449,8 +449,7 @@ h1 {
 }
 #rating-chart .bar-row::before,
 #decade-chart .bar-row::before,
-#venue-chart .bar-row::before,
-.format-row::before { left: calc(var(--bar-axis-left, 60px) - var(--bar-axis-width, 1.5px)); }
+#venue-chart .bar-row::before { left: calc(var(--bar-axis-left, 60px) - var(--bar-axis-width, 1.5px)); }
 .hist-bar { transition: height 0.8s cubic-bezier(0.22,1,0.36,1); cursor: default; }
 .bar-label {
   font-family: 'Dashboard Sans', sans-serif;
@@ -465,8 +464,7 @@ h1 {
 }
 #rating-chart .bar-label,
 #decade-chart .bar-label,
-#venue-chart .bar-label,
-#format-chart .bar-label {
+#venue-chart .bar-label {
   width: var(--bar-label-width, 48px);
   white-space: nowrap;
 }
@@ -529,7 +527,7 @@ h1 {
 .rating-unrated { background: var(--rating-unrated-color); }
 
 /* VENUE / DECADE BARS — signature red */
-.venue-bar { background: var(--accent); }
+.venue-bar { background: var(--chart-red); }
 .venue-bar-other { background: var(--rating-unrated-color); }
 .venue-grid {
   display: grid;
@@ -538,55 +536,11 @@ h1 {
 }
 .venue-col { display: flex; flex-direction: column; }
 
-/* FORMAT STACKED BARS */
-.format-stacked { display: flex; flex-direction: column; gap: 6px; }
-.format-row { display: flex; align-items: center; gap: 12px; position: relative; }
-.format-bar-outer { flex: 1; min-width: 0; height: 22px; display: flex; align-items: center; }
-.format-bar-track {
-  height: 100%;
-  background: transparent;
-  border-radius: 0;
-  display: flex;
-  overflow: hidden;
-  min-width: 3px;
-  transition: width 0.8s cubic-bezier(0.22,1,0.36,1);
-  touch-action: none;
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-touch-callout: none;
-}
-.format-seg {
-  height: 100%;
-  cursor: default;
-  min-width: 0;
-  position: relative;
-}
-.format-seg.seg-standard { background: var(--accent); }
-.format-seg.seg-3d::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(-45deg,
-    transparent 0 2px,
-    rgba(0,0,0,0.5) 2px 4px);
-  pointer-events: none;
-}
-.format-legend {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 18px;
-  margin: 16px 12px 0 0;
-  padding-top: 10px;
-  padding-left: 7px;
-  border-top: 1px solid var(--border);
-  font-size: 1rem;
-  line-height: 1.25;
-  color: var(--text);
-  letter-spacing: 0;
-  text-transform: none;
-  font-weight: 400;
-}
+/* FORMAT TREEMAP */
+/* Labels above the chart hang off the SVG's top margin, which must not collapse through the card. */
+#format-chart { display: flow-root; }
+.tm-key { margin-left: 6px; font-size: 1rem; font-weight: 400; line-height: 1.25; letter-spacing: 0; align-items: baseline; }
+.tm-key .legend-swatch { align-self: center; }
 .legend-chip { display: inline-flex; align-items: center; gap: 6px; }
 .legend-swatch { width: 12px; height: 12px; display: inline-block; flex-shrink: 0; position: relative; overflow: hidden; }
 .legend-swatch.swatch-3d { background: var(--surface3); }
@@ -604,7 +558,7 @@ h1 {
   background: #fffdf5;
   border: 1px solid var(--text);
   color: var(--text);
-  padding: 3px 8px;
+  padding: 0.1875em 0.5em;
   border-radius: 0;
   font-family: 'Dashboard Sans', sans-serif;
   font-weight: 400;
@@ -613,11 +567,6 @@ h1 {
   z-index: 10000;
   pointer-events: none;
   box-shadow: 2px 2px 0 rgba(0,0,0,0.15);
-}
-/* Format-segment color rides inside the tooltip as a legend-style swatch chip. */
-.seg-tooltip .legend-swatch {
-  margin-right: 7px;
-  vertical-align: -1px;
 }
 
 /* CALENDAR HEATMAP */
@@ -1778,7 +1727,7 @@ footer img.footer-favicon {
   .seg-tooltip {
     border-radius: 999px;
     border-width: 0;
-    padding: 4px 12px;
+    padding: 0.25em 0.75em;
   }
   /* Scrollable, so it cannot host the pseudo-element specular ring the
      tooltips use; the shared inset specular shadows alone light its rim. */
@@ -1992,9 +1941,9 @@ footer img.footer-favicon {
   <div class="chart-nav-glass" id="chart-nav-glass">
     <div class="chart-nav-scroll" id="chart-nav-scroll">
       <a class="chart-nav-link" href="#sec-cumulative">Cumulative</a>
+      <a class="chart-nav-link" href="#sec-formats">Formats</a>
       <a class="chart-nav-link" href="#sec-ratings">Ratings</a>
       <a class="chart-nav-link" href="#sec-decades">Decades</a>
-      <a class="chart-nav-link" href="#sec-formats">Formats</a>
       <a class="chart-nav-link" href="#sec-runtimes">Runtimes</a>
       <a class="chart-nav-link" href="#sec-venues">Venues</a>
       <a class="chart-nav-link" href="#sec-calendar">Calendar</a>
@@ -2032,7 +1981,7 @@ footer img.footer-favicon {
   </div>
 
   <div class="charts-grid">
-    <div class="chart-card full animate delay-2" id="sec-cumulative">
+    <div class="chart-card animate delay-2" id="sec-cumulative">
       <div class="chart-label with-subtitle">Cumulative screenings
         <span class="chart-dedup cum-forecast-toggle" id="cum-forecast-wrap">
           <label class="switch-toggle">
@@ -2045,6 +1994,10 @@ footer img.footer-favicon {
       </div>
       <div class="chart-subtitle"><span class="chart-subtitle-hover">Hover</span><span class="chart-subtitle-click">Tap</span> on chart for number of screenings as of any date</div>
       <div id="cumulative-chart"></div>
+    </div>
+    <div class="chart-card animate delay-2" id="sec-formats">
+      <div class="chart-label" style="display:flex;align-items:center;gap:18px;min-height:29px;">Screening format<span class="chart-num">2</span></div>
+      <div id="format-chart"></div>
     </div>
     <div class="chart-card animate delay-2" id="sec-ratings">
       <div class="chart-label rating-header">
@@ -2061,7 +2014,7 @@ footer img.footer-favicon {
           </label>
           <label class="switch-label-text" for="rating-dedup">Unique titles</label>
         </span>
-        <span class="chart-num">2</span>
+        <span class="chart-num">3</span>
       </div>
       <div id="rating-chart"></div>
     </div>
@@ -2074,14 +2027,9 @@ footer img.footer-favicon {
           </label>
           <label class="switch-label-text" for="decade-dedup">Unique titles</label>
         </span>
-        <span class="chart-num">3</span>
+        <span class="chart-num">4</span>
       </div>
       <div id="decade-chart"></div>
-    </div>
-    <div class="chart-card full animate delay-3" id="sec-formats">
-      <div class="chart-label with-subtitle">Screening format<span class="chart-num">4</span></div>
-      <div class="chart-subtitle"><span class="chart-subtitle-hover">Hover</span><span class="chart-subtitle-click">Tap</span> on bars for category breakdown</div>
-      <div id="format-chart"></div>
     </div>
     <div class="chart-card full animate delay-3" id="sec-runtimes">
       <div class="chart-label with-subtitle" style="display:flex;align-items:center;gap:18px;">Runtime distribution
@@ -2756,8 +2704,8 @@ const daysAtCinema = currentStats.daysAtCinema;
 // order. A marker site claims its note where it renders, and the first claim
 // of each id takes the next free symbol, so allocation follows first
 // appearance on the page: the script builds sections in DOM order (stat
-// cards, the cumulative chart's forecast switch when it is showing, decade
-// chart, format chart, log table). Repeat claims keep their symbol; a claim
+// cards, the cumulative chart's forecast switch when it is showing, format
+// chart, decade chart, log table). Repeat claims keep their symbol; a claim
 // with new text (the dedup toggle flips the Various note between singular
 // and plural) rewrites the note in place.
 const FOOTNOTE_SYMBOLS = ['*', '†', '‡', '§', '**', '††', '‡‡', '§§'];
@@ -3127,8 +3075,11 @@ function renderCumulativeChart(anim) {
   const container = document.getElementById('cumulative-chart');
   const W = container.getBoundingClientRect().width;
   if (!W) return;
-  const H = 260;
-  const ML = 10, MR = 39, MT = 16, MB = 28;
+  const ML = 10, MR = 39, MT = 16, MB = 28, MONTH_LABEL_Y = 20;
+  // Side by side with the format chart on desktop, the month labels' baseline sits level with the treemap's bottom edge.
+  const treemap = document.querySelector('#format-chart .tm-bg');
+  const besideTreemap = treemap && Math.abs(container.closest('.chart-card').getBoundingClientRect().top - treemap.closest('.chart-card').getBoundingClientRect().top) < 1;
+  const H = besideTreemap ? Math.max(260, Math.round(treemap.getBoundingClientRect().bottom - container.getBoundingClientRect().top + MB - MONTH_LABEL_Y)) : 260;
   const innerW = W - ML - MR;
   const innerH = H - MT - MB;
   // All-years mode draws on the reference calendar instead of the dashboard
@@ -3256,7 +3207,7 @@ function renderCumulativeChart(anim) {
       nextIdx = Math.min(Math.round((nextMonthStart - yearStart) / dayMs), endIdx);
     }
     const labelX = (x + xScale(nextIdx)) / 2;
-    xAxis += `<text x="${labelX}" y="${MT+innerH+20}" text-anchor="middle" font-family="'Dashboard Sans',sans-serif" font-size="1rem" font-weight="350" fill="var(--text)"${op}>${months[m]}</text>`;
+    xAxis += `<text x="${labelX}" y="${MT+innerH+MONTH_LABEL_Y}" text-anchor="middle" font-family="'Dashboard Sans',sans-serif" font-size="1rem" font-weight="350" fill="var(--text)"${op}>${months[m]}</text>`;
   }
   const xEnd = xScale(endIdx);
   xAxis += `<line x1="${xEnd}" x2="${xEnd}" y1="${MT+innerH+0.75}" y2="${MT+innerH+5.75}" stroke="var(--text)" stroke-width="1.5"/>`;
@@ -3314,7 +3265,7 @@ function renderCumulativeChart(anim) {
     forecastLayer += settledBandW >= 76
       ? `<text x="${(bandX + bandW / 2).toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="middle" font-family="'Dashboard Sans',sans-serif" font-size="1rem" font-weight="400" fill="rgb(89,89,89)">Forecast</text>`
       : `<text x="${(bandX - 8).toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="end" font-family="'Dashboard Sans',sans-serif" font-size="1rem" font-weight="400" fill="rgb(89,89,89)">Forecast</text>`;
-    forecastLayer += `<path d="${centralD}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></g>`;
+    forecastLayer += `<path d="${centralD}" fill="none" stroke="var(--chart-red)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></g>`;
   }
 
   // Build per-day cumulative lookup so a cursor anywhere on the chart can
@@ -3401,7 +3352,7 @@ function renderCumulativeChart(anim) {
   // gridlines the halo exists to hold apart stay erased. Only the mask
   // circle moves on hover; the halo paints over the dot's edge, leaving
   // the usual red core and 1px ring geometry.
-  const hoverDot = `<g class="cum-hover-dot" visibility="hidden" pointer-events="none"><circle r="4" fill="var(--accent)"/></g>`;
+  const hoverDot = `<g class="cum-hover-dot" visibility="hidden" pointer-events="none"><circle r="4" fill="var(--chart-red)"/></g>`;
   const ringMask = `<mask id="cum-ring-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="black"/><circle class="cum-ring-mask-circle" cx="-10" cy="-10" r="4" fill="none" stroke="white" stroke-width="2"/></mask>`;
   const hoverRing = `<g class="cum-hover-ring" mask="url(#cum-ring-mask)" visibility="hidden" pointer-events="none"><rect width="${W}" height="${H}" fill="var(--bg)"/>${ringBackdropLayers}</g>`;
   const hoverZone = `<rect class="cum-hover-zone" x="${ML}" y="${MT}" width="${innerW}" height="${innerH}" fill="transparent" style="cursor:crosshair;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none"/>`;
@@ -3431,7 +3382,7 @@ function renderCumulativeChart(anim) {
         `<path d="${pts.map((pt, i) => `${i === 0 ? 'M' : 'L'}${xScale(pt.x).toFixed(1)},${yScale(pt.y).toFixed(1)}`).join(' ')}" fill="none" stroke="rgb(189,189,175)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`
       ).join('')}</g>`
     : '';
-  container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;overflow:visible;">${plotClip}${yAxis}${xAxis}${todayMark}${closureLayer}${forecastLayer}${yearLayer}<g clip-path="url(#cum-plot-clip)"><path d="${pathD}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>${pastPathD ? `<path d="${pastPathD}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>` : ''}</g>${hoverLine}${ringMask}${hoverDot}${hoverRing}${hoverZone}</svg>`;
+  container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;overflow:visible;">${plotClip}${yAxis}${xAxis}${todayMark}${closureLayer}${forecastLayer}${yearLayer}<g clip-path="url(#cum-plot-clip)"><path d="${pathD}" fill="none" stroke="var(--chart-red)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>${pastPathD ? `<path d="${pastPathD}" fill="none" stroke="var(--chart-red)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>` : ''}</g>${hoverLine}${ringMask}${hoverDot}${hoverRing}${hoverZone}</svg>`;
 
   const svg = container.querySelector('svg');
   const lineEl = svg.querySelector('.cum-hover-line');
@@ -3663,6 +3614,899 @@ function syncBarLabelScope(container) {
   container.style.setProperty('--bar-axis-left', `${labelWidth + BAR_ROW_GAP}px`);
 }
 
+// ====== FORMAT CHART ======
+function parseFormat(raw) {
+  const f = (raw || 'DCP').toString().trim();
+  const threeD = /\b3D\b/i.test(f);
+  const clean = f.replace(/\b3D\b/ig, '').trim();
+  if (/VistaVision/i.test(clean)) return { base: '35mm', premium: 'VistaVision', threeD };
+  if (/IMAX.*70mm|70mm.*IMAX/i.test(clean)) return { base: '70mm', premium: 'IMAX', threeD };
+  if (/IMAX/i.test(clean)) return { base: 'DCP', premium: 'IMAX', threeD };
+  if (/Dolby/i.test(clean)) return { base: 'DCP', premium: 'Dolby', threeD };
+  if (/Prime/i.test(clean)) return { base: 'DCP', premium: 'Prime', threeD };
+  if (/70mm/i.test(clean)) return { base: '70mm', premium: null, threeD };
+  if (/35mm/i.test(clean)) return { base: '35mm', premium: null, threeD };
+  if (/16mm/i.test(clean)) return { base: '16mm', premium: null, threeD };
+  return { base: 'DCP', premium: null, threeD };
+}
+const BASE_ORDER = ['DCP', '35mm', '70mm', '16mm'];
+const STANDARD_FORMAT_KEY = '__std';
+const PREMIUM_TIE_ORDER = ['Dolby', 'IMAX', 'Prime', 'VistaVision'];
+const PREMIUM_LABEL = { '__std': 'Standard', 'IMAX': 'IMAX', 'Dolby': 'Dolby Cinema', 'Prime': 'AMC Prime', 'VistaVision': 'VistaVision' };
+
+const formatBreakdown = {};
+FILMS.forEach(f => {
+  const { base, premium, threeD } = parseFormat(f.format);
+  if (!formatBreakdown[base]) formatBreakdown[base] = { total: 0, segs: {} };
+  formatBreakdown[base].total++;
+  const key = (premium || STANDARD_FORMAT_KEY) + (threeD ? '|3D' : '');
+  formatBreakdown[base].segs[key] = (formatBreakdown[base].segs[key] || 0) + 1;
+});
+const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].total > 0);
+
+// One treemap group per base format: Standard forms each group's outline, premium formats sit in a corner block.
+(function () {
+  const host = document.getElementById('format-chart');
+  const PALETTE = {
+    DCP: { fill: '#efa489', premium: '#e77d63' },
+    '35mm': { fill: '#d8232a', premium: '#9c1d23' },  // --accent / --calendar-6
+    '70mm': { fill: '#6290bf', premium: '#293f84' },  // --blue-light / --blue-dark
+    '16mm': { fill: '#7e7f71', premium: '#6f6a58' },
+  };
+  const DARK = '#121212';
+  const luminance = hex => {
+    const n = parseInt(hex.slice(1), 16);
+    const c = [n >> 16, (n >> 8) & 255, n & 255].map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  };
+  const textOn = hex => (luminance(hex) > 0.2 ? DARK : '#ffffff');
+  const G = 1, GG = 1;
+  const sum = arr => arr.reduce((a, c) => a + c.value, 0);
+  const both = (s, k) => (s[k] || 0) + (s[k + '|3D'] || 0);
+  const groups = bases.map(b => {
+    const s = formatBreakdown[b].segs, pal = PALETTE[b];
+    const premiums = PREMIUM_TIE_ORDER.map(p => ({
+      label: p === 'IMAX' && b === '70mm' ? 'IMAX 70mm' : PREMIUM_LABEL[p],
+      value: both(s, p), threeD: s[p + '|3D'] || 0, fill: pal.premium, text: textOn(pal.premium),
+    }));
+    const std = { label: 'Standard', value: both(s, STANDARD_FORMAT_KEY), threeD: s[STANDARD_FORMAT_KEY + '|3D'] || 0, fill: pal.fill, text: textOn(pal.fill), standard: true };
+    const extras = premiums.filter(i => i.value > 0).sort((x, y) => y.value - x.value);
+    const items = std.value > 0 ? [std, ...extras] : extras;
+    // A 70mm group that is all IMAX says so: with no Standard beside it, nothing else would name it.
+    const allImax70 = b === '70mm' && items.length === 1 && !items[0].standard;
+    return { key: b, name: b === 'DCP' ? 'DCP' + footnoteMark('dcp', 'DCP includes other digital') : allImax70 ? items[0].label : b, total: formatBreakdown[b].total, items, fill: pal.fill, text: textOn(pal.fill) };
+  }).sort((a, b) => b.total - a.total);
+  const total = groups.reduce((a, g) => a + g.total, 0);
+
+  function squarify(items, rect) {
+    const out = [];
+    let { x, y, w, h } = rect;
+    const scale = (w * h) / sum(items);
+    const worst = (row, side) => { const s = sum(row) * scale, v = row.map(r => r.value * scale); return Math.max(side * side * Math.max(...v) / (s * s), (s * s) / (side * side * Math.min(...v))); };
+    const place = row => {
+      const s = sum(row) * scale;
+      if (w >= h) { const cw = s / h; let yy = y; row.forEach(it => { const hh = it.value * scale / cw; out.push({ item: it, x, y: yy, w: cw, h: hh }); yy += hh; }); x += cw; w -= cw; }
+      else { const rh = s / w; let xx = x; row.forEach(it => { const ww = it.value * scale / rh; out.push({ item: it, x: xx, y, w: ww, h: rh }); xx += ww; }); y += rh; h -= rh; }
+    };
+    let row = []; const rest = items.slice();
+    while (rest.length) { const side = Math.min(w, h); if (!row.length || worst([...row, rest[0]], side) <= worst(row, side)) row.push(rest.shift()); else { place(row); row = []; } }
+    if (row.length) place(row);
+    return out;
+  }
+  // Biggest group on top at full width; the rest share a strip below, the
+  // second biggest on the left and the others in a block at the right end.
+  function topLayouts(W, H) {
+    const [first, ...rest] = groups;
+    if (!rest.length) return [[{ g: first, r: { x: 0, y: 0, w: W, h: H } }]];
+    const restTotal = rest.reduce((a, g) => a + g.total, 0);
+    const hFirst = H * first.total / total;
+    const head = [{ g: first, r: { x: 0, y: 0, w: W, h: hFirst } }];
+    const strip = { x: 0, y: hFirst, w: W, h: H - hFirst };
+    const [second, ...others] = rest;
+    if (!others.length) return [head.concat({ g: second, r: strip })];
+    const oTotal = others.reduce((a, g) => a + g.total, 0);
+    const bw = W * oTotal / restTotal;
+    head.push({ g: second, r: { x: 0, y: strip.y, w: W - bw, h: strip.h } });
+    let yy = strip.y, xx = W - bw;
+    const stacked = others.map(g => { const hh = strip.h * g.total / oTotal; const r = { x: W - bw, y: yy, w: bw, h: hh }; yy += hh; return { g, r }; });
+    const side = others.map(g => { const ww = bw * g.total / oTotal; const r = { x: xx, y: strip.y, w: ww, h: strip.h }; xx += ww; return { g, r }; });
+    return [head.concat(stacked), head.concat(side)];
+  }
+
+  // A 3D tooltip names the format in full: "Standard DCP 3D", "AMC Prime 3D", "IMAX 70mm 3D".
+  const tipFor = (g, item) => ({ name: `${item.standard ? `Standard ${g.key}` : item.label} 3D`, count: item.threeD });
+  const tipAttrs = s => (s.tip ? ` class="tm-3d" pointer-events="all" data-tip="${esc(s.tip.name)}" data-count="${s.tip.count}"` : '');
+
+  // Tiles whose inside label a pointer line would run through; their labels go outside instead.
+  let bumped = new Set();
+
+  const ctx = document.createElement('canvas').getContext('2d');
+  const tw = (text, weight, size) => { ctx.font = `${weight} ${size}px "Dashboard Sans"`; return ctx.measureText(text).width; };
+  const esc = s => escapeHtml(String(s));
+
+  function scene(W, H, layout, FS, mode = 'side') {
+    const stack = mode === 'stack';
+    const LH = FS + 3, PAD = 5;
+    const unit = (W * H) / total;
+    const near = (a, b) => Math.abs(a - b) < 0.5;
+    const outer = (v, axis) => near(v, 0) || near(v, axis === 'x' ? W : H);
+    const insetBy = (r, e) => {
+      const l = e(r.x, 'x'), rt = e(r.x + r.w, 'x'), t = e(r.y, 'y'), b = e(r.y + r.h, 'y');
+      return { x: r.x + l, y: r.y + t, w: Math.max(0, r.w - l - rt), h: Math.max(0, r.h - t - b) };
+    };
+    // A format's rectangle: every inner edge is a format boundary.
+    const insetGroup = r => insetBy(r, (v, axis) => (outer(v, axis) ? 0 : GG / 2));
+    // A tile inside a format: edges on the format's boundary share that line exactly; others get the thin line.
+    const insetTile = (r, gr) => insetBy(r, (v, axis) => {
+      if (outer(v, axis)) return 0;
+      const onGroup = near(v, axis === 'x' ? gr.x : gr.y) || near(v, axis === 'x' ? gr.x + gr.w : gr.y + gr.h);
+      return onGroup ? GG / 2 : G / 2;
+    });
+    const shapes = [], labels = [], callouts = [], internals = [], darkAreas = [];
+    const unitSide = Math.sqrt(unit);
+    // n unit squares in rows, anchored at a bottom-right corner; a row wraps upwards when the tile is too narrow. A tile
+    // gives up half a white line on each inner side, so the squares as a whole give up one line in width and height to
+    // look the same size as a tile of that count. If they don't fit, or would leave a gap under 4px beside or above them,
+    // the shape changes instead: a band or column across the tile, covering exactly n screenings' share of it (cellArea
+    // is the area one screening takes up here), so half the screenings in 3D shade half the tile.
+    const unitMarker = (n, right, bottom, maxW, maxH, cellArea, tip) => {
+      const band = () => { const h = Math.min(maxH, n * cellArea / maxW); return [{ hatch: true, tip, x: right - maxW, y: bottom - h, w: maxW, h }]; };
+      const column = () => { const w = Math.min(maxW, n * cellArea / maxH); return [{ hatch: true, tip, x: right - w, y: bottom - maxH, w, h: maxH }]; };
+      const perRow = Math.max(1, Math.min(n, Math.floor((maxW + G + 0.01) / unitSide)));
+      const gapW = maxW - (perRow * unitSide - G), gapH = maxH - (Math.ceil(n / perRow) * unitSide - G);
+      if (gapW < -0.01 || gapH < -0.01 || (gapW > 0.01 && gapW < 4)) return band();
+      if (gapH > 0.01 && gapH < 4) return column();
+      const full = Math.floor(n / perRow), rem = n - full * perRow, out = [];
+      const fullW = perRow * unitSide - G, fullH = full * unitSide - (rem ? 0 : G);
+      out.push({ hatch: true, tip, x: right - fullW, y: bottom - fullH, w: fullW, h: fullH });
+      if (rem) {
+        const w = rem * unitSide - G, h = unitSide - G;
+        out.push({ hatch: true, tip, x: right - w, y: bottom - fullH - h, w, h });
+      }
+      return out;
+    };
+    const fitLines = (text, value, boxW, boxH, weight, clear = () => true) => {
+      const words = text.split(' ');
+      const options = [[text, String(value)], words.length > 1 ? [...words, String(value)] : null, [`${text} ${value}`]].filter(Boolean);
+      for (const lines of options) {
+        const wmax = Math.max(...lines.map(l => tw(l, weight, FS)));
+        const hNeed = lines.length === 1 ? FS + 4 : lines.length * LH + 2 * PAD - 4;
+        if (wmax + 2 * PAD <= boxW && hNeed <= boxH && clear(lines)) return lines;
+      }
+      return null;
+    };
+    // Premium formats go in a block in one corner ('tr', 'br' or 'bl'), keeping a rim of standard around it.
+    const placeBlock = (others, gr, corner, rimmed, edge = null) => {
+      const area = sum(others) * unit, RIM = rimmed ? (stack ? 8 : 6) : 0, maxW = gr.w - RIM, maxH = gr.h - RIM;
+      const at = (cw, ch) => ({ x: corner === 'bl' ? gr.x : gr.x + gr.w - cw, y: corner === 'tr' ? gr.y : gr.y + gr.h - ch, w: cw, h: ch });
+      let block = null, tiles = [], bestScore = Infinity;
+      if (area <= maxW * maxH) {
+        for (let f = 0.5; f <= 2.001; f += 0.05) {
+          let cw = Math.sqrt(area) * f, ch = area / cw;
+          if (ch > maxH) { ch = maxH; cw = area / ch; }
+          if (cw > maxW) { cw = maxW; ch = area / cw; }
+          if (ch > maxH + 0.01) continue;
+          const b = at(cw, ch), ts = squarify(others, b);
+          let score = Math.max(...ts.map(t => Math.max(t.w / t.h, t.h / t.w)));
+          if (edge === 'top') score += 10 * ts.filter(t => !near(t.y, b.y)).length;
+          if (edge === 'bottom') score += 10 * ts.filter(t => !near(t.y + t.h, b.y + b.h)).length;
+          if (score < bestScore - 1e-6) { bestScore = score; block = b; tiles = ts; }
+        }
+      }
+      if (!block) {
+        const S = gr.w * gr.h - area, sw = gr.w + gr.h;
+        const rim = (sw - Math.sqrt(Math.max(0, sw * sw - 4 * S))) / 2;
+        block = at(gr.w - rim, gr.h - rim);
+        tiles = squarify(others, block);
+      }
+      return { block, tiles };
+    };
+    // The standard region: the format's rectangle minus its corner block, a 1px line apart.
+    const lShape = (r, b, gr) => {
+      const L = r.x, R = r.x + r.w, T = r.y, B = r.y + r.h;
+      if (!b) return [[L, T], [R, T], [R, B], [L, B]];
+      const bx0 = b.x - G / 2, bx1 = b.x + b.w + G / 2, by0 = b.y - G / 2, by1 = b.y + b.h + G / 2;
+      const atLeft = near(b.x, gr.x), atTop = near(b.y, gr.y);
+      if (b.h >= gr.h - 0.5) return atLeft ? [[bx1, T], [R, T], [R, B], [bx1, B]] : [[L, T], [bx0, T], [bx0, B], [L, B]];
+      if (b.w >= gr.w - 0.5) return atTop ? [[L, by1], [R, by1], [R, B], [L, B]] : [[L, T], [R, T], [R, by0], [L, by0]];
+      if (atTop && !atLeft) return [[L, T], [bx0, T], [bx0, by1], [R, by1], [R, B], [L, B]];
+      if (!atTop && !atLeft) return [[L, T], [R, T], [R, by0], [bx0, by0], [bx0, B], [L, B]];
+      if (!atTop && atLeft) return [[L, T], [R, T], [R, B], [bx1, B], [bx1, by0], [L, by0]];
+      return [[bx1, T], [R, T], [R, B], [L, B], [L, by1], [bx1, by1]];
+    };
+    layout.forEach(({ g, r: gr }, gi) => {
+      const touchesRight = near(gr.x + gr.w, W);
+      const labelStart = labels.length, shapeStart = shapes.length;
+      const [dominant, ...others] = g.items;
+      const r = insetGroup(gr);
+      const hasStd = dominant.standard && others.length > 0;
+      let corner = gi === 0 ? 'tr' : 'br';
+      const edge = !stack ? null : corner === 'tr' ? 'top' : 'bottom';
+      let { block, tiles } = others.length ? placeBlock(others, gr, corner, dominant.standard, edge) : { block: null, tiles: [] };
+      // Format label, top left, with the standard count on a second line when it fits; clear of the corner block.
+      const domLine = hasStd ? `${dominant.label} ${dominant.value}` : null;
+      const head = `${g.name} ${g.total}`, headW = tw(head, 700, FS), domW = domLine ? tw(domLine, 400, FS) : 0;
+      const oneY = r.y + Math.min(PAD - 1, (r.h - LH) / 2);
+      const boxFree = (w, h, y) => {
+        const bx = r.x + PAD;
+        if (bx + w > r.x + r.w - PAD + 2 || y + h > r.y + r.h || y < r.y) return false;
+        return !block || !(bx < block.x + block.w + 3 && bx + w > block.x - 3 && y < block.y + block.h + 3 && y + h > block.y - 3);
+      };
+      let inside = null;
+      if (domLine && boxFree(Math.max(headW, domW), 2 * LH, r.y + PAD - 1)) inside = { x: r.x + PAD, y: r.y + PAD - 1, color: dominant.text, lines: [{ t: head, w: 700 }, { t: domLine, w: 400 }] };
+      else if (domLine && boxFree(headW + 10 + domW, LH, oneY)) inside = { x: r.x + PAD, y: oneY, color: dominant.text, inline: [head, domLine] };
+      else if (!domLine && boxFree(headW, LH, oneY)) inside = { x: r.x + PAD, y: oneY, color: dominant.text, lines: [{ t: head, w: 700 }] };
+      else if (!domLine && boxFree(Math.max(tw(g.name, 700, FS), tw(String(g.total), 700, FS)), 2 * LH, r.y + PAD - 1)) {
+        inside = { x: r.x + PAD, y: r.y + PAD - 1, color: dominant.text, lines: [{ t: g.name, w: 700 }, { t: String(g.total), w: 700 }] };
+      }
+      // Labelled from outside, standard gets its own pointer: the premium block moves to the bottom-left so
+      // standard runs down the format's right-hand side, next to the labels.
+      const touchesBottom = near(gr.y + gr.h, H), touchesTop = near(gr.y, 0);
+      const stdPointer = !inside && hasStd && (stack ? (touchesBottom || touchesTop) : touchesRight && corner === 'br');
+      if (stdPointer && !stack) { corner = 'bl'; ({ block, tiles } = placeBlock(others, gr, corner, true)); }
+      if (stdPointer && stack && touchesBottom) { corner = 'tr'; ({ block, tiles } = placeBlock(others, gr, corner, true, null)); }
+      shapes.push({ poly: lShape(r, block, gr), fill: dominant.fill });
+      if (dominant.threeD) {
+        let right = block && corner === 'br' ? block.x - G / 2 : r.x + r.w;
+        const bottom = block && corner === 'bl' ? block.y - G / 2 : r.y + r.h;
+        let roof = block && corner === 'tr' ? block.y + block.h + G / 2 : r.y;
+        // Where the strip under a top-right block is too shallow for a row of squares, they sit to the block's left.
+        if (block && corner === 'tr' && bottom - roof < unitSide - G) { right = block.x - G / 2; roof = r.y; }
+        shapes.push(...unitMarker(dominant.threeD, right, bottom, right - r.x - PAD, bottom - roof, others.length ? unit : r.w * r.h / dominant.value, tipFor(g, dominant)));
+      }
+      if (inside) labels.push(inside);
+      else {
+        const lines = [{ t: head, w: 700 }];
+        if (domLine && !stdPointer) lines.push({ t: domLine, w: 400 });
+        if (stack) {
+          const zone = touchesBottom ? 'bottom' : touchesTop ? 'top' : (r.y + r.h / 2 < H / 2 ? 'top' : 'bottom');
+          if (others.length) callouts.push({ bracket: true, zone, r, lines, text: head, gi, rank: 0, gcx: r.x + r.w / 2, blocked: !(touchesBottom || touchesTop) });
+          else callouts.push({ zone, cx: r.x + r.w / 2, cy: r.y + r.h / 2, r, lines, text: head, gi, rank: 0, gcx: r.x + r.w / 2, fill: dominant.fill, blocked: !(touchesBottom || touchesTop) });
+        } else if (others.length) callouts.push({ bracket: true, cx: r.x + r.w, cy: r.y + r.h / 2, r, lines, text: head, gi, rank: 0, blocked: !touchesRight });
+        else callouts.push({ cx: r.x + r.w / 2, cy: r.y + r.h / 2, r, lines, text: head, gi, rank: 0, fill: dominant.fill });
+      }
+      if (stdPointer && stack) {
+        const zone = touchesBottom ? 'bottom' : 'top';
+        let cx, cy, strip;
+        if (corner === 'tr') {
+          // Standard wraps round the premium formats: a column on their left and a strip below them. Its dot goes in
+          // whichever has more room, left of the premium dots so the curves keep their order.
+          strip = { x: r.x, y: block.y + block.h + G / 2, w: r.w, h: r.y + r.h - (block.y + block.h + G / 2) };
+          const premX = Math.min(...tiles.map(t => t.x + t.w / 2));
+          const col = { x: r.x, y: r.y, w: block.x - G / 2 - r.x, h: r.h };
+          const room = (w, h) => Math.min(w, h) / 2;
+          if (col.w >= 16 && room(col.w, col.h) > room(premX - r.x, strip.h)) { cx = col.x + col.w / 2; cy = col.y + col.h / 2; strip = col; }
+          else { cx = (r.x + premX) / 2; cy = strip.h >= 5 ? strip.y + strip.h / 2 : r.y + r.h - 2.5; }
+        } else {
+          strip = { x: r.x, y: r.y, w: block.x - G / 2 - r.x, h: r.h };
+          cx = strip.x + strip.w / 2; cy = r.y + r.h / 2;
+        }
+        callouts.push({ zone, cx, cy, r: strip, text: domLine, lines: [{ t: domLine, w: 400 }], gi, rank: 1, gcx: r.x + r.w / 2, fill: dominant.fill });
+      } else if (stdPointer) {
+        const colX = block.x + block.w + G / 2;
+        const col = { x: colX, y: r.y, w: r.x + r.w - colX, h: r.h };
+        const strip = { x: r.x, y: r.y, w: r.w, h: block.y - G / 2 - r.y };
+        // Standard wraps round the premium formats: a column on their right and a strip above them. Its dot goes in
+        // whichever has more room.
+        const room = q => Math.min(q.w, q.h) / 2;
+        if (strip.h >= 10 && room(strip) > room(col)) {
+          callouts.push({ cx: strip.x + strip.w / 2, cy: strip.y + strip.h / 2, r: strip, text: domLine, lines: [{ t: domLine, w: 400 }], gi, rank: 1, fill: dominant.fill });
+        } else {
+          callouts.push({ cx: col.x + col.w / 2, cy: col.y + col.h / 2, r: col, topStrip: strip.h >= 10 ? strip : null,
+            prefY: strip.h >= 10 ? strip.y + strip.h / 2 : null, text: domLine, lines: [{ t: domLine, w: 400 }], gi, rank: 1, fill: dominant.fill });
+        }
+      }
+      const own = labels.slice(labelStart).map(l => {
+        const lines = l.inline ? [l.inline.join('   ')] : l.lines.map(x => x.t);
+        return { x: l.x, y: l.y, w: Math.max(...lines.map(t => tw(t, 700, FS))), h: (l.inline ? 1 : lines.length) * LH + 2 };
+      });
+      tiles.forEach(t => {
+        const tr = insetTile(t, gr);
+        shapes.push({ rect: tr, fill: t.item.fill });
+        const marker = t.item.threeD ? unitMarker(t.item.threeD, tr.x + tr.w, tr.y + tr.h, tr.w, tr.h, tr.w * tr.h / t.item.value, tipFor(g, t.item)) : [];
+        shapes.push(...marker);
+        const tileKey = g.key + t.item.label;
+        // A label inside the tile keeps 2px off the tile's 3D squares.
+        const offSquares = ls => {
+          const y = tr.y + (ls.length === 1 ? (tr.h - LH) / 2 + 1 : PAD - 1), textRight = tr.x + PAD + Math.max(...ls.map(l => tw(l, 400, FS)));
+          return !marker.some(m => tr.x + PAD < m.x + m.w + 2 && textRight > m.x - 2 && y + 0.28 * FS < m.y + m.h + 2 && y + 1.18 * FS + (ls.length - 1) * LH > m.y - 2);
+        };
+        const lines = bumped.has(tileKey) ? null : fitLines(t.item.label, t.item.value, tr.w, tr.h, 400, offSquares);
+        if (lines) { labels.push({ tileKey, x: tr.x + PAD, y: tr.y + (lines.length === 1 ? (tr.h - LH) / 2 + 1 : PAD - 1), color: t.item.text, lines: lines.map(l => ({ t: l, w: 400 })) }); return; }
+        const c = { cx: tr.x + tr.w / 2, cy: tr.y + tr.h / 2, r: tr, text: `${t.item.label} ${t.item.value}`, lines: [{ t: `${t.item.label} ${t.item.value}`, w: 400 }], gi, rank: 1 + g.items.indexOf(t.item), gcx: r.x + r.w / 2, fill: t.item.fill };
+        if (marker.length) { c.markerTop = Math.min(...marker.map(m => m.y)); c.markerLeft = Math.min(...marker.map(m => m.x)); }
+        const hit = marker.find(m => c.cx > m.x - 4 && c.cx < m.x + m.w + 4 && c.cy > m.y - 4 && c.cy < m.y + m.h + 4);
+        if (hit) {
+          const top = Math.min(...marker.map(m => m.y)), left = Math.min(...marker.map(m => m.x));
+          // Above the squares if the dot can stay in the tile's middle band there, as near the middle of the free strip as
+          // the band allows; otherwise beside them, where there's room. If the squares fill the tile, it stays in the
+          // middle, on them.
+          const above = Math.max(tr.y + (top - tr.y) / 2, tr.y + 0.3 * tr.h);
+          if (above <= top - 4) c.cy = above;
+          else if (left - tr.x >= 7.5) c.cx = tr.x + (left - tr.x) / 2;
+          else if (top - tr.y >= 10) c.cy = tr.y + (top - tr.y) / 2;
+          else c.markerTop = c.markerLeft = null;
+        }
+        if (stack) {
+          c.zone = c.cy < H / 2 ? 'top' : 'bottom';
+          const down = c.zone === 'bottom';
+          const others2 = layout.filter((_, oi) => oi !== gi).map(o => o.r).concat(tiles.filter(o => o !== t));
+          c.blocked = others2.some(o => o.x < tr.x + tr.w - 0.5 && o.x + o.w > tr.x + 0.5 && (down ? o.y >= tr.y + tr.h - 0.5 : o.y + o.h <= tr.y + 0.5));
+        }
+        const blocked = stack ? c.blocked : layout.some(({ r: o }, oi) => oi !== gi && o.x >= tr.x + tr.w - 0.5 && o.y < c.cy && o.y + o.h > c.cy);
+        if (blocked || !stack && !touchesRight && !near(block.x + block.w, W)) {
+          // Inside label: to the left of the tile, within this group, clear of the group's own label.
+          const need = tw(c.text, 400, FS) + 19;
+          let left = r.x + PAD;
+          own.forEach(b => { if (c.cy + LH / 2 > b.y && c.cy - LH / 2 < b.y + b.h) left = Math.max(left, b.x + b.w + 8); });
+          const ly = Math.min(Math.max(c.cy, r.y + LH / 2), r.y + r.h - LH / 2 + 2);
+          if (tr.x - left >= need && r.h >= LH) { internals.push({ ...c, ly, color: dominant.text, groupRect: r }); return; }
+        }
+        callouts.push(c);
+      });
+      // Where pointer lines turn white: on the tiles that take white text. A group of nothing else counts whole, so a
+      // line stays white across the white gaps inside it instead of showing a black speck.
+      const tilesHere = shapes.slice(shapeStart).filter(s => s.rect || s.poly), whiteHere = tilesHere.filter(s => textOn(s.fill) !== DARK);
+      if (whiteHere.length && whiteHere.length === tilesHere.length) darkAreas.push({ rect: r });
+      else darkAreas.push(...whiteHere);
+    });
+    return { shapes, labels, callouts, internals, unit, FS, LH, PAD, blockedBrackets: callouts.filter(c => (c.bracket || stack) && c.blocked).length, darkAreas };
+  }
+
+  // The 3D key sits in the title row, after the title and before the chart number: the bar chart's legend chip, at
+  // the legend's size.
+  function setKey() {
+    const card = host.closest('.chart-card'), row = card && card.querySelector('.chart-label');
+    if (!row) return;
+    const threeD = groups.reduce((a, g) => a + g.items.reduce((b, i) => b + (i.threeD || 0), 0), 0);
+    let key = row.querySelector('.tm-key');
+    if (!threeD) { if (key) key.remove(); return; }
+    if (!key) { key = document.createElement('span'); key.className = 'legend-chip tm-key'; row.insertBefore(key, row.querySelector('.chart-num')); }
+    key.innerHTML = `<span class="legend-swatch swatch-3d"></span>3D <span class="legend-count">${threeD}</span>`;
+  }
+
+  // Screen readers get every format's count and its breakdown, without the footnote mark.
+  const ariaLabel = () => 'Screening format: ' + groups.map(g => `${g.key} ${g.total} (${g.items
+    .map(i => `${i.label} ${i.value}${i.threeD ? `, ${i.threeD} in 3D` : ''}`).join('; ')})`).join(', ');
+
+  function render() {
+    const cardW = host.getBoundingClientRect().width;
+    if (!cardW) return;
+    hideTip();
+    setKey();
+    bumped = new Set();
+    const narrow = cardW < 420;
+    const FS = narrow ? 13 : 14;
+    const H = narrow ? 260 : 330;
+    const worstAspect = l => Math.max(1, ...l.slice(2).map(({ r }) => Math.max(r.w / r.h, r.h / r.w)));
+    if (narrow) {
+      const Wp = Math.round(cardW);
+      const sc = topLayouts(Wp, H).map(l => ({ sc: scene(Wp, H, l, FS, 'stack'), aspect: worstAspect(l) }))
+        .sort((a, b) => (a.sc.callouts.length + 10 * a.sc.blockedBrackets) - (b.sc.callouts.length + 10 * b.sc.blockedBrackets) || a.sc.internals.length - b.sc.internals.length || a.aspect - b.aspect)[0].sc;
+      drawStack(sc, Wp, H, cardW);
+      return;
+    }
+    const best = W => topLayouts(W, H).map(l => ({ sc: scene(W, H, l, FS), aspect: worstAspect(l) }))
+      .sort((a, b) => (a.sc.callouts.length + 10 * a.sc.blockedBrackets) - (b.sc.callouts.length + 10 * b.sc.blockedBrackets) || a.sc.internals.length - b.sc.internals.length || a.aspect - b.aspect)[0].sc;
+    // The label column must fit the labels of the layout actually drawn: narrowing the treemap can push
+    // more tiles out to the column, so widen it until every label fits.
+    // A pointer line may not run through a label inside another tile: that label moves out too, and the chart is laid out again.
+    for (let tries = 0; tries < 5; tries++) {
+      let W = Math.round(cardW), sc = best(W);
+      for (let k = 0; k < 6 && sc.callouts.length; k++) {
+        const longest = Math.max(...sc.callouts.flatMap(c => c.lines.map(l => tw(l.t, l.w, FS))));
+        const fitW = Math.floor(cardW - Math.ceil(longest + 30));
+        if (fitW >= W) break;
+        W = fitW; sc = best(W);
+      }
+      const hit = draw(sc, W, H, cardW);
+      if (!hit.length) break;
+      hit.forEach(key => bumped.add(key));
+    }
+  }
+
+  // Every label keeps at least this far below the chart number box in the title row.
+  const NUM_GAP = 10;
+
+  // A dot keeps toward the middle of its tile, between 30% and 70% of its height (or width), clear of any 3D squares;
+  // a label that cannot sit level with that band reaches its dot with a curve instead.
+  const MID = 0.3;
+  const band = (a, len, cut) => {
+    let lo = a + Math.max(3, len * MID), hi = a + len - Math.max(3, len * MID);
+    if (cut != null) hi = Math.min(hi, cut);
+    if (lo > hi) { const top = Math.min(a + len - 3, cut ?? Infinity); lo = hi = Math.max(a + 3, (a + 3 + top) / 2); }
+    return [lo, hi];
+  };
+
+  // A pointer line takes the text colour of whatever it crosses, white on tiles with white text and black everywhere
+  // else, so it changes colour as it passes from tile to tile and out of the chart. Its dot does the same on its own tile.
+  let renderSeq = 0;
+  function pointerKit(dark, uid) {
+    const f = v => +v.toFixed(2);
+    const outline = s => (s.rect ? `M${f(s.rect.x)},${f(s.rect.y)}h${f(s.rect.w)}v${f(s.rect.h)}h${f(-s.rect.w)}Z`
+      : 'M' + s.poly.map(q => `${f(q[0])},${f(q[1])}`).join('L') + 'Z');
+    const d = dark.map(outline).join('');
+    const defs = dark.length ? `<clipPath id="${uid}-dark"><path d="${d}"/></clipPath>`
+      + `<clipPath id="${uid}-light"><path clip-rule="evenodd" d="M-3000,-3000H6000V6000H-3000Z${d}"/></clipPath>` : '';
+    const pointer = (path, cx, cy, fill) => {
+      const line = dark.length
+        ? `<path d="${path}" fill="none" stroke="${DARK}" stroke-width="1" clip-path="url(#${uid}-light)"/><path d="${path}" fill="none" stroke="#ffffff" stroke-width="1" clip-path="url(#${uid}-dark)"/>`
+        : `<path d="${path}" fill="none" stroke="${DARK}" stroke-width="1"/>`;
+      return line + `<circle cx="${f(cx)}" cy="${f(cy)}" r="2.5" fill="${textOn(fill)}"/>`;
+    };
+    return { defs, pointer };
+  }
+
+  function draw(sc, W, H, cardW) {
+    const uid = `tm${++renderSeq}`;
+    const { shapes, labels, callouts, internals, FS, LH } = sc;
+    const pts = arr => arr.map(p => p.map(v => +v.toFixed(2)).join(',')).join(' ');
+    const kit = pointerKit(sc.darkAreas, uid);
+    let svg = `<defs><pattern id="${uid}-hatch" patternUnits="userSpaceOnUse" width="4" height="4" patternTransform="rotate(45)"><rect width="2" height="4" fill="rgba(0,0,0,0.5)"/></pattern>${kit.defs}</defs>`;
+    svg += `<rect class="tm-bg" x="0" y="0" width="${W}" height="${H}" fill="#fff"/>`;
+    shapes.forEach(s => {
+      if (s.poly) svg += `<polygon points="${pts(s.poly)}" fill="${s.fill}"/>`;
+      else if (s.rect) svg += `<rect x="${s.rect.x}" y="${s.rect.y}" width="${s.rect.w}" height="${s.rect.h}" fill="${s.fill}"/>`;
+      else if (s.hatch) svg += `<rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" fill="url(#${uid}-hatch)"${tipAttrs(s)}/>`;
+    });
+    labels.forEach(l => {
+      if (l.inline) { svg += `<text x="${l.x}" y="${l.y + FS}" font-size="${FS}" fill="${l.color}"><tspan font-weight="700">${esc(l.inline[0])}</tspan><tspan dx="10">${esc(l.inline[1])}</tspan></text>`; return; }
+      l.lines.forEach((ln, i) => { svg += `<text x="${l.x}" y="${l.y + FS + i * LH}" font-size="${FS}" font-weight="${ln.w}" fill="${l.color}">${esc(ln.t)}</text>`; });
+    });
+    const f2 = v => +v.toFixed(2);
+    // A leader from a label end (x0, y0) to its dot (x1, y1): straight when level; otherwise one arc that
+    // leaves the label horizontally and curves into the dot, as in The Economist's callouts.
+    const leader = (x0, y0, x1, y1) => {
+      if (Math.abs(y1 - y0) < 0.5) return `M${f2(x0)},${f2(y0)} H${f2(x1)}`;
+      const cx = x1 + 0.3 * (x0 - x1);
+      return `M${f2(x0)},${f2(y0)} Q${f2(cx)},${f2(y0)} ${f2(x1)},${f2(y1)}`;
+    };
+    // The heights a dot may take inside its tile: the middle of the tile, clear of any 3D squares.
+    const dotRange = c => band(c.r.y, c.r.h, c.markerTop != null && c.cx > c.markerLeft - 4 ? c.markerTop - 4 : null);
+    // Where a label at y puts its dot: level with it if the band allows; otherwise in the band, and if the line has to
+    // curve, by at least 4px (further toward the middle of the tile), so the curve never reads as a wobble.
+    const dotAt = (y, lo, hi) => {
+      const d = Math.min(Math.max(y, lo), hi);
+      if (Math.abs(d - y) < 0.5 || Math.abs(d - y) >= 4) return d;
+      return y < lo ? Math.min(hi, y + 4) : Math.max(lo, y - 4);
+    };
+    const pointer = kit.pointer;
+    // Labels for tiles whose way to the gutter is blocked sit inside their own group, to the left.
+    internals.forEach(c => {
+      const x0 = c.r.x - 16;
+      const [lo, hi] = dotRange(c);
+      c.cy = dotAt(c.ly, lo, hi);
+      svg += pointer(leader(x0 + 2, c.ly, c.cx, c.cy), c.cx, c.cy, c.fill);
+      svg += `<text x="${x0 - 3}" y="${c.ly + FS / 2 - 2}" font-size="${FS}" fill="${c.color}" text-anchor="end">${esc(c.text)}</text>`;
+    });
+    // Each label wants to sit level with the middle of its dot's tile (brackets: the top of their group).
+    // Place them in order, 3px apart, as close to those heights as possible (weighted least squares via
+    // pool-adjacent-violators); thin tiles weigh more so their lines stay straight.
+    callouts.forEach(c => {
+      c.h = c.lines.length * LH;
+      // A format's label sits level with its bracket's vertical line, at least 6px clear of the corners.
+      if (c.bracket) { [c.lo, c.hi] = c.r.h >= 13 ? [c.r.y + 6.5, c.r.y + c.r.h - 6.5] : [c.r.y + c.r.h / 2, c.r.y + c.r.h / 2]; c.pref = c.lo; c.wt = 0.5; }
+      else { [c.lo, c.hi] = dotRange(c); c.pref = c.prefY ?? (c.lo + c.hi) / 2; c.wt = c.hi - c.lo < 8 ? 10 : 1; }
+    });
+    callouts.sort((a, b) => a.pref - b.pref || (a.bracket ? -1 : 1));
+    // Within a format the labels read: the format itself, then standard, then its premium formats.
+    const slots = {};
+    callouts.forEach((c, i) => (slots[c.gi] ||= []).push(i));
+    Object.values(slots).forEach(idx => {
+      const inOrder = idx.map(i => callouts[i]).sort((a, b) => Math.min(a.rank, 2) - Math.min(b.rank, 2));
+      idx.forEach((i, k) => { callouts[i] = inOrder[k]; });
+    });
+    // A format with a bracket keeps its labels together as one tight block, one line apart as on phones: its own label
+    // first, level with the bracket's vertical line, then the others, each curving to its tile where it cannot be level.
+    const UG = 8, PITCH = 1, blockGi = new Set(callouts.filter(c => c.bracket).map(c => c.gi));
+    {
+      const seen = new Set(), ordered = [];
+      callouts.forEach(c => {
+        if (!blockGi.has(c.gi)) { ordered.push(c); return; }
+        if (seen.has(c.gi)) return;
+        seen.add(c.gi);
+        ordered.push(...callouts.filter(q => q.gi === c.gi));
+      });
+      ordered.forEach((c, i) => { callouts[i] = c; });
+    }
+    const n = callouts.length, units = [];
+    callouts.forEach((c, i) => {
+      const last = units[units.length - 1];
+      if (blockGi.has(c.gi) && last && last.block && last.gi === c.gi) { last.idx.push(i); return; }
+      units.push({ gi: c.gi, block: blockGi.has(c.gi), idx: [i] });
+    });
+    // Every line that crosses a bracket does so at least 6px clear of its corners. A block whose bracket is too short
+    // for that closes its lines up, to no less than 15px apart; if even that is too much, it centres on the bracket.
+    const CLEAR = 6, PMIN = 15;
+    units.forEach(u => {
+      const head = callouts[u.idx[0]], k = u.idx.length;
+      let p = LH + PITCH;
+      if (u.block && k > 1) p = Math.min(p, Math.max(PMIN, (head.r.h - 1 - 2 * CLEAR) / (k - 1)));
+      u.off = [0];
+      u.idx.slice(1).forEach((i, j) => u.off.push(u.off[j] + callouts[u.idx[j]].h - LH + p));
+      const last = callouts[u.idx[k - 1]];
+      u.H = u.off[k - 1] + last.h;
+      u.span = u.off[k - 1];
+    });
+    units.forEach(u => {
+      const head = callouts[u.idx[0]];
+      if (!u.block) { Object.assign(u, { pref: head.pref, wt: head.wt, lo: head.lo, hi: head.hi }); return; }
+      // Within the range that keeps the format's label and the block's last line clear of the bracket's corners, the
+      // block sits where most of its other labels are level with their tiles, as high as it can.
+      const t = head.r.y + 0.5, b = head.r.y + head.r.h - 0.5, rest = u.idx.slice(1);
+      let lo = t + CLEAR, hi = b - CLEAR - u.span;
+      if (hi < lo) lo = hi = (t + b - u.span) / 2;
+      const score = y => rest.filter((i, k) => y + u.off[k + 1] >= callouts[i].lo - 0.01 && y + u.off[k + 1] <= callouts[i].hi + 0.01).length;
+      const cands = [lo, ...rest.flatMap((i, k) => [callouts[i].lo - u.off[k + 1], callouts[i].hi - u.off[k + 1]])].filter(y => y >= lo - 1e-6 && y <= hi + 1e-6);
+      const best = cands.reduce((bst, y) => (score(y) > score(bst) || (score(y) === score(bst) && y < bst) ? y : bst), lo);
+      Object.assign(u, { pref: best, wt: 5, lo, hi });
+    });
+    // A block keeps a little extra space from the labels of other formats above and below it.
+    const sepU = k => (k < units.length - 1 && units[k].gi !== units[k + 1].gi && (units[k].block || units[k + 1].block) ? UG : 0);
+    const place = gap => {
+      const m = units.length, offs = [];
+      units.reduce((acc, u, k) => { offs.push(acc); return acc + u.H + gap + sepU(k); }, 0);
+      const pools = [];
+      units.forEach((u, k) => {
+        pools.push({ v: u.pref - offs[k], w: u.wt, n: 1 });
+        while (pools.length > 1 && pools[pools.length - 2].v > pools[pools.length - 1].v) {
+          const b = pools.pop(), a = pools.pop();
+          pools.push({ v: (a.v * a.w + b.v * b.w) / (a.w + b.w), w: a.w + b.w, n: a.n + b.n });
+        }
+      });
+      const Y = [];
+      pools.forEach(pl => { for (let j = 0; j < pl.n; j++) Y.push(pl.v + offs[Y.length]); });
+      const after = k => units[k].H + gap + sepU(k), yMin = LH / 2 - 6;
+      const yMax = k => { const u = units[k], i = u.idx[u.idx.length - 1]; return H + 6 - callouts[i].h + LH / 2 - u.off[u.off.length - 1]; };
+      // Then keep each label level with somewhere its dot can sit, wherever the spacing allows.
+      for (let it = 0; it < 30; it++) {
+        for (let k = 0; k < m; k++) Y[k] = Math.max(Y[k], units[k].lo, k ? Y[k - 1] + after(k - 1) : yMin);
+        for (let k = m - 1; k >= 0; k--) Y[k] = Math.min(Y[k], units[k].hi, k < m - 1 ? Y[k + 1] - after(k) : yMax(k));
+      }
+      // A block stays within its bracket: the labels below it make room, below the chart if need be.
+      units.forEach((u, k) => { if (u.block) Y[k] = Math.min(Math.max(Y[k], u.lo), u.hi); });
+      for (let k = 1; k < m; k++) Y[k] = Math.max(Y[k], Y[k - 1] + after(k - 1));
+      const ys = [];
+      units.forEach((u, k) => u.idx.forEach((i, j) => { ys[i] = Y[k] + u.off[j]; }));
+      const bends = callouts.filter((c, i) => ys[i] < c.lo - 0.01 || ys[i] > c.hi + 0.01).length;
+      return { ys, bends };
+    };
+    // 3px between labels, tightening to as little as nothing only if that keeps more lines straight.
+    const ys = [3, 2, 1, 0].map(place).reduce((best, cur) => (cur.bends < best.bends ? cur : best)).ys;
+    const LX = W + 22, BX = W + 6;
+    callouts.forEach((c, i) => {
+      c.labelY = ys[i];
+      if (c.bracket) return;
+      c.cy = dotAt(ys[i], c.lo, c.hi);
+      if (c.topStrip) { const [a, z] = band(c.topStrip.y, c.topStrip.h); if (c.cy >= a && c.cy <= z) c.cx = c.topStrip.x + c.topStrip.w / 2; }
+    });
+    // Where a label's leader crosses the bracket's vertical line.
+    const crossY = c => {
+      const x0 = LX - 4, y0 = c.labelY, x1 = c.cx, y1 = c.cy;
+      if (Math.abs(y1 - y0) < 0.5 || x1 >= BX) return y0;
+      const qx = x1 + 0.3 * (x0 - x1);
+      let lo = 0, hi = 1;
+      for (let k = 0; k < 40; k++) { const m = (lo + hi) / 2, xm = (1 - m) * (1 - m) * x0 + 2 * m * (1 - m) * qx + m * m * x1; if (xm > BX) lo = m; else hi = m; }
+      const tt = (lo + hi) / 2;
+      return y0 + tt * tt * (y1 - y0);
+    };
+    callouts.forEach((c, i) => {
+      const ly = ys[i];
+      c.top = ly - LH / 2;
+      if (c.bracket) {
+        // The format's leader meets the bracket's vertical line, at least 6px clear of the corners and above where
+        // the next label's leader crosses it; level with the label wherever that allows.
+        const t = c.r.y + 0.5, b = c.r.y + c.r.h - 0.5;
+        const next = Math.min(b, ...callouts.filter(q => q !== c && q.gi === c.gi && !q.bracket).map(crossY));
+        const lim = Math.min(b - CLEAR, next - 3);
+        const ty = lim >= t + CLEAR - 0.01 ? Math.min(Math.max(ly, t + CLEAR), lim) : Math.min(Math.max(ly, t + 2), Math.min(b, next) - 2);
+        c.bracketY = ty;
+        svg += `<polyline points="${pts([[W + 1, t], [BX, t], [BX, b], [W + 1, b]])}" fill="none" stroke="${DARK}" stroke-width="1"/>`;
+        svg += `<path d="${leader(LX - 4, ly, BX, ty)}" fill="none" stroke="${DARK}" stroke-width="1"/>`;
+      } else {
+        svg += pointer(leader(LX - 4, ly, c.cx, c.cy), c.cx, c.cy, c.fill);
+      }
+      c.lines.forEach((ln, j) => {
+        svg += `<text x="${LX}" y="${c.top + FS - 1 + j * LH}" font-size="${FS}" font-weight="${ln.w}" fill="${DARK}">${esc(ln.t)}</text>`;
+      });
+    });
+    const svgH = Math.ceil(Math.max(H + 8, ...callouts.map(c => c.top + c.lines.length * LH + 4)));
+    // Labels may rise a little above the chart's top edge, but every label keeps NUM_GAP below the chart number box
+    // (measured to its cap height), so the chart moves down if one would come closer.
+    const num = host.closest('.chart-card')?.querySelector('.chart-num');
+    const numBottom = num ? num.getBoundingClientRect().bottom - host.getBoundingClientRect().top : -Infinity;
+    const drop = Math.ceil(Math.max(0, ...callouts.map(c => numBottom + NUM_GAP - (c.top + 0.28 * FS - 2))));
+    host.innerHTML = `<svg role="img" aria-label="${esc(ariaLabel())}" width="${cardW}" height="${svgH}" data-fs="${FS}" style="display:block;margin-top:${drop}px;font-family:'Dashboard Sans',sans-serif;overflow:visible;pointer-events:none">${svg}</svg>`;
+    // The inside labels that a pointer line runs through, for render() to move out.
+    const runsThrough = (c, l) => {
+      const x0 = LX - 4, qx = c.cx + 0.3 * (x0 - c.cx), right = l.x + Math.max(...l.lines.map(ln => tw(ln.t, ln.w, FS)));
+      const top = l.y + 0.28 * FS, bottom = l.y + 1.18 * FS + (l.lines.length - 1) * LH;
+      for (let i = 0; i <= 80; i++) {
+        const t = i / 80, s = 1 - t, x = s * s * x0 + 2 * s * t * qx + t * t * c.cx, y = (1 - t * t) * c.labelY + t * t * c.cy;
+        if (x >= l.x && x <= right && y >= top && y <= bottom) return true;
+      }
+      return false;
+    };
+    return labels.filter(l => l.tileKey && callouts.some(c => !c.bracket && runsThrough(c, l))).map(l => l.tileKey);
+  }
+
+  // Phones: the chart keeps the full width and its outside labels sit in rows above and below it. A format whose own
+  // label is outside gets a left-aligned block, each label curving to its tile; any other label sits beyond the end of
+  // a straight line from its tile, and curves only when it has to move away from a block. Groups of labels keep apart
+  // either side by side or by rows, whichever is free; never both.
+  function drawStack(sc, W, H, cardW) {
+    const uid = `tm${++renderSeq}`;
+    const { shapes, labels, callouts, internals, FS, LH } = sc;
+    const f2 = v => +v.toFixed(2);
+    const pts = arr => arr.map(p => p.map(v => f2(v)).join(',')).join(' ');
+    const RH = LH + 1, ZG = 8, BD = 5;
+    const leader = (x0, y0, x1, y1) => {
+      if (Math.abs(y1 - y0) < 0.5) return `M${f2(x0)},${f2(y0)} H${f2(x1)}`;
+      const cx = x1 + 0.3 * (x0 - x1);
+      return `M${f2(x0)},${f2(y0)} Q${f2(cx)},${f2(y0)} ${f2(x1)},${f2(y1)}`;
+    };
+    const kit = pointerKit(sc.darkAreas, uid), pointer = kit.pointer;
+    // UG: extra space between rows of groups that sit one above the other. GAP: a block's distance from its tiles.
+    // SEP: the distance that keeps groups apart side by side.
+    // EDGE: how far labels keep inside the card's edges (flush, so they line up with the chart).
+    const UG = 8, GAP = 16, SEP = 48, EDGE = 0;
+    callouts.forEach(c => {
+      c.w = Math.max(...c.lines.map(l => tw(l.t, l.w, FS)));
+      c.tx = c.cx; c.ty = c.cy;
+    });
+    // Geometry in zone coordinates: x across the card, v outward from the chart's edge.
+    const segRect = (p, q, r) => {
+      let t0 = 0, t1 = 1;
+      const dx = q[0] - p[0], dy = q[1] - p[1];
+      const clip = (pp, qq) => {
+        if (Math.abs(pp) < 1e-12) return qq >= 0;
+        const t = qq / pp;
+        if (pp < 0) { if (t > t1) return false; if (t > t0) t0 = t; } else { if (t < t0) return false; if (t < t1) t1 = t; }
+        return true;
+      };
+      return clip(-dx, p[0] - r[0]) && clip(dx, r[2] - p[0]) && clip(-dy, p[1] - r[1]) && clip(dy, r[3] - p[1]);
+    };
+    const polyRect = (P, r) => P.some((p, i) => i && segRect(P[i - 1], p, r));
+    const segX = (p, q, r, s) => {
+      const d = (q[0] - p[0]) * (s[1] - r[1]) - (q[1] - p[1]) * (s[0] - r[0]);
+      if (Math.abs(d) < 1e-9) return false;
+      const t = ((r[0] - p[0]) * (s[1] - r[1]) - (r[1] - p[1]) * (s[0] - r[0])) / d, u = ((r[0] - p[0]) * (q[1] - p[1]) - (r[1] - p[1]) * (q[0] - p[0])) / d;
+      return t > 1e-6 && t < 1 - 1e-6 && u > 1e-6 && u < 1 - 1e-6;
+    };
+    const polyX = (A, B) => A.some((p, i) => i && B.some((r, j) => j && segX(A[i - 1], p, B[j - 1], r)));
+    const grow = (b, mx, my) => [b[0] - mx, b[1] - my, b[2] + mx, b[3] + my];
+    // The header: the title row, with the 3D key and the chart number box. Labels above the chart stay out of it: the
+    // top of each sits at least VM below the chart number box, which is the lowest thing in the row. needAt(v) is how
+    // far the chart must then sit below its usual place (18px under the title row) for a label whose middle is v above
+    // the chart.
+    const card = host.closest('.chart-card');
+    const num = card && card.querySelector('.chart-num');
+    const numBottom = num ? num.getBoundingClientRect().bottom - host.getBoundingClientRect().top : -Infinity;
+    const needAt = v => Math.max(0, numBottom + NUM_GAP + v + 0.37 * FS + 1);
+    const layoutZone = zone => {
+      const items = callouts.filter(c => c.zone === zone);
+      items.forEach(c => { delete c.fallback; });
+      const zb = items.some(c => c.bracket) ? BD : 0;
+      const outward = c => (zone === 'bottom' ? c.ty - H : -c.ty);
+      const lineGap = zone === 'bottom' ? 3 : 4;
+      const blockGi = new Set(items.filter(c => c.bracket).map(c => c.gi));
+      const units = [];
+      items.forEach(c => {
+        if (blockGi.has(c.gi)) {
+          let u = units.find(v => v.block && v.gi === c.gi);
+          if (!u) units.push(u = { block: true, gi: c.gi, items: [] });
+          u.items.push(c);
+        } else units.push({ block: false, gi: c.gi, items: [c] });
+      });
+      units.forEach(u => {
+        if (u.block) {
+          // Format label first, then standard, then premium formats left to right; the format's curve meets its
+          // bracket's horizontal line partway along, between the corner and the next tile's curve.
+          u.items.sort((a, b) => Math.min(a.rank, 2) - Math.min(b.rank, 2) || a.tx - b.tx);
+          const head = u.items[0], x0 = head.r.x + 0.5, x1 = head.r.x + head.r.w - 0.5, nx = u.items[1] ? u.items[1].tx : x1;
+          head.tx = Math.min(Math.max(x0 + (nx - x0) / 2, x0 + 2), Math.max(x0 + 2, nx - 2));
+          head.ty = zone === 'bottom' ? H + BD : -BD;
+        }
+        u.w = Math.max(...u.items.map(c => c.w));
+        u.minT = Math.min(...u.items.map(c => c.tx));
+      });
+      units.sort((a, b) => a.minT - b.minT);
+      // Across: each block ends GAP short of its tiles and SEP short of the next group's labels. A straight label
+      // centres on its line; one that cannot keep SEP from the next block, even with its line near its right end,
+      // moves away from it and curves.
+      for (let k = units.length - 1; k >= 0; k--) {
+        const u = units[k], next = units[k + 1];
+        if (u.block) {
+          let R = u.minT - GAP;
+          if (next) R = Math.min(R, next.L - SEP);
+          u.L = Math.max(EDGE, R - u.w); u.curved = true;
+        } else {
+          const c = u.items[0], m = Math.min(6, u.w / 2);
+          u.L = Math.min(Math.max(c.tx - u.w / 2, EDGE), W - EDGE - u.w);
+          u.curved = false;
+          if (next && next.block && Math.min(c.tx + m, W) > next.L - SEP) { u.L = Math.max(EDGE, next.L - SEP - u.w); u.curved = true; }
+        }
+        u.items.forEach(c => { c.L = u.L; c.curved = u.curved; });
+      }
+      // Rows, outward from the chart: each unit takes the nearest rows where its labels and lines clear everything
+      // placed so far. Groups may share rows only if they are SEP apart side by side; otherwise they sit one beyond
+      // the other with UG between them.
+      const gaps = new Set();
+      const vOf = (row, gs) => { let v = ZG + zb - RH / 2; for (let k = 1; k <= row; k++) v += RH + (k > 1 && gs.has(k) ? UG : 0); return v; };
+      const geo = (c, row, L, curved, gs) => {
+        const v = vOf(row, gs), a = outward(c);
+        const box = [L, v - 0.53 * FS, L + c.w, v + 0.53 * FS];
+        let line;
+        if (curved) {
+          const x0 = L + c.w + 4, x1 = c.tx;
+          line = Array.from({ length: 17 }, (_, i) => { const t = i / 16, s = (1 - t) * (1 - t); return [s * x0 + (1 - s) * x1, (1 - t * t) * v + t * t * a]; });
+        } else line = [[c.tx, a], [c.tx, v - 0.35 * FS - lineGap]];
+        return { box, line, straight: !curved, tx: c.tx, row };
+      };
+      const placed = [], spans = new Map();
+      const apart = (A, B) => A.gi !== B.gi && (A.block || B.block || A.curved || B.curved);
+      const tryPlace = (u, cands, laterXs) => {
+        const r0 = Math.min(...cands.map(k => k.row)), r1 = Math.max(...cands.map(k => k.row));
+        const L = Math.min(...cands.map(k => k.L)), R = Math.max(...cands.map(k => k.L + k.c.w));
+        const gs = new Set(gaps);
+        for (const [P, s] of spans) {
+          if (!apart(u, P) || Math.max(L - s.R, s.L - R) >= SEP - 0.5) continue;
+          if (r0 <= s.r1 && s.r0 <= r1) return null;
+          if (r0 === s.r1 + 1) gs.add(r0);
+          if (s.r0 === r1 + 1) gs.add(s.r0);
+        }
+        const mine = cands.map(k => geo(k.c, k.row, k.L, u.curved, gs));
+        const theirs = placed.map(p => geo(p.c, p.row, p.L, p.u.curved, gs));
+        for (const m of mine) {
+          if (laterXs && laterXs.some(x => x > m.box[0] - 4 && x < m.box[2] + 4)) return null;
+          for (const t of theirs) {
+            if (m.row === t.row && m.box[0] < t.box[2] + 8 && t.box[0] < m.box[2] + 8) return null;
+            if (polyRect(m.line, grow(t.box, 4, 2)) || polyRect(t.line, grow(m.box, 4, 2))) return null;
+            if (m.straight && t.straight ? Math.abs(m.tx - t.tx) < 3 : polyX(m.line, t.line)) return null;
+          }
+        }
+        return gs;
+      };
+      units.forEach((u, ui) => {
+        // Lines still to come must find their way past a straight label.
+        const laterXs = units.slice(ui + 1).flatMap(v => v.items.map(o => o.tx));
+        let ok = null;
+        if (u.curved) {
+          for (let r = 1; r <= 30 && !ok; r++) {
+            const cands = u.items.map((c, i) => ({ c, row: r + i, L: u.L }));
+            const gs = tryPlace(u, cands, null);
+            if (gs) ok = { cands, gs };
+          }
+        } else {
+          // A straight label sits beyond the end of its line, which points into the text: anywhere along the label,
+          // preferably the middle, but at least 6px in from either end (2px where the label meets the card's edge).
+          const c = u.items[0], m = Math.min(6, c.w / 2), mMin = Math.min(2, c.w / 2);
+          const starts0 = [c.w / 2, c.w - m, m, c.w * 0.75, c.w * 0.25, c.w - mMin, mMin]
+            .map(o => Math.min(Math.max(c.tx - o, EDGE), W - EDGE - c.w))
+            .filter((b, i, arr) => c.tx >= b + mMin - 1e-6 && c.tx <= b + c.w - mMin + 1e-6 && arr.indexOf(b) === i);
+          for (let r = 1; r <= 30 && !ok; r++) for (const bx0 of starts0) {
+            const cands = [{ c, row: r, L: bx0 }];
+            const gs = tryPlace(u, cands, laterXs);
+            if (gs) { ok = { cands, gs }; break; }
+          }
+        }
+        if (!ok) {
+          const r = Math.max(0, ...placed.map(p => p.row)) + 1;
+          ok = { cands: u.items.map((c, i) => ({ c, row: r + i, L: u.curved ? u.L : Math.min(Math.max(c.tx - c.w / 2, EDGE), W - EDGE - c.w) })), gs: gaps };
+          u.items.forEach(c => { c.fallback = true; });
+        }
+        ok.gs.forEach(r => gaps.add(r));
+        ok.cands.forEach(k => { k.c.row = k.row; k.c.L = k.L; placed.push({ u, c: k.c, row: k.row, L: k.L }); });
+        spans.set(u, { r0: Math.min(...ok.cands.map(k => k.row)), r1: Math.max(...ok.cands.map(k => k.row)),
+          L: Math.min(...ok.cands.map(k => k.L)), R: Math.max(...ok.cands.map(k => k.L + k.c.w)) });
+      });
+      const maxRow = Math.max(0, ...items.map(c => c.row));
+      items.forEach(c => { c.off = vOf(c.row, gaps) - ZG - zb; });
+      return { units, depth: maxRow ? vOf(maxRow, gaps) + RH / 2 - ZG - zb : 0, gaps: [...gaps] };
+    };
+    const topZ = layoutZone('top'), botZ = layoutZone('bottom');
+    const tb = callouts.some(c => c.zone === 'top' && c.bracket) ? BD : 0, bb = callouts.some(c => c.zone === 'bottom' && c.bracket) ? BD : 0;
+    const topH = topZ.depth ? ZG + tb + topZ.depth : 0;
+    const bottomH = botZ.depth ? ZG + bb + botZ.depth : 0;
+    const labelY = c => (c.zone === 'top' ? -(ZG + tb + c.off) : H + ZG + bb + c.off);
+    // One curve from the end of a label to its tile: it leaves the label level and arrives at the tile vertically.
+    const curve = (x0, y0, x1, y1) => `M${f2(x0)},${f2(y0)} Q${f2(x1)},${f2(y0)} ${f2(x1)},${f2(y1)}`;
+    // The format's curve meets its bracket at least 2px from the corner and 3px left of where the next curve passes the
+    // bracket line. On a narrow bracket the next curve moves right, as far as its tile allows, to make that room.
+    [topZ, botZ].forEach(Z => Z.units.filter(u => u.block && u.items.length > 1).forEach(u => {
+      const head = u.items[0], nxt = u.items[1];
+      const yl = labelY(nxt), xs = nxt.L + nxt.w + 4, denom = yl - nxt.ty;
+      if (Math.abs(denom) < 1e-6) return;
+      const tt = Math.sqrt(Math.max(0, Math.min(1, (yl - head.ty) / denom))), share = 1 - (1 - tt) * (1 - tt);
+      const corner = head.r.x + 0.5, room = xs + (corner + 5 - xs) / share;
+      nxt.tx = Math.max(nxt.tx, Math.min(room, nxt.r.x + nxt.r.w - 3, (u.items[2] ? u.items[2].tx : Infinity) - 3));
+      head.tx = Math.max(corner + 2, Math.min(head.tx, xs + (nxt.tx - xs) * share - 3));
+    }));
+    const top = topZ.units.flatMap(u => u.items), bottom = botZ.units.flatMap(u => u.items);
+    // The chart drops below its usual place only as far as the highest label above it needs.
+    const chartTop = Math.ceil(Math.max(0, ...top.map(c => needAt(-labelY(c)))));
+    let defs = `<defs><pattern id="${uid}-hatch" patternUnits="userSpaceOnUse" width="4" height="4" patternTransform="rotate(45)"><rect width="2" height="4" fill="rgba(0,0,0,0.5)"/></pattern>${kit.defs}</defs>`;
+    let g = `<rect class="tm-bg" x="0" y="0" width="${W}" height="${H}" fill="#fff"/>`;
+    shapes.forEach(s => {
+      if (s.poly) g += `<polygon points="${pts(s.poly)}" fill="${s.fill}"/>`;
+      else if (s.rect) g += `<rect x="${s.rect.x}" y="${s.rect.y}" width="${s.rect.w}" height="${s.rect.h}" fill="${s.fill}"/>`;
+      else if (s.hatch) g += `<rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" fill="url(#${uid}-hatch)"${tipAttrs(s)}/>`;
+    });
+    labels.forEach(l => {
+      if (l.inline) { g += `<text x="${l.x}" y="${l.y + FS}" font-size="${FS}" fill="${l.color}"><tspan font-weight="700">${esc(l.inline[0])}</tspan><tspan dx="10">${esc(l.inline[1])}</tspan></text>`; return; }
+      l.lines.forEach((ln, i) => { g += `<text x="${l.x}" y="${l.y + FS + i * LH}" font-size="${FS}" font-weight="${ln.w}" fill="${l.color}">${esc(ln.t)}</text>`; });
+    });
+    internals.forEach(c => {
+      const x0 = c.r.x - 16;
+      const [lo, hi] = band(c.r.y, c.r.h);
+      c.cy = Math.min(Math.max(c.ly, lo), hi);
+      g += pointer(leader(x0 + 2, c.ly, c.cx, c.cy), c.cx, c.cy, c.fill);
+      g += `<text x="${x0 - 3}" y="${c.ly + FS / 2 - 2}" font-size="${FS}" fill="${c.color}" text-anchor="end">${esc(c.text)}</text>`;
+    });
+    [...top, ...bottom].forEach(c => {
+      const ly = labelY(c);
+      const lineEnd = c.zone === 'bottom' ? ly - 0.35 * FS - 3 : ly + 0.35 * FS + 4;
+      const d = c.curved ? curve(c.L + c.w + 4, ly, c.tx, c.ty) : `M${f2(c.tx)},${f2(c.ty)} V${f2(lineEnd)}`;
+      if (c.bracket) {
+        const x0 = c.r.x + 0.5, x1 = c.r.x + c.r.w - 0.5, e = c.zone === 'bottom' ? H : 0, sgn = c.zone === 'bottom' ? 1 : -1;
+        g += `<polyline points="${pts([[x0, e + sgn], [x0, e + sgn * BD], [x1, e + sgn * BD], [x1, e + sgn]])}" fill="none" stroke="${DARK}" stroke-width="1"/>`;
+        g += `<path d="${d}" fill="none" stroke="${DARK}" stroke-width="1"/>`;
+      } else {
+        g += pointer(d, c.tx, c.ty, c.fill);
+      }
+      g += `<text x="${f2(c.L)}" y="${f2(ly + FS * 0.35)}" font-size="${FS}" font-weight="${c.lines[0].w}" fill="${DARK}">${esc(c.lines[0].t)}</text>`;
+    });
+    const svg = defs + `<g transform="translate(0, ${f2(topH)})">${g}</g>`;
+    // The chart ends at the treemap, not its lowest label: labels hang into the usual 78px gap before the next chart
+    // (card padding plus the grid's row gap) and take up room only as far as they need to stay 32px clear of it.
+    const below = Math.max(0, bottomH + 32 - 78);
+    host.innerHTML = `<svg role="img" aria-label="${esc(ariaLabel())}" width="${cardW}" height="${f2(topH + H + below)}" data-fs="${FS}" style="display:block;margin-top:${f2(chartTop - topH)}px;font-family:'Dashboard Sans',sans-serif;overflow:visible;pointer-events:none">${svg}</svg>`;
+  }
+
+  // The 3D squares show a tooltip: on hover with a mouse, on tap with touch. It is the page's segment tooltip pill,
+  // at the chart labels' font size, with its padding and radius in em so the whole pill scales with the text.
+  const tip = document.getElementById('seg-tooltip');
+  let tipCell = null;
+  const placeTip = (cell, x) => {
+    const r = cell.getBoundingClientRect();
+    if (x == null) x = r.left + r.width / 2;
+    const left = Math.max(8, Math.min(x - tip.offsetWidth / 2, window.innerWidth - tip.offsetWidth - 8));
+    tip.style.left = left + 'px';
+    tip.style.top = Math.max(8, Math.min(r.top - tip.offsetHeight - 6, window.innerHeight - tip.offsetHeight - 8)) + 'px';
+  };
+  const showTip = (cell, x) => {
+    tip.textContent = `${cell.dataset.tip} ${cell.dataset.count}`;
+    tip.style.fontSize = (cell.ownerSVGElement?.dataset.fs || 14) + 'px';
+    tip.style.display = 'block';
+    tipCell = cell;
+    placeTip(cell, x);
+  };
+  const hideTip = () => { tip.style.display = 'none'; tipCell = null; };
+  const cellOf = e => e.target.closest?.('.tm-3d') || null;
+  host.addEventListener('pointerover', e => { if (e.pointerType === 'mouse' && cellOf(e)) showTip(cellOf(e), e.clientX); });
+  host.addEventListener('pointermove', e => {
+    if (e.pointerType !== 'mouse') return;
+    const c = cellOf(e);
+    if (!c) return;
+    if (c !== tipCell) showTip(c, e.clientX); else placeTip(c, e.clientX);
+  });
+  host.addEventListener('pointerout', e => { if (e.pointerType === 'mouse' && cellOf(e) && !e.relatedTarget?.closest?.('.tm-3d')) hideTip(); });
+  host.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse' && cellOf(e)) showTip(cellOf(e), e.clientX); });
+  document.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse' && !cellOf(e)) hideTip(); });
+  window.addEventListener('scroll', hideTip, { passive: true });
+
+  // The cumulative chart reads this chart's height, so it follows every render.
+  const renderBoth = () => { render(); renderCumulativeChart(); };
+  renderBoth();
+  // Text is measured with the web font, so redo the layout once it has loaded.
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(renderBoth);
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(renderBoth, 120);
+  });
+})();
+
 // ====== RATING CHART ======
 const ratingLabel = r => r === 1 ? '1 out of 10' : String(r);
 const allRatingCounts = {};
@@ -3840,7 +4684,7 @@ function renderRuntimeChart() {
       const ro = nextIsBar ? halfGap : 8;
       barsHtml += `<div data-bin="${it.bin}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:24px;position:relative;">
         <div class="hist-count" style="font-family:'Dashboard Sans',sans-serif;font-size:0.9rem;font-weight:350;color:${c ? 'var(--text)' : 'var(--text-dim)'};margin-bottom:4px;">${c || ''}</div>
-        <div class="hist-bar" style="width:100%;height:${h}px;background:var(--accent);border-radius:0;${c ? '' : 'visibility:hidden;'}"></div>
+        <div class="hist-bar" style="width:100%;height:${h}px;background:var(--chart-red);border-radius:0;${c ? '' : 'visibility:hidden;'}"></div>
         <div style="position:absolute;left:-${lo}px;right:-${ro}px;bottom:-1.5px;height:1.5px;background:var(--text);pointer-events:none;"></div>
         ${tick}${label}${endTick}${endLabel}
       </div>`;
@@ -3948,331 +4792,11 @@ if (document.fonts && document.fonts.ready) {
     syncBarLabelColumn(document.getElementById('rating-chart'));
     syncBarLabelColumn(document.getElementById('decade-chart'));
     syncBarLabelColumn(document.getElementById('venue-chart'));
-    syncBarLabelColumn(document.getElementById('format-chart'));
-    applyFormatSegmentWidths();
     syncTableLayouts();
     // The closure label wraps by measured width, so redo it in the real face.
     if (cumClosureSpan) renderCumulativeChart();
   });
 }
-
-// ====== FORMAT CHART ======
-function parseFormat(raw) {
-  const f = (raw || 'DCP').toString().trim();
-  const threeD = /\b3D\b/i.test(f);
-  const clean = f.replace(/\b3D\b/ig, '').trim();
-  if (/VistaVision/i.test(clean)) return { base: '35mm', premium: 'VistaVision', threeD };
-  if (/IMAX.*70mm|70mm.*IMAX/i.test(clean)) return { base: '70mm', premium: 'IMAX', threeD };
-  if (/IMAX/i.test(clean)) return { base: 'DCP', premium: 'IMAX', threeD };
-  if (/Dolby/i.test(clean)) return { base: 'DCP', premium: 'Dolby', threeD };
-  if (/Prime/i.test(clean)) return { base: 'DCP', premium: 'Prime', threeD };
-  if (/70mm/i.test(clean)) return { base: '70mm', premium: null, threeD };
-  if (/35mm/i.test(clean)) return { base: '35mm', premium: null, threeD };
-  if (/16mm/i.test(clean)) return { base: '16mm', premium: null, threeD };
-  return { base: 'DCP', premium: null, threeD };
-}
-const BASE_ORDER = ['DCP', '35mm', '70mm', '16mm'];
-const STANDARD_FORMAT_KEY = '__std';
-const PREMIUM_TIE_ORDER = ['Dolby', 'IMAX', 'Prime', 'VistaVision'];
-const PREMIUM_ORDER = [STANDARD_FORMAT_KEY, ...PREMIUM_TIE_ORDER];
-const PREMIUM_LABEL = { '__std': 'Standard', 'IMAX': 'IMAX', 'Dolby': 'Dolby Cinema', 'Prime': 'AMC Prime', 'VistaVision': 'VistaVision' };
-const PREMIUM_COLOR_SEQUENCE = ['#efa489', '#6290bf', '#293f84', '#7e7f71'];
-
-const formatBreakdown = {};
-const premiumTotals = { '__std': 0, 'IMAX': 0, 'Dolby': 0, 'Prime': 0, 'VistaVision': 0 };
-let threeDTotal = 0;
-FILMS.forEach(f => {
-  const { base, premium, threeD } = parseFormat(f.format);
-  if (!formatBreakdown[base]) formatBreakdown[base] = { total: 0, segs: {} };
-  formatBreakdown[base].total++;
-  const pKey = premium || STANDARD_FORMAT_KEY;
-  const key = pKey + (threeD ? '|3D' : '');
-  formatBreakdown[base].segs[key] = (formatBreakdown[base].segs[key] || 0) + 1;
-  premiumTotals[pKey]++;
-  if (threeD) threeDTotal++;
-});
-const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].total > 0);
-const maxBaseTotal = Math.max(...bases.map(b => formatBreakdown[b].total), 1);
-
-function premiumTotalInBase(base, premium) {
-  const segs = formatBreakdown[base]?.segs || {};
-  return (segs[premium] || 0) + (segs[premium + '|3D'] || 0);
-}
-function premiumRank(premium) {
-  const rank = PREMIUM_TIE_ORDER.indexOf(premium);
-  return rank === -1 ? PREMIUM_TIE_ORDER.length : rank;
-}
-function sortPremiumsByCount(a, b) {
-  return b.total - a.total || premiumRank(a.p) - premiumRank(b.p);
-}
-function sortFormatRowPremiums(a, b) {
-  if (a.p === STANDARD_FORMAT_KEY && b.p !== STANDARD_FORMAT_KEY) return -1;
-  if (b.p === STANDARD_FORMAT_KEY && a.p !== STANDARD_FORMAT_KEY) return 1;
-  return b.total - a.total || PREMIUM_ORDER.indexOf(a.p) - PREMIUM_ORDER.indexOf(b.p);
-}
-
-const premiumColorByName = {};
-let nextPremiumColorIndex = 0;
-[...bases]
-  .sort((a, b) => formatBreakdown[b].total - formatBreakdown[a].total || BASE_ORDER.indexOf(a) - BASE_ORDER.indexOf(b))
-  .forEach(base => {
-    PREMIUM_TIE_ORDER
-      .map(p => ({ p, total: premiumTotalInBase(base, p) }))
-      .filter(({ p, total }) => total > 0 && !premiumColorByName[p])
-      .sort(sortPremiumsByCount)
-      .forEach(({ p }) => {
-        premiumColorByName[p] = PREMIUM_COLOR_SEQUENCE[nextPremiumColorIndex];
-        nextPremiumColorIndex++;
-      });
-  });
-
-function segLabel(b, p, threeD) {
-  if (p === STANDARD_FORMAT_KEY) return threeD ? 'Standard DCP 3D' : 'Standard ' + b;
-  if (p === 'IMAX' && b === '70mm') return 'IMAX 70mm' + (threeD ? ' 3D' : '');
-  return PREMIUM_LABEL[p] + (threeD ? ' 3D' : '');
-}
-function formatTrackMinWidth(base) {
-  const currentTotal = formatBreakdown[base].total;
-  if (currentTotal === 1) return 3;
-  const nextMoreNumerous = bases
-    .map(b => formatBreakdown[b].total)
-    .filter(total => total > currentTotal)
-    .sort((a, b) => a - b)[0];
-  return nextMoreNumerous && nextMoreNumerous > currentTotal * 8 ? 6 : 3;
-}
-const rowsHtml = bases.map(b => {
-  const data = formatBreakdown[b];
-  const trackPct = (data.total / maxBaseTotal) * 100;
-  const trackMinWidth = formatTrackMinWidth(b);
-  const premiumsByCount = PREMIUM_ORDER
-    .map(p => ({ p, total: (data.segs[p] || 0) + (data.segs[p + '|3D'] || 0) }))
-    .filter(x => x.total > 0)
-    .sort(sortFormatRowPremiums)
-    .map(x => x.p);
-  const segs = premiumsByCount.flatMap(p => {
-    const className = p === STANDARD_FORMAT_KEY ? ' seg-standard' : '';
-    const colorStyle = p === STANDARD_FORMAT_KEY ? '' : `background:${premiumColorByName[p]};`;
-    const out = [];
-    const plain = data.segs[p] || 0;
-    const threeD = data.segs[p + '|3D'] || 0;
-    if (plain > 0) {
-      const plainLabel = (threeD > 0 && p !== STANDARD_FORMAT_KEY)
-        ? segLabel(b, p, false) + ' 2D'
-        : segLabel(b, p, false);
-      out.push(`<div class="format-seg${className}" style="flex:${plain};${colorStyle}" data-label="${escapeHtml(plainLabel)}" data-count="${plain}"></div>`);
-    }
-    if (threeD > 0) {
-      out.push(`<div class="format-seg${className} seg-3d" style="flex:${threeD};${colorStyle}" data-label="${escapeHtml(segLabel(b, p, true))}" data-count="${threeD}"></div>`);
-    }
-    return out;
-  }).join('');
-  return `<div class="format-row">
-    <div class="bar-label">${escapeHtml(b === 'DCP' ? 'DCP' + footnoteMark('dcp', 'DCP includes other digital') : b)}</div>
-    <div class="format-bar-outer"><div class="format-bar-track" style="width:${trackPct}%;min-width:${trackMinWidth}px;">${segs}</div></div>
-    <div class="bar-count">${data.total}</div>
-  </div>`;
-}).join('');
-
-const legendItems = [
-  ...PREMIUM_TIE_ORDER.map(p => ({
-    key: p,
-    label: PREMIUM_LABEL[p],
-    count: premiumTotals[p],
-    color: premiumColorByName[p],
-    rank: premiumRank(p),
-  })),
-  { key: '3d', label: '3D', count: threeDTotal, rank: PREMIUM_TIE_ORDER.length },
-].filter(item => item.count > 0)
-  .sort((a, b) => b.count - a.count || a.rank - b.rank);
-const legendHtml = `<div class="format-legend">
-  ${legendItems.map(item => {
-    const swatch = item.key === '3d'
-      ? '<span class="legend-swatch swatch-3d"></span>'
-      : `<span class="legend-swatch" style="background:${item.color}"></span>`;
-    return `<span class="legend-chip">${swatch}${escapeHtml(item.label)} <span class="legend-count">${item.count}</span></span>`;
-  }).join('')}
-</div>`;
-
-document.getElementById('format-chart').innerHTML = `<div class="format-stacked">${rowsHtml}</div>${legendHtml}`;
-const FORMAT_COUNT_COMFORT_PX = 3;
-const FORMAT_COUNT_BOOST_LIMIT = 10;
-const FORMAT_COUNT_MIN_STEP_PX = 1;
-function buildFormatCountScale(unitWidth) {
-  const widths = [0];
-  for (let count = 1; count <= maxBaseTotal; count++) {
-    const naturalWidth = count * unitWidth;
-    const boostRatio = count < FORMAT_COUNT_BOOST_LIMIT
-      ? (FORMAT_COUNT_BOOST_LIMIT - count) / (FORMAT_COUNT_BOOST_LIMIT - 1)
-      : 0;
-    let width = naturalWidth;
-    if (naturalWidth < FORMAT_COUNT_COMFORT_PX && boostRatio > 0) {
-      width += (FORMAT_COUNT_COMFORT_PX - naturalWidth) * boostRatio;
-    }
-    widths[count] = Math.max(width, widths[count - 1] + FORMAT_COUNT_MIN_STEP_PX);
-  }
-  return count => widths[count] || count * unitWidth;
-}
-function absorbFormatSegmentExcess(segments, excessWidth) {
-  let remaining = excessWidth;
-  let absorbers = segments.filter(seg => seg.count >= FORMAT_COUNT_BOOST_LIMIT && seg.width > FORMAT_COUNT_COMFORT_PX);
-  while (remaining > 0.01 && absorbers.length) {
-    const totalWeight = absorbers.reduce((sum, seg) => sum + seg.width, 0);
-    let absorbed = 0;
-    absorbers.forEach(seg => {
-      const share = remaining * (seg.width / totalWeight);
-      const maxReduction = seg.width - FORMAT_COUNT_COMFORT_PX;
-      const reduction = Math.min(share, maxReduction);
-      seg.width -= reduction;
-      absorbed += reduction;
-    });
-    if (absorbed <= 0.01) break;
-    remaining -= absorbed;
-    absorbers = absorbers.filter(seg => seg.width > FORMAT_COUNT_COMFORT_PX);
-  }
-  return remaining;
-}
-function applyFormatSegmentWidths() {
-  const tracks = [...document.querySelectorAll('.format-bar-track')];
-  const availableWidth = Math.max(...tracks.map(track => track.parentElement.getBoundingClientRect().width));
-  if (!availableWidth) return;
-  const countWidth = buildFormatCountScale(availableWidth / maxBaseTotal);
-  tracks.forEach(track => {
-    const outerWidth = track.parentElement.getBoundingClientRect().width;
-    const segEls = [...track.querySelectorAll('.format-seg')];
-    if (!outerWidth || !segEls.length) return;
-    const segments = segEls.map(el => {
-      const count = Number(el.dataset.count);
-      return { el, count, width: countWidth(count) };
-    });
-    const naturalTrackWidth = segments.reduce((sum, seg) => sum + seg.width, 0);
-    if (naturalTrackWidth > outerWidth) {
-      const remainingExcess = absorbFormatSegmentExcess(segments, naturalTrackWidth - outerWidth);
-      if (remainingExcess > 0.01) {
-        const scaledTotal = segments.reduce((sum, seg) => sum + seg.width, 0);
-        const scale = outerWidth / scaledTotal;
-        segments.forEach(seg => { seg.width *= scale; });
-      }
-    }
-    const trackWidth = segments.reduce((sum, seg) => sum + seg.width, 0);
-    track.style.width = `${trackWidth}px`;
-    segments.forEach(seg => {
-      seg.el.style.flex = `0 0 ${seg.width}px`;
-      seg.el.style.width = `${seg.width}px`;
-    });
-  });
-}
-syncBarLabelColumn(document.getElementById('format-chart'));
-applyFormatSegmentWidths();
-let formatResizeTimer;
-window.addEventListener('resize', () => {
-  clearTimeout(formatResizeTimer);
-  formatResizeTimer = setTimeout(() => {
-    syncBarLabelColumn(document.getElementById('format-chart'));
-    applyFormatSegmentWidths();
-  }, 120);
-});
-
-const segTooltip = document.getElementById('seg-tooltip');
-const formatStacked = document.querySelector('.format-stacked');
-let activeTouchFormatSeg = null;
-function formatSegmentBaseColor(seg) {
-  const color = getComputedStyle(seg).backgroundColor;
-  return color && color !== 'rgba(0, 0, 0, 0)' ? color : 'var(--accent)';
-}
-function setActiveTouchFormatSeg(seg) {
-  if (activeTouchFormatSeg === seg) return;
-  activeTouchFormatSeg?.classList.remove('is-touch-active');
-  activeTouchFormatSeg = seg;
-  if (seg) {
-    formatStacked?.classList.add('is-touch-interacting');
-    seg.classList.add('is-touch-active');
-  }
-}
-function clearActiveTouchFormatSeg() {
-  activeTouchFormatSeg?.classList.remove('is-touch-active');
-  activeTouchFormatSeg = null;
-  formatStacked?.classList.remove('is-touch-interacting');
-}
-function positionSegTooltip(seg, cursorX) {
-  const r = seg.getBoundingClientRect();
-  let left = cursorX - segTooltip.offsetWidth / 2;
-  if (left + segTooltip.offsetWidth > window.innerWidth - 8) left = window.innerWidth - segTooltip.offsetWidth - 8;
-  if (left < 8) left = 8;
-  segTooltip.style.left = left + 'px';
-  segTooltip.style.top = (r.top - segTooltip.offsetHeight - 6) + 'px';
-}
-function showSegTooltip(seg, cursorX) {
-  const label = seg.dataset.label;
-  const count = Number(seg.dataset.count);
-  const swatch = `<span class="legend-swatch${seg.classList.contains('seg-3d') ? ' swatch-3d' : ''}" style="background:${formatSegmentBaseColor(seg)}"></span>`;
-  segTooltip.innerHTML = `${swatch}${escapeHtml(label)} · ${count}`;
-  segTooltip.style.display = 'block';
-  const r = seg.getBoundingClientRect();
-  if (cursorX == null) cursorX = r.left + r.width / 2;
-  positionSegTooltip(seg, cursorX);
-}
-function hideSegTooltip() {
-  segTooltip.style.display = 'none';
-  clearActiveTouchFormatSeg();
-}
-function segmentAtPoint(track, clientX, clientY) {
-  const hit = document.elementFromPoint(clientX, clientY);
-  const hitSeg = hit?.closest?.('.format-seg');
-  if (hitSeg && track.contains(hitSeg)) return hitSeg;
-  const trackRect = track.getBoundingClientRect();
-  if (clientX < trackRect.left || clientX > trackRect.right) {
-    return null;
-  }
-  return [...track.querySelectorAll('.format-seg')].find(seg => {
-    const r = seg.getBoundingClientRect();
-    return clientX >= r.left && clientX <= r.right;
-  }) || null;
-}
-function showSegTooltipAtPoint(track, clientX, clientY) {
-  const seg = segmentAtPoint(track, clientX, clientY);
-  if (!seg) return;
-  setActiveTouchFormatSeg(seg);
-  showSegTooltip(seg, clientX);
-}
-document.querySelectorAll('.format-seg').forEach(seg => {
-  seg.addEventListener('mouseenter', e => showSegTooltip(seg, e.clientX));
-  seg.addEventListener('mousemove', e => positionSegTooltip(seg, e.clientX));
-  seg.addEventListener('mouseleave', hideSegTooltip);
-  seg.addEventListener('touchstart', e => {
-    e.preventDefault();
-    const t = e.touches[0];
-    setActiveTouchFormatSeg(seg);
-    showSegTooltip(seg, t ? t.clientX : null);
-  }, {passive: false});
-});
-document.querySelectorAll('.format-bar-track').forEach(track => {
-  track.addEventListener('pointerdown', e => {
-    if (e.pointerType === 'mouse') return;
-    e.preventDefault();
-    try { track.setPointerCapture(e.pointerId); } catch (_) {}
-    showSegTooltipAtPoint(track, e.clientX, e.clientY);
-  });
-  track.addEventListener('pointermove', e => {
-    if (e.pointerType === 'mouse' || !track.hasPointerCapture?.(e.pointerId)) return;
-    e.preventDefault();
-    showSegTooltipAtPoint(track, e.clientX, e.clientY);
-  });
-  track.addEventListener('pointercancel', hideSegTooltip);
-  if (!window.PointerEvent) {
-    track.addEventListener('touchmove', e => {
-      const t = e.touches[0];
-      if (!t) return;
-      e.preventDefault();
-      showSegTooltipAtPoint(track, t.clientX, t.clientY);
-    }, {passive: false});
-  }
-});
-document.addEventListener('touchstart', e => {
-  if (!e.target.closest('.format-seg')) hideSegTooltip();
-});
-document.addEventListener('pointerdown', e => {
-  if (e.pointerType !== 'mouse' && !e.target.closest('.format-seg, .format-bar-track')) hideSegTooltip();
-});
 
 // ====== RATING PALETTE ======
 // Read rating colors from CSS custom properties (--rating-1 ... --rating-10
