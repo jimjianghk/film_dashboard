@@ -3722,8 +3722,8 @@ const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].to
   let bumped = new Set();
 
   const ctx = document.createElement('canvas').getContext('2d');
-  // A count sits 0.3em from its name.
-  const COUNT_GAP = 0.3;
+  // A count sits 0.35em from its name.
+  const COUNT_GAP = 0.35;
   const tw = (text, weight, size) => {
     ctx.font = `${weight} ${size}px "Dashboard Sans"`;
     const named = String(text).match(/^(.*) (\d+)$/);
@@ -3997,7 +3997,7 @@ const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].to
     // The label column is as wide as the labels of the layout actually drawn: narrowing the treemap can push more tiles out
     // to the column, so widen it until every label fits. The longest may hang past the card's right edge where the page's
     // margin is wide enough for it; on narrower margins it ends at that edge.
-    const hang = document.documentElement.clientWidth - host.getBoundingClientRect().right >= 24 ? 13 : 0;
+    const hang = document.documentElement.clientWidth - host.getBoundingClientRect().right >= 24 ? 14 : 0;
     // A pointer line may not run through a label inside another tile: that label moves out too, and the chart is laid out again.
     for (let tries = 0; tries < 5; tries++) {
       let W = Math.round(cardW), sc = best(W);
