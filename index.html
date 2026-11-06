@@ -3985,14 +3985,16 @@ const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].to
     }
     const best = W => topLayouts(W, H).map(l => ({ sc: scene(W, H, l, FS), aspect: worstAspect(l) }))
       .sort((a, b) => (a.sc.callouts.length + 10 * a.sc.blockedBrackets) - (b.sc.callouts.length + 10 * b.sc.blockedBrackets) || a.sc.internals.length - b.sc.internals.length || a.aspect - b.aspect)[0].sc;
-    // The label column must fit the labels of the layout actually drawn: narrowing the treemap can push
-    // more tiles out to the column, so widen it until every label fits.
+    // The label column is as wide as the labels of the layout actually drawn: narrowing the treemap can push more tiles out
+    // to the column, so widen it until every label fits. The longest may hang 12px past the card's right edge, where the
+    // page's margin leaves at least that much again before the edge of the screen.
+    const hang = document.documentElement.clientWidth - host.getBoundingClientRect().right >= 24 ? 12 : 0;
     // A pointer line may not run through a label inside another tile: that label moves out too, and the chart is laid out again.
     for (let tries = 0; tries < 5; tries++) {
       let W = Math.round(cardW), sc = best(W);
       for (let k = 0; k < 6 && sc.callouts.length; k++) {
         const longest = Math.max(...sc.callouts.flatMap(c => c.lines.map(l => tw(l.t, l.w, FS))));
-        const fitW = Math.floor(cardW - Math.ceil(longest + 30));
+        const fitW = Math.floor(cardW - Math.ceil(longest + 22 - hang));
         if (fitW >= W) break;
         W = fitW; sc = best(W);
       }
@@ -4176,15 +4178,47 @@ const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].to
       if (c.bracket) return;
       c.cy = dotAt(ys[i], c.lo, c.hi);
     });
+    // A curve may cross a white line between tiles, but shouldn't run so close to one that the two seem to merge. A white line
+    // that reaches the chart's edge counts out to the labels, because a curve level with it there reads as its continuation.
+    const whiteLines = shapes.flatMap(s => {
+      const P = s.poly || (s.rect ? [[s.rect.x, s.rect.y], [s.rect.x + s.rect.w, s.rect.y], [s.rect.x + s.rect.w, s.rect.y + s.rect.h], [s.rect.x, s.rect.y + s.rect.h]] : []);
+      return P.map((a, i) => [a, P[(i + 1) % P.length]]).filter(([a, b]) => Math.abs(a[1] - b[1]) < 0.01 && a[1] > 0.6 && a[1] < H - 0.6)
+        .map(([a, b]) => { const right = Math.max(a[0], b[0]); return { left: Math.min(a[0], b[0]), right: right >= W - 0.5 ? LX : right, y: a[1] }; });
+    });
+    // The longest stretch of a curve within 3px of any one white line.
+    const hugLength = (c, qx, qy) => {
+      const x0 = LX - 4, pts = [];
+      for (let i = 0; i <= 120; i++) {
+        const t = i / 120, s = 1 - t;
+        pts.push([s * s * x0 + 2 * s * t * qx + t * t * c.cx, s * s * c.labelY + 2 * s * t * qy + t * t * c.cy]);
+      }
+      return Math.max(0, ...whiteLines.map(l => {
+        let run = 0, most = 0;
+        pts.forEach(([x, y], i) => {
+          const near = x >= l.left && x <= l.right && Math.abs(y - l.y) <= 3;
+          run = near && i ? run + Math.hypot(x - pts[i - 1][0], y - pts[i - 1][1]) : 0;
+          most = Math.max(most, run);
+        });
+        return most;
+      }));
+    };
+    // A curve leaves its label level and bends near its dot. If that hugs a white line for 15px or more, it is turned round to
+    // leave at an angle and arrive at the dot level, provided that at least halves the stretch.
+    callouts.forEach(c => {
+      if (c.bracket || Math.abs(c.cy - c.labelY) < 0.5) return;
+      const x0 = LX - 4, usual = hugLength(c, c.cx + 0.3 * (x0 - c.cx), c.labelY);
+      c.turned = usual >= 15 && hugLength(c, x0 - 0.3 * (x0 - c.cx), c.cy) <= usual / 2;
+    });
+    const control = (c, x0) => (c.turned ? [x0 - 0.3 * (x0 - c.cx), c.cy] : [c.cx + 0.3 * (x0 - c.cx), c.labelY]);
     // Where a label's leader crosses the bracket's vertical line.
     const crossY = c => {
       const x0 = LX - 4, y0 = c.labelY, x1 = c.cx, y1 = c.cy;
       if (Math.abs(y1 - y0) < 0.5 || x1 >= BX) return y0;
-      const qx = x1 + 0.3 * (x0 - x1);
+      const [qx, qy] = control(c, x0);
       let lo = 0, hi = 1;
       for (let k = 0; k < 40; k++) { const m = (lo + hi) / 2, xm = (1 - m) * (1 - m) * x0 + 2 * m * (1 - m) * qx + m * m * x1; if (xm > BX) lo = m; else hi = m; }
-      const tt = (lo + hi) / 2;
-      return y0 + tt * tt * (y1 - y0);
+      const tt = (lo + hi) / 2, ss = 1 - tt;
+      return ss * ss * y0 + 2 * ss * tt * qy + tt * tt * y1;
     };
     callouts.forEach((c, i) => {
       const ly = ys[i];
@@ -4200,7 +4234,8 @@ const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].to
         svg += `<polyline points="${pts([[W + 1, t], [BX, t], [BX, b], [W + 1, b]])}" fill="none" stroke="${DARK}" stroke-width="1"/>`;
         svg += `<path d="${leader(LX - 4, ly, BX, ty)}" fill="none" stroke="${DARK}" stroke-width="1"/>`;
       } else {
-        svg += pointer(leader(LX - 4, ly, c.cx, c.cy), c.cx, c.cy, c.fill);
+        const [qx, qy] = control(c, LX - 4);
+        svg += pointer(Math.abs(c.cy - ly) < 0.5 ? leader(LX - 4, ly, c.cx, c.cy) : `M${f2(LX - 4)},${f2(ly)} Q${f2(qx)},${f2(qy)} ${f2(c.cx)},${f2(c.cy)}`, c.cx, c.cy, c.fill);
       }
       c.lines.forEach((ln, j) => {
         svg += `<text x="${LX}" y="${c.top + FS - 1 + j * LH}" font-size="${FS}" font-weight="${ln.w}" fill="${DARK}">${esc(ln.t)}</text>`;
@@ -4215,10 +4250,10 @@ const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].to
     host.innerHTML = `<svg role="img" aria-label="${esc(ariaLabel())}" width="${cardW}" height="${svgH}" data-fs="${FS}" style="display:block;margin-top:${drop}px;font-family:'Dashboard Sans',sans-serif;overflow:visible;pointer-events:none">${svg}</svg>`;
     // The inside labels that a pointer line runs through, for render() to move out.
     const runsThrough = (c, l) => {
-      const x0 = LX - 4, qx = c.cx + 0.3 * (x0 - c.cx), right = l.x + Math.max(...l.lines.map(ln => tw(ln.t, ln.w, FS)));
+      const x0 = LX - 4, [qx, qy] = control(c, x0), right = l.x + Math.max(...l.lines.map(ln => tw(ln.t, ln.w, FS)));
       const top = l.y + 0.28 * FS, bottom = l.y + 1.18 * FS + (l.lines.length - 1) * LH;
       for (let i = 0; i <= 80; i++) {
-        const t = i / 80, s = 1 - t, x = s * s * x0 + 2 * s * t * qx + t * t * c.cx, y = (1 - t * t) * c.labelY + t * t * c.cy;
+        const t = i / 80, s = 1 - t, x = s * s * x0 + 2 * s * t * qx + t * t * c.cx, y = s * s * c.labelY + 2 * s * t * qy + t * t * c.cy;
         if (x >= l.x && x <= right && y >= top && y <= bottom) return true;
       }
       return false;
