@@ -3853,7 +3853,6 @@ const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].to
       const touchesBottom = near(gr.y + gr.h, H), touchesTop = near(gr.y, 0);
       const stdPointer = !inside && hasStd && (stack ? (touchesBottom || touchesTop) : touchesRight && (corner === 'br' || split));
       if (stdPointer && !stack && !split) { corner = 'bl'; ({ block, tiles } = placeBlock(others, gr, corner, true)); }
-      if (stdPointer && stack && touchesBottom && !split) { corner = 'tr'; ({ block, tiles } = placeBlock(others, gr, corner, true, null)); }
       shapes.push({ poly: lShape(r, block, gr), fill: dominant.fill });
       if (dominant.threeD) {
         let right = block && corner === 'br' ? block.x - G / 2 : r.x + r.w;
@@ -3890,7 +3889,7 @@ const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].to
           strip = { x: r.x, y: r.y, w: block.x - G / 2 - r.x, h: r.h };
           cx = strip.x + strip.w / 2; cy = r.y + r.h / 2;
         }
-        callouts.push({ zone, cx, cy, r: strip, text: domLine, lines: [{ t: domLine, w: 400 }], gi, rank: 1, gcx: r.x + r.w / 2, fill: dominant.fill });
+        callouts.push({ std: true, zone, cx, cy, r: strip, text: domLine, lines: [{ t: domLine, w: 400 }], gi, rank: 1, gcx: r.x + r.w / 2, fill: dominant.fill });
       } else if (stdPointer) {
         const colX = block.x + block.w + G / 2;
         const col = { x: colX, y: r.y, w: r.x + r.w - colX, h: r.h };
@@ -4426,12 +4425,28 @@ const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].to
     // label. If even that leaves no room, the format's line runs up into the end of the bracket.
     [topZ, botZ].forEach(Z => Z.units.filter(u => u.block && u.items.length > 1).forEach(u => {
       const head = u.items[0], nxt = u.items[1], corner = head.r.x + 0.5;
-      const yl = labelY(nxt), xs = nxt.L + nxt.w + 4, denom = yl - nxt.ty;
-      const tt = Math.abs(denom) < 1e-6 ? 1 : Math.sqrt(Math.max(0, Math.min(1, (yl - head.ty) / denom)));
-      const xAt = xs + (nxt.tx - xs) * (1 - (1 - tt) * (1 - tt));
-      if (xAt - corner >= 5) { head.tx = Math.max(corner + 2, Math.min(head.tx, xAt - 3)); return; }
+      const yl = labelY(nxt), xs = nxt.L + nxt.w + 4;
+      const passAt = ty => {
+        const denom = yl - ty, tt = Math.abs(denom) < 1e-6 ? 1 : Math.sqrt(Math.max(0, Math.min(1, (yl - head.ty) / denom)));
+        return xs + (nxt.tx - xs) * (1 - (1 - tt) * (1 - tt));
+      };
+      let xAt = passAt(nxt.ty);
+      if (xAt - corner >= 5) {
+        // Curves that would pass under 5px apart: Standard's dot drops to the edge of its middle band nearest the labels,
+        // which straightens its curve before the bracket and opens up the gap.
+        if (nxt.std && xAt - Math.min(head.tx, xAt - 3) < 5) { nxt.ty = nxt.r.y + nxt.r.h * (nxt.zone === 'bottom' ? 0.7 : 0.3); xAt = passAt(nxt.ty); }
+        head.tx = Math.max(corner + 2, Math.min(head.tx, xAt - 3));
+        return;
+      }
       const others = Z.units.filter(v => v !== u).flatMap(v => v.items);
-      u.items.forEach(c => { c.elbow = !others.some(o => o.row === c.row && o.L < c.tx + 4 && o.L + o.w > c.L + c.w); });
+      u.items.forEach((c, i) => {
+        c.elbow = !others.some(o => o.row === c.row && o.L < c.tx + 4 && o.L + o.w > c.L + c.w);
+        // A line that keeps its curve moves right, as far as its tile allows, to clear the corner of the line before it.
+        const prev = u.items[i - 1];
+        if (c.elbow || !prev || !prev.elbow) return;
+        const yc = labelY(c), xc = c.L + c.w + 4, tc = Math.sqrt(Math.max(0, Math.min(1, (yc - labelY(prev)) / (yc - c.ty))));
+        c.tx = Math.max(c.tx, Math.min(xc + (prev.tx + 3 - xc) / (1 - (1 - tc) * (1 - tc)), c.r.x + c.r.w - 3));
+      });
       head.tx = (nxt.elbow ? nxt.tx : xAt) - corner >= 5 ? corner + 2 : corner;
     }));
     const top = topZ.units.flatMap(u => u.items), bottom = botZ.units.flatMap(u => u.items);
