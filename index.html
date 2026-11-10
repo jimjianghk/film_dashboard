@@ -2902,7 +2902,7 @@ function filmDecade(f) {
 // estimators read the current year, the blend never anchors to a past-year
 // average that ignores the season in progress, and because each day reads
 // the past years' own day-by-day counts, the curve keeps the usual
-// seasonal shape. The confidence band is a 95% Student-t prediction
+// seasonal shape. The confidence band is a 70% Student-t prediction
 // interval on the blend's combined standard error. Same-date comparisons
 // reuse the stats row's Feb. 29-safe rule. The rendering follows The
 // Economist's forecast treatment: a grey band shades the forecast span
@@ -2930,14 +2930,14 @@ function computeCumForecast(pastFilmsLists) {
     .filter(y => y.atCutoff);
   if (!pastYears.length) return null;
   const n = pastYears.length;
-  // t(0.975, df) by table for the small df this chart will ever see; the
-  // closed-form fallback stays within ~0.01 of the true quantile. With one
+  // t(0.85, df) by table for the small df this chart will ever see; the
+  // closed-form fallback stays within ~0.001 of the true quantile. With one
   // past year there is no variance to weight the blend with and the band
   // degenerates to the central line; the lower bound never dips below the
   // logged count. The day after the cutoff barely differs across past
   // years, so the band opens from nearly nothing.
-  const T95 = { 1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 6: 2.447, 7: 2.365, 8: 2.306, 9: 2.262, 10: 2.228 };
-  const tCrit = T95[n - 1] || 1.96 + 2.75 / (n - 1);
+  const T70 = { 1: 1.963, 2: 1.386, 3: 1.250, 4: 1.190, 5: 1.156, 6: 1.134, 7: 1.119, 8: 1.108, 9: 1.100, 10: 1.093 };
+  const tCrit = T70[n - 1] || 1.036 + 0.57 / (n - 1);
   const mean = vals => vals.reduce((s, v) => s + v, 0) / vals.length;
   const predVar = vals => {
     const m = mean(vals);
@@ -2981,7 +2981,7 @@ function computeCumForecast(pastFilmsLists) {
   // stays under on one day holds on every earlier day. Carrying the central
   // line and lower edge forward and the upper edge backward irons out the
   // few days where the blend's shifting weights would tick a line back, and
-  // only ever tightens the band without loosening its 95% coverage.
+  // only ever tightens the band without loosening its 70% coverage.
   for (let i = 1; i < central.length; i++) central[i] = Math.max(central[i], central[i - 1]);
   for (let i = 1; i < lo.length; i++) lo[i] = Math.max(lo[i], lo[i - 1]);
   for (let i = hi.length - 2; i >= 0; i--) hi[i] = Math.min(hi[i], hi[i + 1]);
@@ -3259,11 +3259,44 @@ function renderCumulativeChart(anim) {
     // the +5 baseline offset is the same optical-centring nudge the
     // y-axis labels use. The label sits centred in the band, or slips to
     // right-aligned just outside the band's left edge when the band is
-    // too narrow to hold it; the choice keys on the settled band width
-    // rather than the animated one so it never switches sides mid-toggle.
-    const labelY = (Math.max(MT, yScale(onAxis.max)) + Math.max(MT, yScale(onAxis.max - onAxis.step))) / 2 + 5;
-    const settledBandW = innerW * (daysInYear - 1 - fcst.startIdx) / (daysInYear - 1);
-    forecastLayer += settledBandW >= 76
+    // too narrow to hold it or the confidence area would overlap it
+    // there; and if the screening line would overlap it out there, it
+    // drops to between the bottom two gridlines instead. Every test reads
+    // the settled chart rather than the animated one so the label never
+    // switches places mid-toggle, and compares the label's ink box in
+    // days and axis values. Neither edge of the confidence area ever
+    // falls, so the area overlaps the box exactly when its upper edge has
+    // climbed past the box's bottom by the label's right end while its
+    // lower edge is still under the box's top at the label's left end.
+    // The screening line never falls either, so the same pair of checks
+    // serves for it, widened by half its stroke.
+    const lastDay = daysInYear - 1;
+    const settledBandW = innerW * (lastDay - fcst.startIdx) / lastDay;
+    const fontPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const daysPerPx = lastDay / innerW;
+    const vPerPx = onAxis.max / innerH;
+    const labelDays = measureClosureLabel('Forecast', fontPx) * daysPerPx;
+    const vBottom = onAxis.max - onAxis.step / 2 - 5 * vPerPx;
+    const vTop = vBottom + fontPx * 0.75 * vPerPx;
+    const valueAt = (pts, day) => {
+      let i = 0;
+      while (i < pts.length - 2 && pts[i + 1].x <= day) i++;
+      const a = pts[i], b = pts[i + 1] || a;
+      return b.x > a.x ? a.y + (b.y - a.y) * Math.max(0, Math.min(1, (day - a.x) / (b.x - a.x))) : a.y;
+    };
+    const fanEdge = edge => edge.map((y, k) => ({ x: fcst.startIdx + k, y }));
+    const midDay = (fcst.startIdx + lastDay) / 2;
+    const labelInBand = settledBandW >= 76 && !(
+      valueAt(fanEdge(fcst.hi), midDay + labelDays / 2) > vBottom &&
+      valueAt(fanEdge(fcst.lo), midDay - labelDays / 2) < vTop);
+    const outRightDay = fcst.startIdx - 8 * daysPerPx;
+    const labelLow = !labelInBand &&
+      valueAt(points, outRightDay + 1.5 * daysPerPx) > vBottom - 1.5 * vPerPx &&
+      valueAt(points, outRightDay - labelDays - 1.5 * daysPerPx) < vTop + 1.5 * vPerPx;
+    const labelY = (labelLow
+      ? yScale(0) + yScale(onAxis.step)
+      : Math.max(MT, yScale(onAxis.max)) + Math.max(MT, yScale(onAxis.max - onAxis.step))) / 2 + 5;
+    forecastLayer += labelInBand
       ? `<text x="${(bandX + bandW / 2).toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="middle" font-family="'Dashboard Sans',sans-serif" font-size="1rem" font-weight="400" fill="rgb(89,89,89)">Forecast</text>`
       : `<text x="${(bandX - 8).toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="end" font-family="'Dashboard Sans',sans-serif" font-size="1rem" font-weight="400" fill="rgb(89,89,89)">Forecast</text>`;
     forecastLayer += `<path d="${centralD}" fill="none" stroke="var(--chart-red)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></g>`;
@@ -3523,7 +3556,7 @@ const cumForecastSeasonOpen = endDate >= dashYear + '-03-01';
 if (!IS_ALL_MODE && isCurrentDashboardYear && cumForecastSeasonOpen && cumForecastYears.length && FILMS.length) {
   cumForecastWrap.classList.add('is-visible');
   document.querySelector('label[for="cum-forecast"]').textContent =
-    'Show forecast' + footnoteMark('forecast', 'Estimates based on screening counts since 2017, excluding 2020 and 2021; band represents 95% probability');
+    'Show forecast' + footnoteMark('forecast', 'Estimates based on screening counts since 2017, excluding 2020 and 2021; band represents 70% probability');
   cumForecastInput.addEventListener('change', () => {
     if (cumForecastInput.checked && !cumForecast && !cumForecastLoad) {
       const archiveFetches = cumForecastYears.map(y => {
