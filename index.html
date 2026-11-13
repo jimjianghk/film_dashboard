@@ -56,8 +56,6 @@
 }
 :root {
   --bg: #ebe9dc;
-  --surface: #e9e4d7;
-  --surface2: #ded8c8;
   --surface3: #d3ccb9;
   --border: #c9c3b2;
   --border-strong: #b7b09c;
@@ -66,16 +64,7 @@
   --text-dimmer: #8a867a;
   --accent: #d8232a;
   --chart-red: #de4939; /* Cumulative line, decade, runtime and venue bars. */
-  --accent-bright: #b21d23;
-  --accent-dim: rgba(216,35,42,0.12);
-  --accent-glow: rgba(216,35,42,0.18);
-  --peach: #efa489;
-  --peach-light: #f0c4b4;
-  --blue-dark: #293f84;
-  --blue-mid: #4a6d94;
-  --blue-light: #6290bf;
   --red: #d8232a;
-  --green: #3e7a4c;
 
   /* RATING COLORS — single source of truth, dark red (1) to dark navy (10),
      each with the text color its badge carries. Space-separated RGB so they
@@ -3684,7 +3673,7 @@ const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].to
   const PALETTE = {
     DCP: { fill: '#efa489', premium: '#e77d63' },
     '35mm': { fill: '#d8232a', premium: '#9c1d23' },  // --accent / --calendar-6
-    '70mm': { fill: '#6290bf', premium: '#293f84' },  // --blue-light / --blue-dark
+    '70mm': { fill: '#6290bf', premium: '#293f84' },
     '16mm': { fill: '#7e7f71', premium: '#6f6a58' },
   };
   const DARK = '#121212';
