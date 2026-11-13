@@ -70,7 +70,7 @@ Monthly heatmap grid covering the whole dashboard year, January through December
 
 ### Festivals and series table
 
-Every named festival or series in a sortable table with five columns: series name, venue (each venue the series played at, most frequent first), month (the months it screened in, with consecutive months shown as a range), number of screenings, and average rating. The average covers only rated screenings and appears in the same circular badge as the log: a whole number when it lands on one, otherwise to one decimal in a slightly smaller type, with the badge color following the same continuous rating scale as the calendar's average-rating view. A series with no rated screening shows the grey unrated badge instead. Rows sort by screening count, highest first, by default, with ties in the order the series first appeared during the year. Clicking a header sorts by that column; unrated series always sort last on rating, and names order ignoring leading articles as titles do in the log table. Sorting by venue splits a series that played more than one venue into a row per venue, each showing that venue's own months, its screenings as a share of the series total ("23 (out of 24)"), and the average of its own screenings. The table scrolls within a viewport, and has the same horizontal overflow behavior as the log table (see below).
+Every named festival or series in a sortable table with five columns: series name, venue (each venue the series played at, most frequent first), month (the months it screened in, with consecutive months shown as a range), number of screenings, and average rating. The average covers only rated screenings and appears in the same rectangular badge as the log: a whole number when it lands on one, otherwise to one decimal, with the badge color following the same continuous rating scale as the calendar's average-rating view. A series with no rated screening shows the grey unrated badge instead. Rows sort by screening count, highest first, by default, with ties in the order the series first appeared during the year. Clicking a header sorts by that column; unrated series always sort last on rating, and names order ignoring leading articles as titles do in the log table. Sorting by venue splits a series that played more than one venue into a row per venue, each showing that venue's own months, its screenings as a share of the series total ("23 (out of 24)"), and the average of its own screenings. The table scrolls within a viewport, and has the same horizontal overflow behavior as the log table (see below).
 
 ### Complete log table
 
@@ -83,7 +83,7 @@ Sortable, filterable table of every screening. Nine columns: date, title, year, 
 - Dropdown filters on date (by month), year (by decade), rating (1–10 plus N/A), format, venue, and series. A shorts program appears under every decade at least one of its production years belongs to.
 - Free-text search on title that works with CJK input methods and finds a bilingually logged film by either title.
 - When the table overflows horizontally, a `>>>` cue marks more columns; clicking it scrolls right.
-- Rating badges are color-coded circles matching the bar chart palette. Unrated films show a grey badge.
+- Rating badges are color-coded rectangles matching the bar chart palette. Unrated films show a grey badge.
 - A screening paid in a foreign currency shows its original local price in the Price cell (e.g. CN¥50 or €14.50), while sorting on the column uses the USD-converted value so every row orders on one scale.
 
 ### Page footnotes
