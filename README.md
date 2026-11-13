@@ -107,7 +107,6 @@ When the year has fewer than 5 logged films, the masthead and stats row render a
 - Liquid glass floating layer: chart tooltips, venue name tips, the log table's filter menus, the year menu panel, the chart navigation pill, and the log and series table headers render as translucent glass with soft highlights, subtle depth, and capsule-style one-line tooltips
 - Browsers that can't render the glass effect keep the flatter solid design
 - Reduced-transparency and high-contrast preferences restore solid, high-contrast surfaces
-- Fade-up entrance animations with staggered delays
 - Responsive layouts step down from wide desktop to small phone widths
 
 ## Data

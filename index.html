@@ -37,6 +37,9 @@
   // counts.
   document.documentElement.classList.toggle('is-web-app',
     navigator.standalone === true || matchMedia('not all and (display-mode: browser)').matches);
+  // The stat row, charts and tables stay hidden until the data has rendered
+  // (see .is-loading), so their empty frames never show.
+  document.documentElement.classList.add('is-loading');
 })();
 </script>
 <style>
@@ -1851,17 +1854,13 @@ footer img.footer-favicon {
   .chart-nav-logo::before { content: none; }
 }
 
-/* ANIMATIONS */
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.animate { animation: fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) forwards; opacity: 0; }
-.delay-1 { animation-delay: 0.05s; }
-.delay-2 { animation-delay: 0.15s; }
-.delay-3 { animation-delay: 0.25s; }
-.delay-4 { animation-delay: 0.35s; }
-.delay-5 { animation-delay: 0.45s; }
+/* LOADING: everything the data fills in stays hidden until it has rendered,
+   then appears at once. The head script sets the class before first paint
+   and the main script lifts it when the render is done. */
+.is-loading .stats-row,
+.is-loading .stats-compare-toggle,
+.is-loading .charts-grid,
+.is-loading .section { visibility: hidden; }
 
 @media (max-width: 1160px) {
   .stats-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 6px; row-gap: 0; }
@@ -1955,8 +1954,8 @@ footer img.footer-favicon {
     <div class="header-date" id="date-range"></div>
   </header>
 
-  <div class="stats-row animate delay-1" id="stats-row"></div>
-  <div class="stats-compare-toggle animate delay-1" id="stats-compare-toggle-wrap">
+  <div class="stats-row" id="stats-row"></div>
+  <div class="stats-compare-toggle" id="stats-compare-toggle-wrap">
     <label class="switch-toggle">
       <input type="checkbox" id="stats-compare-toggle" aria-label="Show year comparisons">
       <span class="switch-slider"></span>
@@ -1971,7 +1970,7 @@ footer img.footer-favicon {
   </div>
 
   <div class="charts-grid">
-    <div class="chart-card animate delay-2" id="sec-cumulative">
+    <div class="chart-card" id="sec-cumulative">
       <div class="chart-label with-subtitle">Cumulative screenings
         <span class="chart-dedup cum-forecast-toggle" id="cum-forecast-wrap">
           <label class="switch-toggle">
@@ -1985,11 +1984,11 @@ footer img.footer-favicon {
       <div class="chart-subtitle"><span class="chart-subtitle-hover">Hover</span><span class="chart-subtitle-click">Tap</span> on chart for number of screenings as of any date</div>
       <div id="cumulative-chart"></div>
     </div>
-    <div class="chart-card animate delay-2" id="sec-formats">
+    <div class="chart-card" id="sec-formats">
       <div class="chart-label" style="display:flex;align-items:center;gap:18px;min-height:29px;">Screening format<span class="chart-num">2</span></div>
       <div id="format-chart"></div>
     </div>
-    <div class="chart-card animate delay-2" id="sec-ratings">
+    <div class="chart-card" id="sec-ratings">
       <div class="chart-label rating-header">
         <span>Rating</span>
         <span class="cal-toggle-wrap rating-filter-toggle">
@@ -2008,7 +2007,7 @@ footer img.footer-favicon {
       </div>
       <div id="rating-chart"></div>
     </div>
-    <div class="chart-card animate delay-2" id="sec-decades">
+    <div class="chart-card" id="sec-decades">
       <div class="chart-label" style="display:flex;align-items:center;gap:18px;min-height:29px;">Production decade
         <span class="chart-dedup" style="display:flex;align-items:center;gap:6px;">
           <label class="switch-toggle">
@@ -2021,7 +2020,7 @@ footer img.footer-favicon {
       </div>
       <div id="decade-chart"></div>
     </div>
-    <div class="chart-card full animate delay-3" id="sec-runtimes">
+    <div class="chart-card full" id="sec-runtimes">
       <div class="chart-label with-subtitle" style="display:flex;align-items:center;gap:18px;">Runtime distribution
         <span class="chart-dedup" style="display:flex;align-items:center;gap:6px;">
           <label class="switch-toggle">
@@ -2037,12 +2036,12 @@ footer img.footer-favicon {
         <div id="runtime-chart" style="display:flex;align-items:flex-end;gap:2px;height:160px;padding-top:12px;width:100%;"></div>
       </div>
     </div>
-    <div class="chart-card full animate delay-3" id="sec-venues">
+    <div class="chart-card full" id="sec-venues">
       <div class="chart-label with-subtitle">Screening venue<span class="chart-num">6</span></div>
       <div class="chart-subtitle"><span class="chart-subtitle-hover">Hover</span><span class="chart-subtitle-click">Tap</span> on labels for full venue names</div>
       <div id="venue-chart" class="venue-grid"></div>
     </div>
-    <div class="chart-card full animate delay-4" id="sec-calendar">
+    <div class="chart-card full" id="sec-calendar">
       <div class="chart-label calendar-header">
         <span>Screening calendar</span>
         <div class="chart-subtitle calendar-subtitle"><span class="chart-subtitle-hover">Hover</span><span class="chart-subtitle-click">Tap</span> on dates for lists of screenings</div>
@@ -2090,7 +2089,7 @@ footer img.footer-favicon {
     </div>
   </div>
 
-  <div class="section animate delay-4" id="sec-series">
+  <div class="section" id="sec-series">
     <div class="chart-label">Festivals &amp; series<span class="chart-num">8</span></div>
     <div class="film-table-shell series-table-shell">
       <div class="film-table-wrap">
@@ -2117,7 +2116,7 @@ footer img.footer-favicon {
     </div>
   </div>
 
-  <div class="section animate delay-5" id="sec-log">
+  <div class="section" id="sec-log">
     <div class="chart-label">Complete log<span class="chart-num">9</span></div>
     <div class="film-table-shell">
       <div class="film-table-wrap">
@@ -2346,17 +2345,6 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') setYearMenuOpen(false);
-});
-
-// ====== LIQUID GLASS: KEEP BACKDROP-FILTER ALIVE ======
-// Completed entrance animations keep filling forwards, which Chromium treats
-// as an active opacity animation on the sections and silently breaks
-// backdrop-filter for everything inside them (table header pane, venue tips).
-// Remove the classes once done; the end state equals the default style.
-document.addEventListener('animationend', e => {
-  if (e.animationName === 'fadeUp' && e.target.classList?.contains('animate')) {
-    e.target.classList.remove('animate', 'delay-1', 'delay-2', 'delay-3', 'delay-4', 'delay-5');
-  }
 });
 
 // ====== CHART NAV — show/hide, scroll-spy, tab centering ======
@@ -2822,8 +2810,8 @@ if (FILMS.length < 5) {
   // The footer keeps only the spending note: the chart and table markers are
   // claimed at render, which the return below skips.
   const note = document.createElement('div');
-  note.className = 'sparse-note animate delay-2';
-  note.textContent = 'Visualisations will display when there are more film entries.';
+  note.className = 'sparse-note';
+  note.textContent = 'Charts will appear once there are five screenings.';
   document.querySelector('.charts-grid').insertAdjacentElement('afterend', note);
   return;
 }
@@ -4623,7 +4611,6 @@ function renderRatingChart(filter) {
       </div>` : '');
     container.dataset.init = '1';
   }
-  syncBarLabelColumn(container);
   const allSubset = dedup ? dedupFilms(FILMS) : FILMS;
   const allCounts = {};
   for (let i=1;i<=10;i++) allCounts[i] = 0;
@@ -4636,6 +4623,10 @@ function renderRatingChart(filter) {
     row.querySelector('.bar-fill').style.width = (c / maxRating) * 100 + '%';
     row.querySelector('.bar-count').textContent = c;
   }
+  // The label column is measured after the widths are set: measuring flushes
+  // layout, and bars first laid out at zero would play the toggle transition
+  // on page load.
+  syncBarLabelColumn(container);
 }
 renderRatingChart('all');
 let activeRatFilter = 'all';
@@ -4858,7 +4849,6 @@ function renderDecadeChart() {
     ).join('');
     container.dataset.init = '1';
   }
-  syncBarLabelColumn(container);
   for (const d of decadeArr) {
     const c = decadeCounts[d] || 0;
     const row = container.querySelector(`.bar-row[data-decade="${d}"]`);
@@ -4866,6 +4856,8 @@ function renderDecadeChart() {
     row.querySelector('.bar-fill').style.width = (c / maxDecade) * 100 + '%';
     row.querySelector('.bar-count').textContent = c;
   }
+  // Measured after the widths are set, as in the rating chart.
+  syncBarLabelColumn(container);
 }
 renderDecadeChart();
 document.getElementById('decade-dedup').addEventListener('change', renderDecadeChart);
@@ -5764,7 +5756,11 @@ if (location.hash) {
   if (anchorEl) anchorEl.scrollIntoView({ behavior: 'instant', block: 'start' });
 }
 
-});
+})
+  // The page appears in one step once the render is done. This also runs
+  // when the render stops early (a sparse year) or fails, so nothing is left
+  // hidden.
+  .finally(() => document.documentElement.classList.remove('is-loading'));
 </script>
 </body>
 </html>
