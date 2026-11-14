@@ -1902,7 +1902,6 @@ footer img.footer-favicon {
   <div class="tooltip-meta" id="tt-meta"></div>
 </div>
 <div class="seg-tooltip" id="seg-tooltip"></div>
-<div class="seg-tooltip" id="cum-tooltip"></div>
 
 <div class="year-menu">
   <button class="year-menu-button" id="year-menu-button" type="button" aria-label="Open year menu" aria-expanded="false" aria-controls="year-menu-panel">
@@ -2912,8 +2911,7 @@ function computeCumForecast(pastFilmsLists) {
   };
   const yearStart = new Date(dashYear + '-01-01T12:00:00');
   const central = [cumNow];
-  const lo = [cumNow];
-  const hi = [cumNow];
+  const margin = [0];
   for (let i = dataDayIdxForStats + 1; i < daysInYearForStats; i++) {
     const d = new Date(yearStart.getTime() + i * 86400000);
     const point = normalizeYearPoint(`${dashYear}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
@@ -2940,25 +2938,35 @@ function computeCumForecast(pastFilmsLists) {
       }
     }
     central.push(est);
-    lo.push(Math.max(cumNow, est - halfWidth));
-    hi.push(est + halfWidth);
+    margin.push(halfWidth);
   }
-  // A cumulative count never falls, so neither does its expected value, a
-  // floor it clears by one day holds on every later day, and a ceiling it
-  // stays under on one day holds on every earlier day. Carrying the central
-  // line and lower edge forward and the upper edge backward irons out the
-  // few days where the blend's shifting weights would tick a line back, and
-  // only ever tightens the band without loosening its 70% coverage.
+  // A cumulative count never falls, so neither does its expected value:
+  // carrying the central line forward irons out the few days where the
+  // blend's shifting weights would tick it back. The band is that line plus
+  // or minus each day's margin, so the hover label can quote the two as
+  // they are drawn; its edges are left to dip where the margin widens
+  // faster than the line climbs, and only the logged count holds the lower
+  // one up.
   for (let i = 1; i < central.length; i++) central[i] = Math.max(central[i], central[i - 1]);
-  for (let i = 1; i < lo.length; i++) lo[i] = Math.max(lo[i], lo[i - 1]);
-  for (let i = hi.length - 2; i >= 0; i--) hi[i] = Math.min(hi[i], hi[i + 1]);
+  const lo = central.map((c, i) => Math.max(cumNow, c - margin[i]));
+  const hi = central.map((c, i) => c + margin[i]);
   return {
     startIdx: dataDayIdxForStats,
     central,
+    margin,
     lo,
     hi,
-    yearEndHi: hi[hi.length - 1]
+    maxHi: Math.max(...hi)
   };
+}
+
+// A forecast margin to the fewest decimal places that show it as more than
+// zero: whole when it rounds to at least 1, otherwise one more place at a
+// time until a digit appears.
+function formatForecastMargin(margin) {
+  let places = 0;
+  while (places < 6 && +margin.toFixed(places) === 0) places++;
+  return +margin.toFixed(places) === 0 ? '0' : margin.toFixed(places);
 }
 
 // All-years mode plots every year's cumulative curve on one non-leap
@@ -3129,7 +3137,7 @@ function renderCumulativeChart(anim) {
     return { step, max: Math.max(4 * step, Math.ceil(maxVal / step) * step) };
   };
   const offAxis = yAxisFor(total);
-  const onAxis = cumForecast ? yAxisFor(Math.max(total, Math.ceil(cumForecast.yearEndHi))) : offAxis;
+  const onAxis = cumForecast ? yAxisFor(Math.max(total, Math.ceil(cumForecast.maxHi))) : offAxis;
   const niceMax = offAxis.max + (onAxis.max - offAxis.max) * p;
   const yScale = v => MT + innerH - (v / niceMax) * innerH;
   const pathD = points.map((p, i) =>
@@ -3231,12 +3239,13 @@ function renderCumulativeChart(anim) {
     // drops to between the bottom two gridlines instead. Every test reads
     // the settled chart rather than the animated one so the label never
     // switches places mid-toggle, and compares the label's ink box in
-    // days and axis values. Neither edge of the confidence area ever
-    // falls, so the area overlaps the box exactly when its upper edge has
-    // climbed past the box's bottom by the label's right end while its
-    // lower edge is still under the box's top at the label's left end.
-    // The screening line never falls either, so the same pair of checks
-    // serves for it, widened by half its stroke.
+    // days and axis values. The confidence area's edges run straight
+    // from one day to the next and may dip, so each day-to-day stretch
+    // under the label is solved for where the upper edge is above the
+    // box's bottom while the lower edge is below its top. The screening
+    // line never falls, so it overlaps the box exactly when it has climbed
+    // past the box's bottom by the label's right end while still under
+    // the box's top at the label's left end, widened by half its stroke.
     const lastDay = daysInYear - 1;
     const settledBandW = innerW * (lastDay - fcst.startIdx) / lastDay;
     const fontPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
@@ -3251,11 +3260,22 @@ function renderCumulativeChart(anim) {
       const a = pts[i], b = pts[i + 1] || a;
       return b.x > a.x ? a.y + (b.y - a.y) * Math.max(0, Math.min(1, (day - a.x) / (b.x - a.x))) : a.y;
     };
-    const fanEdge = edge => edge.map((y, k) => ({ x: fcst.startIdx + k, y }));
+    // The part of a stretch, as [from, to] within 0..1, where a + b*t > 0.
+    const whereAbove = (span, a, b) => {
+      if (b === 0) return a > 0 ? span : null;
+      return b > 0 ? [Math.max(span[0], -a / b), span[1]] : [span[0], Math.min(span[1], -a / b)];
+    };
+    const fanOverlaps = (fromDay, toDay) => {
+      for (let k = Math.max(0, Math.floor(fromDay - fcst.startIdx)); k < fcst.hi.length - 1 && fcst.startIdx + k < toDay; k++) {
+        let span = [Math.max(0, fromDay - fcst.startIdx - k), Math.min(1, toDay - fcst.startIdx - k)];
+        span = whereAbove(span, fcst.hi[k] - vBottom, fcst.hi[k + 1] - fcst.hi[k]);
+        span = span && whereAbove(span, vTop - fcst.lo[k], fcst.lo[k] - fcst.lo[k + 1]);
+        if (span && span[0] < span[1]) return true;
+      }
+      return false;
+    };
     const midDay = (fcst.startIdx + lastDay) / 2;
-    const labelInBand = settledBandW >= 76 && !(
-      valueAt(fanEdge(fcst.hi), midDay + labelDays / 2) > vBottom &&
-      valueAt(fanEdge(fcst.lo), midDay - labelDays / 2) < vTop);
+    const labelInBand = settledBandW >= 76 && !fanOverlaps(midDay - labelDays / 2, midDay + labelDays / 2);
     const outRightDay = fcst.startIdx - 8 * daysPerPx;
     const labelLow = !labelInBand &&
       valueAt(points, outRightDay + 1.5 * daysPerPx) > vBottom - 1.5 * vPerPx &&
@@ -3345,7 +3365,19 @@ function renderCumulativeChart(anim) {
     ).join('');
   }
 
-  const hoverLine = `<line class="cum-hover-line" x1="0" x2="0" y1="${MT}" y2="${MT+innerH}" stroke="var(--text)" stroke-width="1" visibility="hidden" pointer-events="none"/>`;
+  // The hover label follows The Economist's interactive charts: the date
+  // over the count, in the chart subtitle's weight, 5px from a trace line
+  // that runs on above the plot to the top of the date; the label sits to
+  // the trace's left on the right half of the chart and to its right on
+  // the left half. The count stands 3.5px below the top gridline, which
+  // keeps it 8px clear of the "Forecast" label below when the gridlines
+  // are at their closest, 36px apart; wider gridlines only move "Forecast"
+  // further off.
+  const hoverFontPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  const hoverLabelFont = `font-family="'Dashboard Sans',sans-serif" font-size="1rem" font-weight="500"`;
+  const hoverLabelYs = [MT + 3.5 - hoverFontPx * 17 / 16, MT + 3.5];
+  const hoverLabelLines = fills => hoverLabelYs.map((y, i) => `<text y="${y.toFixed(1)}"${fills ? ` fill="${fills[i]}"` : ''}></text>`).join('');
+  const hoverLine = `<line class="cum-hover-line" x1="0" x2="0" y1="${(hoverLabelYs[0] - hoverFontPx * 0.7).toFixed(1)}" y2="${MT+innerH}" stroke="var(--text)" stroke-width="1" visibility="hidden" pointer-events="none"/>`;
   // The dot's halo is a pseudo-transparent annulus: a masked repaint of
   // the true backdrop (paper, then the band and confidence area under the
   // same clip and animation opacity as the real ones), so region seams
@@ -3353,9 +3385,14 @@ function renderCumulativeChart(anim) {
   // gridlines the halo exists to hold apart stay erased. Only the mask
   // circle moves on hover; the halo paints over the dot's edge, leaving
   // the usual red core and 1px ring geometry.
+  // The label's halo is a copy of its text under it, stroked 4px wide in
+  // the paper colour, which blocks the top gridline, the band, the
+  // confidence area and any line from around the glyphs.
   const hoverDot = `<g class="cum-hover-dot" visibility="hidden" pointer-events="none"><circle r="4" fill="var(--chart-red)"/></g>`;
   const ringMask = `<mask id="cum-ring-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="black"/><circle class="cum-ring-mask-circle" cx="-10" cy="-10" r="4" fill="none" stroke="white" stroke-width="2"/></mask>`;
   const hoverRing = `<g class="cum-hover-ring" mask="url(#cum-ring-mask)" visibility="hidden" pointer-events="none"><rect width="${W}" height="${H}" fill="var(--bg)"/>${ringBackdropLayers}</g>`;
+  const hoverLabelHalo = `<g class="cum-hover-label-halo" ${hoverLabelFont} fill="var(--bg)" stroke="var(--bg)" stroke-width="4" stroke-linejoin="round" visibility="hidden" pointer-events="none">${hoverLabelLines()}</g>`;
+  const hoverLabel = `<g class="cum-hover-label" ${hoverLabelFont} visibility="hidden" pointer-events="none">${hoverLabelLines(['var(--text)', 'var(--chart-red)'])}</g>`;
   const hoverZone = `<rect class="cum-hover-zone" x="${ML}" y="${MT}" width="${innerW}" height="${innerH}" fill="transparent" style="cursor:crosshair;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none"/>`;
   container.style.touchAction = 'none';
   container.style.webkitUserSelect = 'none';
@@ -3383,7 +3420,7 @@ function renderCumulativeChart(anim) {
         `<path d="${pts.map((pt, i) => `${i === 0 ? 'M' : 'L'}${xScale(pt.x).toFixed(1)},${yScale(pt.y).toFixed(1)}`).join(' ')}" fill="none" stroke="rgb(189,189,175)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`
       ).join('')}</g>`
     : '';
-  container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;overflow:visible;">${plotClip}${yAxis}${xAxis}${todayMark}${closureLayer}${forecastLayer}${yearLayer}<g clip-path="url(#cum-plot-clip)"><path d="${pathD}" fill="none" stroke="var(--chart-red)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>${pastPathD ? `<path d="${pastPathD}" fill="none" stroke="var(--chart-red)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>` : ''}</g>${hoverLine}${ringMask}${hoverDot}${hoverRing}${hoverZone}</svg>`;
+  container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;overflow:visible;">${plotClip}${yAxis}${xAxis}${todayMark}${closureLayer}${forecastLayer}${yearLayer}<g clip-path="url(#cum-plot-clip)"><path d="${pathD}" fill="none" stroke="var(--chart-red)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>${pastPathD ? `<path d="${pastPathD}" fill="none" stroke="var(--chart-red)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>` : ''}</g>${hoverLine}${ringMask}${hoverDot}${hoverRing}${hoverLabelHalo}${hoverLabel}${hoverZone}</svg>`;
 
   const svg = container.querySelector('svg');
   const lineEl = svg.querySelector('.cum-hover-line');
@@ -3391,7 +3428,8 @@ function renderCumulativeChart(anim) {
   const ringEl = svg.querySelector('.cum-hover-ring');
   const maskCircleEl = svg.querySelector('.cum-ring-mask-circle');
   const zoneEl = svg.querySelector('.cum-hover-zone');
-  const cumTooltip = document.getElementById('cum-tooltip');
+  const labelEl = svg.querySelector('.cum-hover-label');
+  const labelHaloEl = svg.querySelector('.cum-hover-label-halo');
 
   let isDragging = false;
   const showHover = (clientX, allowClamp = false) => {
@@ -3414,32 +3452,33 @@ function renderCumulativeChart(anim) {
     dotEl.setAttribute('transform', `translate(${x},${y})`);
     dotEl.setAttribute('visibility', 'visible');
     const dt = new Date(yearStart.getTime() + dayIdx * dayMs);
-    const dateStr = dt.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+    const dateStr = dt.toLocaleDateString('en-US', { month:'long', day:'numeric' });
     // The all-years average shows one decimal, dropped when it lands on a
     // whole number.
     const avgRounded = Math.round(cum * 10) / 10;
     const avgLabel = Number.isInteger(avgRounded) ? String(avgRounded) : avgRounded.toFixed(1);
-    cumTooltip.textContent = IS_ALL_MODE
-      ? `${dateStr} · ${avgLabel} ${avgRounded === 1 ? 'screening' : 'screenings'} on average`
-      : inForecast
-      ? `${dateStr} · ${cum} forecast ${cum === 1 ? 'screening' : 'screenings'}`
-      : `${dateStr} · ${cum} ${cum === 1 ? 'screening' : 'screenings'}`;
-    cumTooltip.style.display = 'block';
-    const dotClientX = r.left + x * (r.width / W);
-    const dotClientY = r.top + y * (r.height / H);
-    let left = dotClientX - cumTooltip.offsetWidth / 2;
-    if (left + cumTooltip.offsetWidth > window.innerWidth - 8) left = window.innerWidth - cumTooltip.offsetWidth - 8;
-    if (left < 8) left = 8;
-    cumTooltip.style.left = left + 'px';
-    let top = dotClientY - cumTooltip.offsetHeight - 8;
-    if (top < 8) top = dotClientY + 16;
-    cumTooltip.style.top = top + 'px';
+    // A forecast day's count carries the band's margin and is marked as a
+    // forecast.
+    const countStr = (IS_ALL_MODE ? avgLabel : String(cum)) +
+      (inForecast ? '±' + formatForecastMargin(fcst.margin[dayIdx - fcst.startIdx]) + ' forecast' : '');
+    const labelOnLeft = x > ML + innerW / 2;
+    [labelEl, labelHaloEl].forEach(group => {
+      [dateStr, countStr].forEach((str, i) => {
+        const line = group.children[i];
+        line.setAttribute('x', x + (labelOnLeft ? -5 : 5));
+        line.setAttribute('text-anchor', labelOnLeft ? 'end' : 'start');
+        line.textContent = str;
+      });
+    });
+    labelHaloEl.setAttribute('visibility', 'visible');
+    labelEl.setAttribute('visibility', 'visible');
   };
   const hideHover = () => {
     lineEl.setAttribute('visibility', 'hidden');
     ringEl.setAttribute('visibility', 'hidden');
     dotEl.setAttribute('visibility', 'hidden');
-    cumTooltip.style.display = 'none';
+    labelHaloEl.setAttribute('visibility', 'hidden');
+    labelEl.setAttribute('visibility', 'hidden');
   };
 
   zoneEl.addEventListener('pointerdown', e => {
@@ -3454,7 +3493,7 @@ function renderCumulativeChart(anim) {
     if (e.pointerType !== 'mouse' && !zoneEl.hasPointerCapture?.(e.pointerId)) return;
     showHover(e.clientX, isDragging);
   });
-  // Mouse: leaving the zone hides. Touch/pen: tooltip persists after release until the user taps elsewhere.
+  // Mouse: leaving the zone hides. Touch/pen: the label persists after release until the user taps elsewhere.
   zoneEl.addEventListener('pointerup', e => {
     if (e.pointerType === 'mouse') hideHover();
     isDragging = false;
