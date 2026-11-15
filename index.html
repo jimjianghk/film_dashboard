@@ -952,13 +952,15 @@ h1 {
   letter-spacing: 0;
   color: var(--text);
 }
+/* A film line is 20px tall, like the empty-day note, which leaves 1px above
+   and below its 18px badge. */
 .tooltip-empty { display: inline-flex; align-items: center; min-height: 20px; }
 .tooltip-films { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
-.tooltip-film { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; }
+.tooltip-film { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; min-height: 20px; }
 .tooltip-film-name { min-width: 0; white-space: nowrap; }
 .tooltip.is-constrained .tooltip-films { gap: 6px; }
 .tooltip.is-constrained .tooltip-film-name {
-  max-width: calc(100vw - 77px);
+  max-width: calc(100vw - 75px);
   overflow-wrap: anywhere;
   text-wrap: balance;
   white-space: normal;
@@ -1169,7 +1171,7 @@ tbody tr:last-child td { border-bottom: none; }
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  width: 27px; height: 20px;
+  width: 25px; height: 18px;
   line-height: 1;
   text-align: center;
   border-radius: 0;
@@ -1180,8 +1182,8 @@ tbody tr:last-child td { border-bottom: none; }
 }
 /* In the tables the badge is centred on its row, so its smaller type centres
    on the text beside it instead of sharing that text's baseline. The margins
-   keep the cell as tall as one line of that text: (24px - 20px) / 2. */
-td .rating-badge { display: flex; margin: 2px 0; }
+   keep the cell as tall as one line of that text: (24px - 18px) / 2. */
+td .rating-badge { display: flex; margin: 3px 0; }
 .rating-badge.rating-1  { background: rgb(var(--rating-1));  color: rgb(var(--rating-1-text)); }
 .rating-badge.rating-2  { background: rgb(var(--rating-2));  color: rgb(var(--rating-2-text)); }
 .rating-badge.rating-3  { background: rgb(var(--rating-3));  color: rgb(var(--rating-3-text)); }
