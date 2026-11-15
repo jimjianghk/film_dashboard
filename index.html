@@ -4135,7 +4135,11 @@ const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].to
       if (c.bracket) { [c.lo, c.hi] = c.r.h >= 13 ? [c.r.y + 6.5, c.r.y + c.r.h - 6.5] : [c.r.y + c.r.h / 2, c.r.y + c.r.h / 2]; c.pref = c.lo; c.wt = 0.5; }
       else { [c.lo, c.hi] = dotRange(c); c.pref = (c.lo + c.hi) / 2; c.wt = c.hi - c.lo < 8 ? 10 : 1; }
     });
-    callouts.sort((a, b) => a.pref - b.pref || (a.bracket ? -1 : 1));
+    // Heights within 0.01px count as equal: side-by-side tiles differ only by rounding noise. Ties go bracket first,
+    // then left to right, so the order of equal labels follows their tiles rather than the noise. Otherwise the label
+    // that has to curve could land its dot on the straight line of a tile further left.
+    const prefKey = c => Math.round(c.pref * 100);
+    callouts.sort((a, b) => prefKey(a) - prefKey(b) || (a.bracket ? 0 : 1) - (b.bracket ? 0 : 1) || a.cx - b.cx);
     // Within a format the labels read: the format itself, then standard, then its premium formats.
     const slots = {};
     callouts.forEach((c, i) => (slots[c.gi] ||= []).push(i));
