@@ -1425,10 +1425,16 @@ footer img.footer-favicon {
     color: var(--accent);
   }
 }
+/* right -10.5px with the list's 10.25px right padding puts the year links'
+   content edge 0.25px right of the button, which lines the ink of a last
+   digit such as 0, 5 or 6 (about 0.015em inside its centred cell) up with
+   the e in "Choose" (0.018em inside its advance at 1.7rem). The leading 2
+   sits about 0.02em inside its cell, so 10px of left padding leaves the same
+   gap of about 11px from each side of the panel to the digits. */
 .year-menu-panel {
   position: absolute;
   top: calc(100% + 8px);
-  right: -12px;
+  right: -10.5px;
   z-index: 1;
   width: max-content;
   padding: 4px 0 6px;
@@ -1470,7 +1476,7 @@ footer img.footer-favicon {
   --year-fade: calc(var(--year-row) * 0.75);
   position: relative;
   max-height: calc(var(--year-row) * 4.75);
-  padding: 0 10px;
+  padding: 0 10.25px 0 10px;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
@@ -1501,6 +1507,22 @@ footer img.footer-favicon {
   line-height: 1.18;
   font-weight: 700;
   text-align: right;
+}
+/* The headline font's own tabular figures are inconsistent (only 0 and 1
+   are widened), so each digit is centred in a fixed cell and every year
+   comes out the same width. 0.392em leaves about 0.034em between the ink of
+   2 and 0, the gap they get in the hero stats. Wider digits (0 is 0.406em)
+   overflow the cell evenly on both sides, which flex centring allows. */
+.year-menu-panel a span {
+  display: inline-flex;
+  justify-content: center;
+  width: 0.392em;
+}
+/* The font's tabular 1 has a base and flag that make its ink 0.351em wide,
+   close to the other digits, where the plain 1 is only 0.23em and leaves
+   gaps around it. Its 0.472em advance overflows the cell evenly. */
+.year-menu-panel a span.year-digit-one {
+  font-variant-numeric: tabular-nums;
 }
 .year-menu-panel a:hover,
 .year-menu-panel a[aria-current="page"] {
@@ -2237,7 +2259,7 @@ const applyDashboardManifest = manifest => {
   earliestDashboardYear = dashboardYears[0];
   previousDashboardYear = dashboardYears[dashboardYears.indexOf(requestedDashboardYear) - 1];
   yearMenuList.innerHTML = [...dashboardYears].reverse()
-    .map(year => `<a href="${yearMenuUrlForYear(year)}" data-year="${year}">${year}</a>`)
+    .map(year => `<a href="${yearMenuUrlForYear(year)}" data-year="${year}" aria-label="${year}">${[...year].map(d => `<span${d === '1' ? ' class="year-digit-one"' : ''} aria-hidden="true">${d}</span>`).join('')}</a>`)
     .join('');
   setDashboardYearShell(requestedDashboardYear);
   setCurrentYearMenuItem(requestedDashboardYear);
