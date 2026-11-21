@@ -111,8 +111,8 @@
   --calendar-6: 156 29 35;
   --calendar-7: 80 11 14;
 
-  /* MAP COLORS: the venue map's water, the five boroughs' land, and the
-     land around the city. */
+  /* MAP COLORS: the venue map's water, New York State's land, and the
+     land of the states around it. */
   --map-water: #e8f4f8;
   --map-land: #d2d1c6;
   --map-land-outer: #bdbdaf;
@@ -380,6 +380,8 @@ h1 {
 .switch-label-text { white-space: nowrap; }
 .chart-label {
   --chart-num-size: 24px;
+  /* How far the chart number box sits in from the chart's right edge. */
+  --chart-num-indent: 0px;
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
@@ -407,6 +409,7 @@ h1 {
 }
 .chart-num {
   margin-left: auto;
+  margin-right: var(--chart-num-indent);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -536,6 +539,19 @@ h1 {
 
 /* VENUE MAP — the venue chart's default view; the card's class picks which
    of the map and the bars shows, and the subtitle that goes with it. */
+/* The map runs up behind the card's header: it is drawn taller by the
+   header's height (the band, which the script measures) and pulled up by
+   as much, and the header sits on top of it. */
+#venue-map {
+  margin-top: calc(-1 * var(--venue-band, 0px));
+  /* On a phone the map runs out through the page's gutters to the edges
+     of the screen; the script measures the gutters. */
+  margin-left: calc(-1 * var(--venue-bleed-left, 0px));
+  margin-right: calc(-1 * var(--venue-bleed-right, 0px));
+}
+#sec-venues::before,
+.venue-header,
+#sec-venues .chart-subtitle { position: relative; z-index: 1; }
 #venue-map svg {
   display: block;
   margin: 0 auto;
@@ -553,9 +569,12 @@ h1 {
 /* Switching views: the card's height eases to the incoming view's while
    the outgoing view, lifted out of the flow, fades out over the incoming
    one fading in. Both views are in their finished state throughout. */
-.venue-views { position: relative; }
+/* flow-root keeps the map's upward pull inside the wrapper, and the clip
+   that hides the taller view during a switch leaves the band above the
+   wrapper, and a phone's map out to the screen's edges, showing. */
+.venue-views { position: relative; display: flow-root; }
 .venue-views.is-switching {
-  overflow: hidden;
+  clip-path: inset(-400px -100px 0 -100px);
   transition: height 0.5s cubic-bezier(0.22,1,0.36,1);
 }
 .venue-views.is-switching > * { transition: opacity 0.3s ease; }
@@ -569,6 +588,34 @@ h1 {
 }
 #sec-venues .venue-views > #venue-chart.is-leaving { display: grid; }
 .venue-views > .is-faded { opacity: 0; }
+/* In map view the header lies on the map as on The Economist's, 12px in
+   from the map's sides: the red tag, title, toggle and subtitle from the
+   left, the red tag flush with the title as on every chart, and the
+   number box from the right.
+   Where the card is wider than the map, which is where charts sit two to
+   a row, they first move in by the inset the script measures, so the
+   chart reads as one centered column. The move eases with the view
+   switch, and only then. */
+#sec-venues.venue-view-map::before { margin-left: calc(var(--venue-inset, 0px) + 12px); }
+#sec-venues.venue-view-map .venue-header,
+#sec-venues.venue-view-map .chart-subtitle {
+  padding-left: calc(var(--venue-inset, 0px) + 12px);
+  padding-right: calc(var(--venue-inset, 0px) + 12px);
+}
+#sec-venues.venue-view-map .venue-header { padding-right: calc(var(--venue-inset, 0px) + 12px - var(--chart-num-indent, 0px)); }
+/* On a phone the header does not move at all between the views: the map
+   comes out to the screen's edges around it. */
+@media (max-width: 800px) {
+  #sec-venues.venue-view-map::before { margin-left: 0; }
+  #sec-venues.venue-view-map .venue-header,
+  #sec-venues.venue-view-map .chart-subtitle { padding-left: 0; padding-right: 0; }
+}
+/* The unchosen toggle's gray is too faint over the map's land. */
+#sec-venues.venue-view-map .cal-toggle:not(.active) { color: var(--text-dim); }
+#sec-venues.venue-view-map .cal-toggle:hover:not(.active) { color: var(--text); }
+#sec-venues.venue-switching::before { transition: margin-left 0.5s cubic-bezier(0.22,1,0.36,1); }
+#sec-venues.venue-switching .venue-header,
+#sec-venues.venue-switching .chart-subtitle { transition: padding 0.5s cubic-bezier(0.22,1,0.36,1); }
 
 /* FORMAT TREEMAP */
 /* Labels above the chart hang off the SVG's top margin, which must not collapse through the card. */
@@ -906,7 +953,7 @@ h1 {
   .calendar-header {
     row-gap: 4px;
   }
-  .rating-header > span:first-child { flex: 1 0 calc(100% - var(--chart-num-size) - 12px); min-width: 0; }
+  .rating-header > span:first-child { flex: 1 0 calc(100% - var(--chart-num-size) - 12px); min-width: 0; } /* the box and the 12px gap */
   .rating-header .chart-num { order: 1; margin-left: 0; }
   .rating-filter-toggle { order: 2; }
   .rating-dedup-toggle { order: 3; margin-left: 6px; }
@@ -4981,11 +5028,18 @@ const venueMapEl = document.getElementById('venue-map');
 // whatever the year and however far the map is zoomed in: prominent,
 // without swallowing its neighbors.
 const VENUE_MAP_MAX_RADIUS = 0.055;
-// On desktop the map is a frame a quarter wider than tall, centered in
-// the card. On a phone it is as wide as the card and a quarter taller
-// than wide: the same frame turned on its end. In between, the height
-// stops growing first.
+// Where the page is wide enough to set charts two to a row, the map is a
+// frame a quarter wider than tall, centered in the card. Anywhere
+// narrower it is as wide as the card, and on a phone as wide as the
+// screen: there a quarter taller than wide, the same frame turned on its
+// end, and past the width at which its height stops growing, a wider and
+// wider view.
 const VENUE_MAP_MAX_WIDTH = 600, VENUE_MAP_MAX_HEIGHT = 480;
+// Whether the half-width charts are sitting two to a row.
+const venueChartsPaired = () => {
+  const [first, second] = document.querySelectorAll('.charts-grid > .chart-card:not(.full)');
+  return !!first && !!second && Math.abs(first.getBoundingClientRect().top - second.getBoundingClientRect().top) < 1;
+};
 // The closest the map zooms in, in pixels per basemap unit (10m): about
 // 8km from top to bottom on desktop, so a year spent at two neighboring
 // venues still shows enough of the city to place them.
@@ -4997,12 +5051,31 @@ const measureVenueLabel = (text, fontPx, weight = 500) => {
   return venueLabelCtx.measureText(text).width;
 };
 function renderVenueMap(force) {
-  const cardWidth = Math.floor(venueMapEl.clientWidth);
-  // Zero width means the bar view is showing; an unchanged width is one of
-  // mobile browsers' resize events on scroll, which must not wipe a label.
-  if (!venueBasemap || !cardWidth || (!force && cardWidth === venueMapEl._renderedWidth)) return;
-  venueMapEl._renderedWidth = cardWidth;
-  const W = Math.min(cardWidth, VENUE_MAP_MAX_WIDTH), H = Math.round(Math.min(W * VENUE_MAP_MAX_WIDTH / VENUE_MAP_MAX_HEIGHT, VENUE_MAP_MAX_HEIGHT));
+  // Nothing to draw while the bar view is showing.
+  if (!venueBasemap || !venueCard.classList.contains('venue-view-map')) return;
+  const cardBox = venueCard.getBoundingClientRect(), cardWidth = Math.floor(venueViewsEl.clientWidth);
+  // The band is the header's height, from the top of the red tag to where
+  // the map used to start: the map is drawn that much taller, behind it.
+  const subtitleEl = venueCard.querySelector('.chart-subtitle');
+  const band = Math.round(subtitleEl.getBoundingClientRect().bottom + parseFloat(getComputedStyle(subtitleEl).marginBottom) -
+    cardBox.top - parseFloat(getComputedStyle(venueCard).paddingTop));
+  // On a phone (the stylesheet's 800px breakpoint) the map takes in the
+  // page's gutters on either side of the card.
+  const phone = window.matchMedia('(max-width: 800px)').matches;
+  const bleedLeft = phone ? Math.max(0, Math.round(cardBox.left)) : 0;
+  const bleedRight = phone ? Math.max(0, Math.round(document.documentElement.clientWidth - cardBox.right)) : 0;
+  // An unchanged frame is one of mobile browsers' resize events on
+  // scroll, which must not wipe a label.
+  const drawn = `${cardWidth} ${band} ${bleedLeft} ${bleedRight}`;
+  if (!cardWidth || (!force && drawn === venueMapEl._drawn)) return;
+  venueMapEl._drawn = drawn;
+  venueCard.style.setProperty('--venue-band', `${band}px`);
+  venueCard.style.setProperty('--venue-bleed-left', `${bleedLeft}px`);
+  venueCard.style.setProperty('--venue-bleed-right', `${bleedRight}px`);
+  const W = venueChartsPaired() ? Math.min(cardWidth, VENUE_MAP_MAX_WIDTH) : cardWidth + bleedLeft + bleedRight;
+  const H = Math.round(Math.min(W * VENUE_MAP_MAX_WIDTH / VENUE_MAP_MAX_HEIGHT, VENUE_MAP_MAX_HEIGHT));
+  // How far the map's sides sit in from the card's, for the header to match.
+  venueCard.style.setProperty('--venue-inset', `${Math.max(0, (cardWidth - W) / 2)}px`);
   const [lon0, lat0] = venueBasemap.origin;
   const [unitsPerLon, unitsPerLat] = venueBasemap.unitsPerDegree;
   const fontPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
@@ -5011,6 +5084,8 @@ function renderVenueMap(force) {
   const lineHeight = fontPx * 17 / 16, capHeight = fontPx * 0.72;
   const blockHeight = capHeight + lineHeight;
   const GAP = 7, EDGE = 4, MARGIN = 6;
+  // The outermost circles keep 5% of the map's height clear of its edges.
+  const BORDER = Math.round(H * 0.05);
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
   // Circle areas are proportional to screenings, sized against the view's
@@ -5029,14 +5104,14 @@ function renderVenueMap(force) {
     ? located.map(([code, coords]) => ({ code, count: venueCounts[code], ...project(coords) }))
     : Object.values(venueCoords).map(coords => ({ count: 0, ...project(coords) }));
   // The scale is the largest, up to the closest zoom, at which every
-  // circle keeps clear of the edges of the area it is fitted to, with the
-  // circles centered in that area.
+  // circle keeps that border clear of the edges of the area it is fitted
+  // to, with the circles centered in that area.
   const fit = (w, h) => {
     const span = (key, length) => sites.reduce((scale, a) => sites.reduce((least, b) =>
-      b[key] > a[key] ? Math.min(least, (length - 2 * MARGIN - radius(a.count) - radius(b.count)) / (b[key] - a[key])) : least, scale), VENUE_MAP_MAX_SCALE);
+      b[key] > a[key] ? Math.min(least, (length - 2 * BORDER - radius(a.count) - radius(b.count)) / (b[key] - a[key])) : least, scale), VENUE_MAP_MAX_SCALE);
     const scale = Math.max(Math.min(span('x', w), span('y', h)), 0.01);
-    const least = key => Math.max(...sites.map(p => MARGIN + radius(p.count) - p[key] * scale));
-    const most = (key, length) => Math.min(...sites.map(p => length - MARGIN - radius(p.count) - p[key] * scale));
+    const least = key => Math.max(...sites.map(p => BORDER + radius(p.count) - p[key] * scale));
+    const most = (key, length) => Math.min(...sites.map(p => length - BORDER - radius(p.count) - p[key] * scale));
     return { scale, minTx: least('x'), minTy: least('y'), tx: (least('x') + most('x', w)) / 2, ty: (least('y') + most('y', h)) / 2 };
   };
   const view = fit(W, H);
@@ -5054,9 +5129,10 @@ function renderVenueMap(force) {
   }
 
   // The scale bar sits at the bottom just left of the box, or in the
-  // corner without one, and is at most 13% of the map's width: its slot.
-  // The slot and the box each claim the frame to their right and below.
-  const SCALE_MAX = W * 0.13;
+  // corner without one, and is at most 13% of the map's width, or of the
+  // two-to-a-row frame's where the map is wider than that: its slot. The
+  // slot and the box each claim the frame to their right and below.
+  const SCALE_MAX = Math.min(W, VENUE_MAP_MAX_WIDTH) * 0.13;
   const scaleRight = (box ? box.x : W) - 14, scaleY = H - 14.5;
   const claims = [{ x: scaleRight - SCALE_MAX, y: scaleY - 8 - capHeight }, box].filter(Boolean);
   // The circles are fitted to the whole frame. If that leaves one on a
@@ -5232,9 +5308,12 @@ function renderVenueMap(force) {
   const states = `<g class="venue-map-states" font-family="'Dashboard Sans',sans-serif" text-anchor="middle">${stateNames.map(n =>
     `<text x="${(n.x + n.spacing * n.px / 2).toFixed(1)}" y="${(n.y + n.height / 2).toFixed(1)}"${n.turn ? ` transform="rotate(${n.turn} ${n.x} ${n.y})"` : ''} font-size="${n.size}rem" font-weight="${n.weight}" letter-spacing="${n.spacing}em" fill="${n.fill}">${n.text}</text>`).join('')}</g>`;
 
-  const land = `<g transform="translate(${tx.toFixed(2)} ${ty.toFixed(2)}) scale(${scale.toFixed(5)})">` +
+  // Everything is placed within the area below the band, as it was
+  // before the map ran up behind the header; only the land and water
+  // continue into the band.
+  const land = `<g transform="translate(${tx.toFixed(2)} ${(ty + band).toFixed(2)}) scale(${scale.toFixed(5)})">` +
     `<path d="${venueBasemap.rest}" fill="var(--map-land-outer)" fill-rule="evenodd"/>` +
-    `<path d="${venueBasemap.city}" fill="var(--map-land)" fill-rule="evenodd"/>` +
+    `<path d="${venueBasemap.ny}" fill="var(--map-land)" fill-rule="evenodd"/>` +
     `<path d="${venueBasemap.borders}" fill="none" stroke="#fff" stroke-width="${(1 / scale).toFixed(2)}" stroke-linejoin="round" stroke-linecap="round"/></g>`;
   const dots = `<g fill="var(--chart-red)" fill-opacity="0.5">${circles.map(c =>
     `<circle cx="${c.cx.toFixed(1)}" cy="${c.cy.toFixed(1)}" r="${c.r.toFixed(1)}"/>`).join('')}</g>`;
@@ -5262,7 +5341,7 @@ function renderVenueMap(force) {
   const scaleBar = `<g class="venue-map-scale"><path d="M${scaleLeft} ${scaleY}H${scaleRight}M${scaleLeft + 0.75} ${scaleY - 4.5}v9M${scaleRight - 0.75} ${scaleY - 4.5}v9" fill="none" stroke="${SCALE_GRAY}" stroke-width="1.5"/>` +
     `<text x="${(scaleLeft + scaleRight) / 2}" y="${scaleY - 8}" text-anchor="middle" font-family="'Dashboard Sans',sans-serif" font-size="1rem" font-weight="400" fill="${SCALE_GRAY}">${scaleText}</text></g>`;
   const zone = `<rect class="venue-map-zone" width="${W}" height="${H}" fill="transparent"/>`;
-  venueMapEl.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Map of screening venues in New York City"><rect width="${W}" height="${H}" fill="var(--map-water)"/>${land}${states}${dots}${scaleBar}${other}${ring}${labelHalo}${label}${zone}</svg>`;
+  venueMapEl.innerHTML = `<svg viewBox="0 0 ${W} ${band + H}" width="${W}" height="${band + H}" role="img" aria-label="Map of screening venues in New York City"><rect width="${W}" height="${band + H}" fill="var(--map-water)"/>${land}<g transform="translate(0 ${band})">${states}${dots}${scaleBar}${other}${ring}${labelHalo}${label}${zone}</g></svg>`;
 
   const svg = venueMapEl.querySelector('svg');
   const ringEl = svg.querySelector('.venue-map-ring');
@@ -5309,7 +5388,7 @@ function renderVenueMap(force) {
   restLabel();
   const pointAt = (e, minRadius) => {
     const r = svg.getBoundingClientRect();
-    const c = circleAt((e.clientX - r.left) * (W / r.width), (e.clientY - r.top) * (H / r.height), minRadius);
+    const c = circleAt((e.clientX - r.left) * (W / r.width), (e.clientY - r.top) * ((band + H) / r.height) - band, minRadius);
     if (c) showLabel(c); else restLabel();
   };
   // Mouse: the label follows the pointer and goes back to the busiest
@@ -5349,8 +5428,11 @@ const endVenueSwitch = () => {
   clearTimeout(venueSwitchTimer);
   venueSwitchTimer = null;
   venueViewsEl.classList.remove('is-switching');
+  venueCard.classList.remove('venue-switching');
   venueViewsEl.style.height = '';
   [venueMapEl, venueChartEl].forEach(el => el.classList.remove('is-leaving', 'is-faded'));
+  // The header has settled: redraw if that changed its height.
+  if (venueView === 'map') renderVenueMap();
 };
 function setVenueView(view, animate) {
   if (view === venueView) return;
@@ -5358,6 +5440,9 @@ function setVenueView(view, animate) {
   const entering = view === 'map' ? venueMapEl : venueChartEl;
   const leaving = view === 'map' ? venueChartEl : venueMapEl;
   const startHeight = venueViewsEl.getBoundingClientRect().height;
+  const animated = animate && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Set before the views swap, so that the header's inset eases to its new value.
+  if (animated) venueCard.classList.add('venue-switching');
   venueView = view;
   venueCard.classList.toggle('venue-view-map', view === 'map');
   venueCard.classList.toggle('venue-view-bars', view === 'bars');
@@ -5366,10 +5451,10 @@ function setVenueView(view, animate) {
   // it is showing.
   if (view === 'map') renderVenueMap();
   else syncBarLabelColumn(venueChartEl);
-  if (!animate || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (!animated) return;
 
-  // The switch (see the stylesheet) is two style changes with a layout
-  // between them: first the starting state with nothing set to
+  // The views' own switch (see the stylesheet) is two style changes with
+  // a layout between them: first the starting state with nothing set to
   // transition, then the end state with the transitions on.
   const endHeight = venueViewsEl.getBoundingClientRect().height;
   leaving.classList.add('is-leaving');
