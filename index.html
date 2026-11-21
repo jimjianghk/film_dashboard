@@ -5318,7 +5318,9 @@ function renderVenueMap(force) {
   const dots = `<g fill="var(--chart-red)" fill-opacity="0.5">${circles.map(c =>
     `<circle cx="${c.cx.toFixed(1)}" cy="${c.cy.toFixed(1)}" r="${c.r.toFixed(1)}"/>`).join('')}</g>`;
   // One circle at a time carries an outline and a label: the one under
-  // the pointer or, with nothing under it, the busiest venue's. The label
+  // the pointer or, with nothing under it, the busiest venue's. On a
+  // touchscreen the busiest venue's is only the opening one: a tap off
+  // the circles clears it, and nothing then takes its place. The label
   // is the cumulative chart's: the name over the count, in that chart's
   // weight and colors. Its halo is a copy of the text stroked in white,
   // the whole copy at 75% so the map tints it, as on The Economist's maps;
@@ -5363,8 +5365,11 @@ function renderVenueMap(force) {
     }
     return best;
   };
-  let shown = null;
+  // Resting: the busiest venue's label is up as the map's default, not
+  // because anyone picked it.
+  let shown = null, resting = false;
   const showLabel = c => {
+    resting = false;
     if (c === shown) return;
     shown = c;
     ringEl.setAttribute('cx', c.cx.toFixed(1));
@@ -5380,40 +5385,48 @@ function renderVenueMap(force) {
     }));
     [ringEl, labelHaloEl, labelEl].forEach(el => el.setAttribute('visibility', 'visible'));
   };
-  const restLabel = () => {
-    if (busiest) { showLabel(busiest); return; }
+  const hideLabel = () => {
+    resting = false;
     shown = null;
     [ringEl, labelEl, labelHaloEl].forEach(el => el.setAttribute('visibility', 'hidden'));
   };
+  const restLabel = () => {
+    if (busiest) showLabel(busiest); else hideLabel();
+    resting = true;
+  };
   restLabel();
-  const pointAt = (e, minRadius) => {
+  const pointAt = (e, minRadius, offCircle) => {
     const r = svg.getBoundingClientRect();
     const c = circleAt((e.clientX - r.left) * (W / r.width), (e.clientY - r.top) * ((band + H) / r.height) - band, minRadius);
-    if (c) showLabel(c); else restLabel();
+    if (c) showLabel(c); else offCircle();
   };
   // Mouse: the label follows the pointer and goes back to the busiest
   // venue when it leaves. Touch: a tap on a circle moves the label to it,
-  // and a tap anywhere else sends it back. A tap is a touch
+  // and a tap anywhere else on the map, the band behind the header
+  // included, clears it, the busiest venue's too. A touch off the map
+  // clears a label someone tapped but leaves the opening one: every
+  // scroll starts with one, and the default would be gone before the
+  // map came into view. A tap is a touch
   // that lifts within 10px of where it landed; a swipe never lifts here,
   // because the browser takes it over to scroll the page. Taps are read
   // from the pointer events themselves, as click events did not arrive
   // on phones. A finger gets a wider minimum target than a mouse.
   let touchStart = null;
-  zoneEl.addEventListener('pointermove', e => { if (e.pointerType === 'mouse') pointAt(e, 6); });
+  zoneEl.addEventListener('pointermove', e => { if (e.pointerType === 'mouse') pointAt(e, 6, restLabel); });
   zoneEl.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') restLabel(); });
-  zoneEl.addEventListener('pointerdown', e => {
+  svg.addEventListener('pointerdown', e => {
     if (e.pointerType !== 'mouse') touchStart = { id: e.pointerId, x: e.clientX, y: e.clientY };
   });
-  zoneEl.addEventListener('pointerup', e => {
+  svg.addEventListener('pointerup', e => {
     if (!touchStart || touchStart.id !== e.pointerId) return;
     const moved = Math.hypot(e.clientX - touchStart.x, e.clientY - touchStart.y);
     touchStart = null;
-    if (moved < 10) pointAt(e, 12);
+    if (moved < 10) pointAt(e, 12, hideLabel);
   });
-  zoneEl.addEventListener('pointercancel', () => { touchStart = null; });
+  svg.addEventListener('pointercancel', () => { touchStart = null; });
   if (venueMapEl._docHandler) document.removeEventListener('pointerdown', venueMapEl._docHandler);
   venueMapEl._docHandler = e => {
-    if (e.pointerType !== 'mouse' && !venueMapEl.contains(e.target)) restLabel();
+    if (e.pointerType !== 'mouse' && !resting && !venueMapEl.contains(e.target)) hideLabel();
   };
   document.addEventListener('pointerdown', venueMapEl._docHandler);
 }
