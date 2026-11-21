@@ -110,6 +110,12 @@
   --calendar-5: 216 35 42;
   --calendar-6: 156 29 35;
   --calendar-7: 80 11 14;
+
+  /* MAP COLORS: the venue map's water, the five boroughs' land, and the
+     land around the city. */
+  --map-water: #e8f4f8;
+  --map-land: #d2d1c6;
+  --map-land-outer: #bdbdaf;
 }
 
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -528,6 +534,42 @@ h1 {
 }
 .venue-col { display: flex; flex-direction: column; }
 
+/* VENUE MAP — the venue chart's default view; the card's class picks which
+   of the map and the bars shows, and the subtitle that goes with it. */
+#venue-map svg {
+  display: block;
+  margin: 0 auto;
+  /* Shrinks with the card until the resize redraw catches up. */
+  max-width: 100%;
+  height: auto;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+.venue-view-map #venue-chart,
+.venue-view-bars #venue-map,
+.venue-view-map .venue-subtitle-bars,
+.venue-view-bars .venue-subtitle-map { display: none; }
+/* Switching views: the card's height eases to the incoming view's while
+   the outgoing view, lifted out of the flow, fades out over the incoming
+   one fading in. Both views are in their finished state throughout. */
+.venue-views { position: relative; }
+.venue-views.is-switching {
+  overflow: hidden;
+  transition: height 0.5s cubic-bezier(0.22,1,0.36,1);
+}
+.venue-views.is-switching > * { transition: opacity 0.3s ease; }
+#sec-venues .venue-views > .is-leaving {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+}
+#sec-venues .venue-views > #venue-chart.is-leaving { display: grid; }
+.venue-views > .is-faded { opacity: 0; }
+
 /* FORMAT TREEMAP */
 /* Labels above the chart hang off the SVG's top margin, which must not collapse through the card. */
 #format-chart { display: flow-root; }
@@ -882,8 +924,18 @@ h1 {
 .calendar-header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .calendar-subtitle { flex: 0 0 100%; order: 5; margin: -7px 0 0; }
 @media (max-width: 499px) { .calendar-subtitle { order: 1; margin-bottom: 10px; } }
+/* The venue header's two short toggles share the title's row until the
+   narrowest phones, where they drop to a row of their own like the rating
+   chart's. */
+@media (max-width: 359px) {
+  .venue-header { flex-wrap: wrap; row-gap: 4px; }
+  .venue-header > span:first-child { flex: 1 0 calc(100% - var(--chart-num-size) - 12px); min-width: 0; }
+  .venue-header .chart-num { order: 1; margin-left: 0; }
+  .venue-view-toggle { order: 2; }
+}
 @media (min-width: 500px) {
   .rating-filter-toggle,
+  .venue-view-toggle,
   .calendar-header .cal-toggle-wrap {
     margin-left: 8px;
   }
@@ -2049,10 +2101,23 @@ footer img.footer-favicon {
         <div id="runtime-chart" style="display:flex;align-items:flex-end;gap:2px;height:160px;padding-top:12px;width:100%;"></div>
       </div>
     </div>
-    <div class="chart-card full" id="sec-venues">
-      <div class="chart-label with-subtitle">Screening venue<span class="chart-num">6</span></div>
-      <div class="chart-subtitle"><span class="chart-subtitle-hover">Hover</span><span class="chart-subtitle-click">Tap</span> on labels for full venue names</div>
-      <div id="venue-chart" class="venue-grid"></div>
+    <div class="chart-card full venue-view-map" id="sec-venues">
+      <div class="chart-label with-subtitle venue-header">
+        <span>Screening venue</span>
+        <span class="cal-toggle-wrap venue-view-toggle">
+          <button class="cal-toggle active" id="venue-toggle-map">Map</button>
+          <button class="cal-toggle" id="venue-toggle-bars">Chart</button>
+        </span>
+        <span class="chart-num">6</span>
+      </div>
+      <div class="chart-subtitle">
+        <span class="venue-subtitle-map"><span class="chart-subtitle-hover">Hover</span><span class="chart-subtitle-click">Tap</span> on circles for venues and screenings</span>
+        <span class="venue-subtitle-bars"><span class="chart-subtitle-hover">Hover</span><span class="chart-subtitle-click">Tap</span> on labels for full venue names</span>
+      </div>
+      <div class="venue-views" id="venue-views">
+        <div id="venue-map"></div>
+        <div id="venue-chart" class="venue-grid"></div>
+      </div>
     </div>
     <div class="chart-card full" id="sec-calendar">
       <div class="chart-label calendar-header">
@@ -2162,6 +2227,7 @@ footer img.footer-favicon {
 </div>
 
 <script src="data/manifest.js"></script>
+<script src="assets/venue-basemap.js"></script>
 <script>
 if (window.location.pathname.endsWith('/index.html')) {
   const cleanPath = window.location.pathname.slice(0, -'index.html'.length) || '/';
@@ -4868,10 +4934,469 @@ document.getElementById('venue-chart').innerHTML =
   `<div class="venue-col">${venueCol(venueArr.slice(0, venueHalf))}</div>` +
   `<div class="venue-col">${venueCol(venueArr.slice(venueHalf))}</div>`;
 syncBarLabelColumn(document.getElementById('venue-chart'));
+
+// ====== VENUE MAP ======
+// The venue chart's default view: a circle per venue on a static map of
+// the city, its area proportional to the venue's screenings. Latitude and
+// longitude of each venue code; OTHER has no place on the map.
+const venueCoords = {
+  METRO:[40.7150,-73.9911], MOMA:[40.7614,-73.9776], FLC:[40.7737,-73.9837],
+  AMC68:[40.7749,-73.9820], IFC:[40.7311,-74.0014], AMC42:[40.7565,-73.9885],
+  PARIS:[40.7639,-73.9742], FORUM:[40.7285,-74.0045], BAM:[40.6867,-73.9776],
+  MOMI:[40.7563,-73.9242], QUAD:[40.7359,-73.9956], JAPSO:[40.7526,-73.9687],
+  ROXY:[40.7192,-74.0051], ANTHO:[40.7247,-73.9903], SVA:[40.7458,-73.9996],
+  CVILL:[40.7341,-73.9934], AMC31:[40.7429,-73.9770], REG13:[40.7343,-73.9906],
+  ANGEL:[40.7258,-73.9974], NITEP:[40.6612,-73.9794], NITEW:[40.7161,-73.9625],
+  MET:[40.7794,-73.9632], AMC34:[40.7524,-73.9942], VEAST:[40.7309,-73.9863],
+  LOOK:[40.7709,-73.9927], AMC84:[40.7869,-73.9776], AMC11:[40.7316,-73.9886],
+  WHITBY:[40.7626,-73.9753], BEACON:[40.7805,-73.9813],
+  ALAMOM:[40.7078,-74.0087], SYMPH:[40.7940,-73.9724],
+  LENFE:[40.8166,-73.9583], TC:[40.8100,-73.9602], LAND:[40.7709,-73.9927],
+  SKIR:[40.7296,-73.9979]
+};
+// Each venue's latest screening, by date and then by place in the log:
+// breaks a tie for the busiest venue.
+const venueLastSeen = {};
+FILMS.forEach((f, index) => {
+  const seen = venueLastSeen[f.venue];
+  if (!seen || f.date >= seen.date) venueLastSeen[f.venue] = { date: f.date, index };
+});
+const venueBasemap = window.VENUE_BASEMAP;
+// Which state's land a point of the basemap is on: 1 for New Jersey, 2 for
+// New York, 0 for water or anywhere else. Read from the basemap's grid.
+const venueStateAt = (() => {
+  const grid = venueBasemap && venueBasemap.regions;
+  if (!grid) return () => 0;
+  const cells = new Uint8Array(grid.cols * grid.rows);
+  let at = 0;
+  for (const [, kind, count] of grid.runs.matchAll(/([wjy])(\d+)/g)) cells.fill('wjy'.indexOf(kind), at, at += Number(count));
+  return (x, y) => {
+    const col = Math.floor((x - grid.x) / grid.cell), row = Math.floor((y - grid.y) / grid.cell);
+    return col >= 0 && col < grid.cols && row >= 0 && row < grid.rows ? cells[row * grid.cols + col] : 0;
+  };
+})();
+const venueCard = document.getElementById('sec-venues');
+const venueMapEl = document.getElementById('venue-map');
+// The busiest venue's circle has a radius of 5.5% of the map's height,
+// whatever the year and however far the map is zoomed in: prominent,
+// without swallowing its neighbors.
+const VENUE_MAP_MAX_RADIUS = 0.055;
+// On desktop the map is a frame a quarter wider than tall, centered in
+// the card. On a phone it is as wide as the card and a quarter taller
+// than wide: the same frame turned on its end. In between, the height
+// stops growing first.
+const VENUE_MAP_MAX_WIDTH = 600, VENUE_MAP_MAX_HEIGHT = 480;
+// The closest the map zooms in, in pixels per basemap unit (10m): about
+// 8km from top to bottom on desktop, so a year spent at two neighboring
+// venues still shows enough of the city to place them.
+const VENUE_MAP_MAX_SCALE = 0.6;
+let venueLabelCtx = null;
+const measureVenueLabel = (text, fontPx, weight = 500) => {
+  if (!venueLabelCtx) venueLabelCtx = document.createElement('canvas').getContext('2d');
+  venueLabelCtx.font = `${weight} ${fontPx}px 'Dashboard Sans', sans-serif`;
+  return venueLabelCtx.measureText(text).width;
+};
+function renderVenueMap(force) {
+  const cardWidth = Math.floor(venueMapEl.clientWidth);
+  // Zero width means the bar view is showing; an unchanged width is one of
+  // mobile browsers' resize events on scroll, which must not wipe a label.
+  if (!venueBasemap || !cardWidth || (!force && cardWidth === venueMapEl._renderedWidth)) return;
+  venueMapEl._renderedWidth = cardWidth;
+  const W = Math.min(cardWidth, VENUE_MAP_MAX_WIDTH), H = Math.round(Math.min(W * VENUE_MAP_MAX_WIDTH / VENUE_MAP_MAX_HEIGHT, VENUE_MAP_MAX_HEIGHT));
+  const [lon0, lat0] = venueBasemap.origin;
+  const [unitsPerLon, unitsPerLat] = venueBasemap.unitsPerDegree;
+  const fontPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  // A label is a name over a count: from the top of the name's capitals
+  // to the count's baseline is one block.
+  const lineHeight = fontPx * 17 / 16, capHeight = fontPx * 0.72;
+  const blockHeight = capHeight + lineHeight;
+  const GAP = 7, EDGE = 4, MARGIN = 6;
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+  // Circle areas are proportional to screenings, sized against the view's
+  // own busiest venue rather than a fixed number of screenings. No circle
+  // is drawn smaller than a 2.5px radius, which keeps a single screening
+  // visible.
+  const otherCount = venueCounts.OTHER || 0;
+  const located = Object.entries(venueCoords).filter(([code]) => venueCounts[code] > 0);
+  const maxCount = Math.max(otherCount, ...located.map(([code]) => venueCounts[code]), 1);
+  const radius = count => count ? Math.max(2.5, VENUE_MAP_MAX_RADIUS * H * Math.sqrt(count / maxCount)) : 0;
+  const project = ([lat, lon]) => ({ x: (lon - lon0) * unitsPerLon, y: (lat0 - lat) * unitsPerLat });
+  // The map covers the venues with screenings in this view and no more,
+  // so its extent changes from year to year. With none to show it covers
+  // every venue there are coordinates for.
+  const sites = located.length
+    ? located.map(([code, coords]) => ({ code, count: venueCounts[code], ...project(coords) }))
+    : Object.values(venueCoords).map(coords => ({ count: 0, ...project(coords) }));
+  // The scale is the largest, up to the closest zoom, at which every
+  // circle keeps clear of the edges of the area it is fitted to, with the
+  // circles centered in that area.
+  const fit = (w, h) => {
+    const span = (key, length) => sites.reduce((scale, a) => sites.reduce((least, b) =>
+      b[key] > a[key] ? Math.min(least, (length - 2 * MARGIN - radius(a.count) - radius(b.count)) / (b[key] - a[key])) : least, scale), VENUE_MAP_MAX_SCALE);
+    const scale = Math.max(Math.min(span('x', w), span('y', h)), 0.01);
+    const least = key => Math.max(...sites.map(p => MARGIN + radius(p.count) - p[key] * scale));
+    const most = (key, length) => Math.min(...sites.map(p => length - MARGIN - radius(p.count) - p[key] * scale));
+    return { scale, minTx: least('x'), minTy: least('y'), tx: (least('x') + most('x', w)) / 2, ty: (least('y') + most('y', h)) / 2 };
+  };
+  const view = fit(W, H);
+
+  // OTHER screenings have no place on the map. They get a gray circle on
+  // the same scale, outlined and with a standing label, in a white box
+  // cut into the map's bottom right corner, like the key on The
+  // Economist's maps.
+  let box = null;
+  if (otherCount) {
+    const r = radius(otherCount), PAD = 9;
+    const textW = Math.max(measureVenueLabel('Other venues', fontPx), measureVenueLabel(String(otherCount), fontPx));
+    const w = Math.ceil(PAD + 2 * r + GAP + textW + PAD), h = Math.ceil(Math.max(2 * r, blockHeight) + 2 * PAD);
+    box = { x: W - w, y: H - h, w, h, cx: W - w + PAD + r, cy: H - h / 2, textX: W - w + PAD + 2 * r + GAP, textTop: H - h / 2 - blockHeight / 2 };
+  }
+
+  // The scale bar sits at the bottom just left of the box, or in the
+  // corner without one, and is at most 13% of the map's width: its slot.
+  // The slot and the box each claim the frame to their right and below.
+  const SCALE_MAX = W * 0.13;
+  const scaleRight = (box ? box.x : W) - 14, scaleY = H - 14.5;
+  const claims = [{ x: scaleRight - SCALE_MAX, y: scaleY - 8 - capHeight }, box].filter(Boolean);
+  // The circles are fitted to the whole frame. If that leaves one on a
+  // claim, they slide left as a group until clear, or failing that up;
+  // if the frame has no room for either, they are fitted to the frame
+  // left of the claims or above them, whichever keeps the map larger.
+  const slide = (along, across, shift, crossShift) => Math.min(shift, ...sites.flatMap(p => claims
+    .filter(claim => crossShift + p[across] * view.scale + radius(p.count) + MARGIN > claim[across])
+    .map(claim => claim[along] - MARGIN - radius(p.count) - p[along] * view.scale)));
+  const slidTx = slide('x', 'y', view.tx, view.ty), slidTy = slide('y', 'x', view.ty, view.tx);
+  if (slidTx >= view.minTx) view.tx = slidTx;
+  else if (slidTy >= view.minTy) view.ty = slidTy;
+  else {
+    const beside = fit(Math.min(...claims.map(claim => claim.x)), H), above = fit(W, Math.min(...claims.map(claim => claim.y)));
+    Object.assign(view, beside.scale >= above.scale ? beside : above);
+  }
+  const { scale, tx, ty } = view;
+  // Largest first, so smaller circles draw on top.
+  const circles = sites.filter(p => p.count > 0)
+    .map(p => ({ ...p, cx: tx + p.x * scale, cy: ty + p.y * scale, r: radius(p.count) }))
+    .sort((a, b) => b.r - a.r);
+  // The busiest venue; of several tied, the one visited most recently.
+  const busiest = circles.reduce((best, c) => {
+    if (!best || c.count !== best.count) return !best || c.count > best.count ? c : best;
+    const a = venueLastSeen[c.code], b = venueLastSeen[best.code];
+    return a.date > b.date || (a.date === b.date && a.index > b.index) ? c : best;
+  }, null);
+  // The scale bar marks the longest round distance that fits its slot,
+  // so a closer view gets a shorter distance. The basemap's units are 10m.
+  const SCALE_GRAY = 'rgb(89,89,89)';
+  const scaleKm = [20, 10, 5, 4, 3, 2, 1, 0.5, 0.2].find(km => km * 100 * scale <= SCALE_MAX) || 0.1;
+  const scaleText = scaleKm < 1 ? `${scaleKm * 1000} m` : `${scaleKm} km`;
+  const scaleLeft = Math.round(scaleRight - scaleKm * 100 * scale);
+  const scaleTextW = measureVenueLabel(scaleText, fontPx, 400);
+  // The corner box and the scale bar, as rectangles for labels to avoid.
+  const corner = [
+    box,
+    { x: Math.min(scaleLeft, (scaleLeft + scaleRight - scaleTextW) / 2), y: scaleY - 8 - capHeight, w: Math.max(scaleRight - scaleLeft, scaleTextW), h: capHeight + 12.5 }
+  ].filter(Boolean);
+  // A venue's name on one line and, where it has the words, broken into
+  // two and into three, each time at the breaks that leave the longest
+  // line shortest; of breaks equal on that, the later, which keeps "of
+  // Music" together rather than leaving "Brooklyn" alone.
+  const wrappings = name => {
+    const words = name.split(' '), width = line => measureVenueLabel(line, fontPx);
+    const best = (start, parts) => {
+      if (parts === 1) return [words.slice(start).join(' ')];
+      let found = null;
+      for (let cut = start + 1; cut <= words.length - parts + 1; cut++) {
+        const lines = [words.slice(start, cut).join(' '), ...best(cut, parts - 1)];
+        if (!found || Math.max(...lines.map(width)) <= Math.max(...found.map(width))) found = lines;
+      }
+      return found;
+    };
+    return [1, 2, 3].filter(parts => parts <= words.length).map(parts => best(0, parts));
+  };
+  // A venue's label is its name over its count. Its place is the first
+  // of these that is inside the frame, off the corner box and the scale
+  // bar, and 12px clear of the state names:
+  //   1. beside the circle with the name on one line: on the right or
+  //      the left, whichever covers less of the other circles, and on
+  //      the right if they cover the same;
+  //   2. the same with the name on two lines;
+  //   3. below the circle, then above it, on one line: centered on the
+  //      circle, then starting level with it, then ending level with it;
+  //   4. the same on two lines;
+  //   5. beside the circle, then below or above it, on three lines.
+  // If none is, the same list is gone through again with each place
+  // lifted to sit above the box and the scale bar; and only if that
+  // fails too, once more allowing the label onto a state name. Other
+  // circles count only in choosing between right and left. `names` are
+  // the state names' rectangles.
+  const NAME_GAP = 12;
+  const placeLabel = (c, names) => {
+    const count = String(c.count), options = [];
+    for (const lines of wrappings(venueFullNames[c.code] || c.code)) {
+      const w = Math.max(...lines.concat(count).map(line => measureVenueLabel(line, fontPx))), h = capHeight + lines.length * lineHeight;
+      const sideTop = clamp(c.cy - h / 2, EDGE, H - EDGE - h), below = c.cy + c.r + GAP, above = c.cy - c.r - GAP - h;
+      const centered = clamp(c.cx - w / 2, EDGE, W - EDGE - w), starting = clamp(c.cx - c.r, EDGE, W - EDGE - w), ending = clamp(c.cx + c.r - w, EDGE, W - EDGE - w);
+      const places = [
+        { anchor: 'start', left: c.cx + c.r + GAP, top: sideTop, beside: true },
+        { anchor: 'end', left: c.cx - c.r - GAP - w, top: sideTop, beside: true },
+        { anchor: 'middle', left: centered, top: below }, { anchor: 'middle', left: centered, top: above },
+        { anchor: 'start', left: starting, top: below }, { anchor: 'end', left: ending, top: below },
+        { anchor: 'start', left: starting, top: above }, { anchor: 'end', left: ending, top: above }
+      ];
+      const liftedTop = Math.min(...corner.map(f => f.y)) - EDGE - h;
+      places.forEach((p, order) => {
+        const group = p.beside ? [0, 1, 4][lines.length - 1] : [2, 3, 5][lines.length - 1];
+        for (const lifted of [false, true]) {
+          const top = lifted ? Math.min(p.top, liftedTop) : p.top;
+          if (lifted && top === p.top) continue;
+          if (p.left < EDGE || p.left + w > W - EDGE || top < EDGE || top + h > H - EDGE) continue;
+          const apart = (f, gap) => p.left + w <= f.x - gap || p.left >= f.x + f.w + gap || top + h <= f.y - gap || top >= f.y + f.h + gap;
+          if (!corner.every(f => apart(f, EDGE))) continue;
+          const covered = p.beside ? circles.reduce((sum, o) => {
+            if (o === c) return sum;
+            const ow = Math.min(p.left + w, o.cx + o.r) - Math.max(p.left, o.cx - o.r), oh = Math.min(top + h, o.cy + o.r) - Math.max(top, o.cy - o.r);
+            return ow > 0 && oh > 0 ? sum + ow * oh : sum;
+          }, 0) : 0;
+          options.push({ anchor: p.anchor, left: p.left, top, lines: lines.concat(count), w, h, rank: [names.every(f => apart(f, NAME_GAP)) ? 0 : 1, lifted ? 1 : 0, group, covered, order],
+            x: p.anchor === 'start' ? p.left : p.anchor === 'end' ? p.left + w : p.left + w / 2 });
+        }
+      });
+    }
+    const before = (p, q) => { const i = p.rank.findIndex((v, k) => v !== q.rank[k]); return i >= 0 && p.rank[i] < q.rank[i]; };
+    if (options.length) return options.reduce((best, p) => before(p, best) ? p : best);
+    // Nowhere fits: one line, below the circle or as near below as the frame allows.
+    const line = venueFullNames[c.code] || c.code, w = Math.max(measureVenueLabel(line, fontPx), measureVenueLabel(count, fontPx)), h = blockHeight;
+    const left = clamp(c.cx - w / 2, EDGE, Math.max(EDGE, W - EDGE - w));
+    return { anchor: 'middle', left, x: left + w / 2, top: clamp(c.cy + c.r + GAP, EDGE, H - EDGE - h), lines: [line, count], w, h };
+  };
+  // Where the label at rest will sit, for the state names to keep off.
+  const atRest = busiest && (() => {
+    const place = placeLabel(busiest, []);
+    return { x: place.left, y: place.top, w: place.w, h: place.h };
+  })();
+
+  // The states are named as The Economist names countries: the one the
+  // venues are in in bold, widely spaced capitals a quarter larger than
+  // the map's other lettering, its neighbor in gray ones an eighth
+  // smaller. A name goes where its state's land has the most room for it
+  // clear of the circles, the label at rest, the corner box and the
+  // scale bar, and turns on its side where the land only has room for
+  // that, as Jordan does on the Israel map. With no room, no name.
+  const STEP = 4, NAME_PAD = 6, cols = Math.ceil(W / STEP), rows = Math.ceil(H / STEP);
+  const taken = [...corner, atRest].filter(Boolean);
+  const stateNames = [];
+  for (const state of [
+    { text: 'NEW YORK', land: 2, size: 1.25, weight: 700, fill: 'var(--text)', spacing: 0.12 },
+    { text: 'NEW JERSEY', land: 1, size: 0.875, weight: 400, fill: SCALE_GRAY, spacing: 0.04 }
+  ]) {
+    const px = fontPx * state.size, height = capHeight * state.size;
+    const length = measureVenueLabel(state.text, px, state.weight) + state.spacing * px * (state.text.length - 1);
+    // The points of a 4px lattice open to this name, as running totals so
+    // that the open points in any rectangle are four look-ups away.
+    const totals = new Int32Array((cols + 1) * (rows + 1));
+    for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+      const x = (i + 0.5) * STEP, y = (j + 0.5) * STEP;
+      const open = venueStateAt((x - tx) / scale, (y - ty) / scale) === state.land &&
+        !circles.some(c => Math.hypot(x - c.cx, y - c.cy) < c.r + NAME_PAD) &&
+        !taken.some(f => x > f.x - NAME_PAD && x < f.x + f.w + NAME_PAD && y > f.y - NAME_PAD && y < f.y + f.h + NAME_PAD);
+      totals[(j + 1) * (cols + 1) + i + 1] = (open ? 1 : 0) + totals[j * (cols + 1) + i + 1] + totals[(j + 1) * (cols + 1) + i] - totals[j * (cols + 1) + i];
+    }
+    const allOpen = (i0, j0, i1, j1) => i0 >= 0 && j0 >= 0 && i1 < cols && j1 < rows &&
+      totals[(j1 + 1) * (cols + 1) + i1 + 1] - totals[j0 * (cols + 1) + i1 + 1] - totals[(j1 + 1) * (cols + 1) + i0] + totals[j0 * (cols + 1) + i0] === (i1 - i0 + 1) * (j1 - j0 + 1);
+    const along = Math.ceil((length / 2 + NAME_PAD) / STEP), across = Math.ceil((height / 2 + NAME_PAD) / STEP);
+    // Level first, then on its side. The roomiest spot is the one whose
+    // rectangle can grow furthest and stay open; of equals, the middle one.
+    for (const upright of [false, true]) {
+      const halfW = upright ? across : along, halfH = upright ? along : across;
+      let room = -1, spots = [];
+      for (let j = halfH; j < rows - halfH; j++) for (let i = halfW; i < cols - halfW; i++) {
+        let grow = -1;
+        while (allOpen(i - halfW - grow - 1, j - halfH - grow - 1, i + halfW + grow + 1, j + halfH + grow + 1)) grow++;
+        if (grow > room) { room = grow; spots = []; }
+        if (grow === room && grow >= 0) spots.push([i, j]);
+      }
+      if (!spots.length) continue;
+      const midI = spots.reduce((sum, p) => sum + p[0], 0) / spots.length, midJ = spots.reduce((sum, p) => sum + p[1], 0) / spots.length;
+      const [i, j] = spots.reduce((best, p) => Math.hypot(p[0] - midI, p[1] - midJ) < Math.hypot(best[0] - midI, best[1] - midJ) ? p : best);
+      const x = (i + 0.5) * STEP, y = (j + 0.5) * STEP;
+      // On its side, a name reads upward on the left of the map and downward on the right.
+      const turn = upright ? (x < W / 2 ? -90 : 90) : 0;
+      const rect = upright ? { x: x - height / 2, y: y - length / 2, w: height, h: length } : { x: x - length / 2, y: y - height / 2, w: length, h: height };
+      stateNames.push({ ...state, x, y, turn, px, height, rect });
+      taken.push(rect);
+      break;
+    }
+  }
+  // Letter spacing trails the last letter, so the text is nudged half a
+  // space along to center what is seen.
+  const states = `<g class="venue-map-states" font-family="'Dashboard Sans',sans-serif" text-anchor="middle">${stateNames.map(n =>
+    `<text x="${(n.x + n.spacing * n.px / 2).toFixed(1)}" y="${(n.y + n.height / 2).toFixed(1)}"${n.turn ? ` transform="rotate(${n.turn} ${n.x} ${n.y})"` : ''} font-size="${n.size}rem" font-weight="${n.weight}" letter-spacing="${n.spacing}em" fill="${n.fill}">${n.text}</text>`).join('')}</g>`;
+
+  const land = `<g transform="translate(${tx.toFixed(2)} ${ty.toFixed(2)}) scale(${scale.toFixed(5)})">` +
+    `<path d="${venueBasemap.rest}" fill="var(--map-land-outer)" fill-rule="evenodd"/>` +
+    `<path d="${venueBasemap.city}" fill="var(--map-land)" fill-rule="evenodd"/>` +
+    `<path d="${venueBasemap.borders}" fill="none" stroke="#fff" stroke-width="${(1 / scale).toFixed(2)}" stroke-linejoin="round" stroke-linecap="round"/></g>`;
+  const dots = `<g fill="var(--chart-red)" fill-opacity="0.5">${circles.map(c =>
+    `<circle cx="${c.cx.toFixed(1)}" cy="${c.cy.toFixed(1)}" r="${c.r.toFixed(1)}"/>`).join('')}</g>`;
+  // One circle at a time carries an outline and a label: the one under
+  // the pointer or, with nothing under it, the busiest venue's. The label
+  // is the cumulative chart's: the name over the count, in that chart's
+  // weight and colors. Its halo is a copy of the text stroked in white,
+  // the whole copy at 75% so the map tints it, as on The Economist's maps;
+  // any fainter and the red count is lost over overlapping circles.
+  const labelFont = `font-family="'Dashboard Sans',sans-serif" font-size="1rem" font-weight="500"`;
+  const ring = `<circle class="venue-map-ring" fill="none" stroke="var(--chart-red)" stroke-width="1.5" visibility="hidden" pointer-events="none"/>`;
+  const labelHalo = `<g class="venue-map-label-halo" ${labelFont} fill="#fff" stroke="#fff" stroke-width="4" stroke-linejoin="round" opacity="0.75" visibility="hidden" pointer-events="none"><text></text><text></text><text></text><text></text></g>`;
+  const label = `<g class="venue-map-label" ${labelFont} visibility="hidden" pointer-events="none"><text></text><text></text><text></text><text></text></g>`;
+  // The box's label is the same name over count, the count in the
+  // circle's gray as the others' are in their red.
+  const other = box
+    ? `<g class="venue-map-other"><rect x="${box.x + 0.5}" y="${box.y + 0.5}" width="${box.w - 1}" height="${box.h - 1}" fill="#fff" stroke="var(--text)"/>` +
+      `<circle cx="${box.cx.toFixed(1)}" cy="${box.cy.toFixed(1)}" r="${radius(otherCount).toFixed(1)}" fill="var(--rating-unrated-color)" fill-opacity="0.5" stroke="var(--rating-unrated-color)" stroke-width="1.5"/>` +
+      `<g ${labelFont}><text x="${box.textX.toFixed(1)}" y="${(box.textTop + capHeight).toFixed(1)}" fill="var(--text)">Other venues</text>` +
+      `<text x="${box.textX.toFixed(1)}" y="${(box.textTop + capHeight + lineHeight).toFixed(1)}" fill="var(--rating-unrated-color)">${otherCount}</text></g></g>`
+    : '';
+  // The scale bar follows The Economist's: the distance centered over a
+  // line with a tick at each end, the line as heavy as the strokes of
+  // the lettering.
+  const scaleBar = `<g class="venue-map-scale"><path d="M${scaleLeft} ${scaleY}H${scaleRight}M${scaleLeft + 0.75} ${scaleY - 4.5}v9M${scaleRight - 0.75} ${scaleY - 4.5}v9" fill="none" stroke="${SCALE_GRAY}" stroke-width="1.5"/>` +
+    `<text x="${(scaleLeft + scaleRight) / 2}" y="${scaleY - 8}" text-anchor="middle" font-family="'Dashboard Sans',sans-serif" font-size="1rem" font-weight="400" fill="${SCALE_GRAY}">${scaleText}</text></g>`;
+  const zone = `<rect class="venue-map-zone" width="${W}" height="${H}" fill="transparent"/>`;
+  venueMapEl.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Map of screening venues in New York City"><rect width="${W}" height="${H}" fill="var(--map-water)"/>${land}${states}${dots}${scaleBar}${other}${ring}${labelHalo}${label}${zone}</svg>`;
+
+  const svg = venueMapEl.querySelector('svg');
+  const ringEl = svg.querySelector('.venue-map-ring');
+  const labelEl = svg.querySelector('.venue-map-label');
+  const labelHaloEl = svg.querySelector('.venue-map-label-halo');
+  const zoneEl = svg.querySelector('.venue-map-zone');
+
+  // Where circles overlap, the one whose far edge is nearest the pointer
+  // wins: the tightest circle around it. A circle lying wholly inside
+  // another therefore answers anywhere on itself, while two of similar
+  // size that overlap split the ground between their centers. A circle
+  // can be hit out to minRadius from its center even when drawn smaller,
+  // so a single screening's dot is not a fiddly target.
+  const circleAt = (px, py, minRadius) => {
+    let best = null, bestReach = Infinity;
+    for (const c of circles) {
+      const dist = Math.hypot(px - c.cx, py - c.cy);
+      if (dist <= Math.max(c.r, minRadius) && dist + c.r < bestReach) { best = c; bestReach = dist + c.r; }
+    }
+    return best;
+  };
+  let shown = null;
+  const showLabel = c => {
+    if (c === shown) return;
+    shown = c;
+    ringEl.setAttribute('cx', c.cx.toFixed(1));
+    ringEl.setAttribute('cy', c.cy.toFixed(1));
+    ringEl.setAttribute('r', c.r.toFixed(1));
+    const place = placeLabel(c, stateNames.map(n => n.rect));
+    [labelEl, labelHaloEl].forEach(group => [...group.children].forEach((line, i) => {
+      line.textContent = place.lines[i] || '';
+      line.setAttribute('x', place.x.toFixed(1));
+      line.setAttribute('y', (place.top + capHeight + i * lineHeight).toFixed(1));
+      line.setAttribute('text-anchor', place.anchor);
+      if (group === labelEl) line.setAttribute('fill', i === place.lines.length - 1 ? 'var(--chart-red)' : 'var(--text)');
+    }));
+    [ringEl, labelHaloEl, labelEl].forEach(el => el.setAttribute('visibility', 'visible'));
+  };
+  const restLabel = () => {
+    if (busiest) { showLabel(busiest); return; }
+    shown = null;
+    [ringEl, labelEl, labelHaloEl].forEach(el => el.setAttribute('visibility', 'hidden'));
+  };
+  restLabel();
+  const pointAt = (e, minRadius) => {
+    const r = svg.getBoundingClientRect();
+    const c = circleAt((e.clientX - r.left) * (W / r.width), (e.clientY - r.top) * (H / r.height), minRadius);
+    if (c) showLabel(c); else restLabel();
+  };
+  // Mouse: the label follows the pointer and goes back to the busiest
+  // venue when it leaves. Touch: a tap on a circle moves the label to it,
+  // and a tap anywhere else sends it back. A tap is a touch
+  // that lifts within 10px of where it landed; a swipe never lifts here,
+  // because the browser takes it over to scroll the page. Taps are read
+  // from the pointer events themselves, as click events did not arrive
+  // on phones. A finger gets a wider minimum target than a mouse.
+  let touchStart = null;
+  zoneEl.addEventListener('pointermove', e => { if (e.pointerType === 'mouse') pointAt(e, 6); });
+  zoneEl.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') restLabel(); });
+  zoneEl.addEventListener('pointerdown', e => {
+    if (e.pointerType !== 'mouse') touchStart = { id: e.pointerId, x: e.clientX, y: e.clientY };
+  });
+  zoneEl.addEventListener('pointerup', e => {
+    if (!touchStart || touchStart.id !== e.pointerId) return;
+    const moved = Math.hypot(e.clientX - touchStart.x, e.clientY - touchStart.y);
+    touchStart = null;
+    if (moved < 10) pointAt(e, 12);
+  });
+  zoneEl.addEventListener('pointercancel', () => { touchStart = null; });
+  if (venueMapEl._docHandler) document.removeEventListener('pointerdown', venueMapEl._docHandler);
+  venueMapEl._docHandler = e => {
+    if (e.pointerType !== 'mouse' && !venueMapEl.contains(e.target)) restLabel();
+  };
+  document.addEventListener('pointerdown', venueMapEl._docHandler);
+}
+const venueViewToggles = {
+  map: document.getElementById('venue-toggle-map'),
+  bars: document.getElementById('venue-toggle-bars')
+};
+const venueViewsEl = document.getElementById('venue-views');
+const venueChartEl = document.getElementById('venue-chart');
+let venueView = 'map', venueSwitchTimer = null;
+const endVenueSwitch = () => {
+  clearTimeout(venueSwitchTimer);
+  venueSwitchTimer = null;
+  venueViewsEl.classList.remove('is-switching');
+  venueViewsEl.style.height = '';
+  [venueMapEl, venueChartEl].forEach(el => el.classList.remove('is-leaving', 'is-faded'));
+};
+function setVenueView(view, animate) {
+  if (view === venueView) return;
+  endVenueSwitch(); // a switch still in flight ends where it was heading
+  const entering = view === 'map' ? venueMapEl : venueChartEl;
+  const leaving = view === 'map' ? venueChartEl : venueMapEl;
+  const startHeight = venueViewsEl.getBoundingClientRect().height;
+  venueView = view;
+  venueCard.classList.toggle('venue-view-map', view === 'map');
+  venueCard.classList.toggle('venue-view-bars', view === 'bars');
+  Object.entries(venueViewToggles).forEach(([v, btn]) => btn.classList.toggle('active', v === view));
+  // Each view is laid out from measured widths, which it only has once
+  // it is showing.
+  if (view === 'map') renderVenueMap();
+  else syncBarLabelColumn(venueChartEl);
+  if (!animate || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  // The switch (see the stylesheet) is two style changes with a layout
+  // between them: first the starting state with nothing set to
+  // transition, then the end state with the transitions on.
+  const endHeight = venueViewsEl.getBoundingClientRect().height;
+  leaving.classList.add('is-leaving');
+  entering.classList.add('is-faded');
+  venueViewsEl.style.height = `${startHeight}px`;
+  venueViewsEl.getBoundingClientRect();
+  venueViewsEl.classList.add('is-switching');
+  venueViewsEl.style.height = `${endHeight}px`;
+  leaving.classList.add('is-faded');
+  entering.classList.remove('is-faded');
+  venueSwitchTimer = setTimeout(endVenueSwitch, 550);
+}
+venueViewToggles.map.addEventListener('click', () => setVenueView('map', true));
+venueViewToggles.bars.addEventListener('click', () => setVenueView('bars', true));
+// Without the basemap file the chart is the bars alone.
+if (venueBasemap) renderVenueMap();
+else {
+  setVenueView('bars');
+  document.querySelector('.venue-view-toggle').style.display = 'none';
+}
 let venueResizeTimer;
 window.addEventListener('resize', () => {
   clearTimeout(venueResizeTimer);
-  venueResizeTimer = setTimeout(() => syncBarLabelColumn(document.getElementById('venue-chart')), 120);
+  venueResizeTimer = setTimeout(() => {
+    syncBarLabelColumn(document.getElementById('venue-chart'));
+    renderVenueMap();
+  }, 120);
 });
 
 // ====== DECADE CHART ======
@@ -4923,6 +5448,8 @@ if (document.fonts && document.fonts.ready) {
     syncBarLabelColumn(document.getElementById('rating-chart'));
     syncBarLabelColumn(document.getElementById('decade-chart'));
     syncBarLabelColumn(document.getElementById('venue-chart'));
+    // The map's corner box is sized from its label's measured width.
+    renderVenueMap(true);
     syncTableLayouts();
     // The closure label wraps by measured width, so redo it in the real face.
     if (cumClosureSpan) renderCumulativeChart();

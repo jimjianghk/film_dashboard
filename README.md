@@ -58,7 +58,10 @@ Vertical histogram with 5-minute bins. Has its own dedup toggle; bin structure s
 
 ### Screening venue chart
 
-Two-column horizontal bar chart sorted by count. Hovering a venue code reveals the full cinema name via tooltip. In two-column layout, each column positions its axis from that column's longest label, while both columns share the same bar scale so equal counts render at equal widths. The `OTHER` catch-all maps to "Non-NYC or non-standard venues", always sorts last when present, and uses the same grey as the rating chart's Unrated bar.
+Two text modes, with the map shown by default; the views cross-fade when toggled:
+
+- **Map**: a circle on each venue over a static map of New York City, with circle area proportional to the venue's screenings. Sizes are relative to the busiest venue of the year on view rather than to a fixed number of screenings, and the map's extent fits that year's venues. The busiest venue is outlined and labeled with its full name and screening count, a tie going to the venue visited most recently; hovering another circle moves the outline and label to it, and a circle lying inside a larger one responds anywhere on itself. `OTHER` screenings have no location, so they appear as a grey circle in a box in the map's corner.
+- **Bar chart**: two-column horizontal bar chart sorted by count. Hovering a venue code reveals the full cinema name via tooltip. In two-column layout, each column positions its axis from that column's longest label, while both columns share the same bar scale so equal counts render at equal widths. The `OTHER` catch-all maps to "Non-NYC or non-standard venues", always sorts last when present, and uses the same grey as the rating chart's Unrated bar.
 
 ### Screening calendar
 
