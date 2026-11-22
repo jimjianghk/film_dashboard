@@ -111,11 +111,15 @@
   --calendar-6: 156 29 35;
   --calendar-7: 80 11 14;
 
-  /* MAP COLORS: the venue map's water, New York State's land, and the
-     land of the states around it. */
-  --map-water: #e8f4f8;
+  /* MAP COLORS: the venue map's water, New York State's land, the land
+     of the states around it, the fill of the venue circles, which is
+     drawn at half opacity, and the red of the outline and count on the
+     labeled one. */
+  --map-water: #e5f4f9;
   --map-land: #d2d1c6;
   --map-land-outer: #bdbdaf;
+  --map-circle: #da471c;
+  --map-red: #d9232a;
 }
 
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -5315,18 +5319,19 @@ function renderVenueMap(force) {
     `<path d="${venueBasemap.rest}" fill="var(--map-land-outer)" fill-rule="evenodd"/>` +
     `<path d="${venueBasemap.ny}" fill="var(--map-land)" fill-rule="evenodd"/>` +
     `<path d="${venueBasemap.borders}" fill="none" stroke="#fff" stroke-width="${(1 / scale).toFixed(2)}" stroke-linejoin="round" stroke-linecap="round"/></g>`;
-  const dots = `<g fill="var(--chart-red)" fill-opacity="0.5">${circles.map(c =>
+  const dots = `<g fill="var(--map-circle)" fill-opacity="0.5">${circles.map(c =>
     `<circle cx="${c.cx.toFixed(1)}" cy="${c.cy.toFixed(1)}" r="${c.r.toFixed(1)}"/>`).join('')}</g>`;
   // One circle at a time carries an outline and a label: the one under
   // the pointer or, with nothing under it, the busiest venue's. On a
   // touchscreen the busiest venue's is only the opening one: a tap off
   // the circles clears it, and nothing then takes its place. The label
   // is the cumulative chart's: the name over the count, in that chart's
-  // weight and colors. Its halo is a copy of the text stroked in white,
-  // the whole copy at 75% so the map tints it, as on The Economist's maps;
-  // any fainter and the red count is lost over overlapping circles.
+  // weight, with the count in the map's red. Its halo is a copy of the
+  // text stroked in white, the whole copy at 75% so the map tints it, as
+  // on The Economist's maps; any fainter and the red count is lost over
+  // overlapping circles.
   const labelFont = `font-family="'Dashboard Sans',sans-serif" font-size="1rem" font-weight="500"`;
-  const ring = `<circle class="venue-map-ring" fill="none" stroke="var(--chart-red)" stroke-width="1.5" visibility="hidden" pointer-events="none"/>`;
+  const ring = `<circle class="venue-map-ring" fill="none" stroke="var(--map-red)" stroke-width="1.5" visibility="hidden" pointer-events="none"/>`;
   const labelHalo = `<g class="venue-map-label-halo" ${labelFont} fill="#fff" stroke="#fff" stroke-width="4" stroke-linejoin="round" opacity="0.75" visibility="hidden" pointer-events="none"><text></text><text></text><text></text><text></text></g>`;
   const label = `<g class="venue-map-label" ${labelFont} visibility="hidden" pointer-events="none"><text></text><text></text><text></text><text></text></g>`;
   // The box's label is the same name over count, the count in the
@@ -5381,7 +5386,7 @@ function renderVenueMap(force) {
       line.setAttribute('x', place.x.toFixed(1));
       line.setAttribute('y', (place.top + capHeight + i * lineHeight).toFixed(1));
       line.setAttribute('text-anchor', place.anchor);
-      if (group === labelEl) line.setAttribute('fill', i === place.lines.length - 1 ? 'var(--chart-red)' : 'var(--text)');
+      if (group === labelEl) line.setAttribute('fill', i === place.lines.length - 1 ? 'var(--map-red)' : 'var(--text)');
     }));
     [ringEl, labelHaloEl, labelEl].forEach(el => el.setAttribute('visibility', 'visible'));
   };
