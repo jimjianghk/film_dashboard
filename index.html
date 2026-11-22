@@ -1394,7 +1394,13 @@ td .rating-badge { display: flex; margin: 3px 0; }
   line-height: 1.4;
 }
 .filter-row-tr .col-filter:focus { border-color: var(--accent); outline: none; }
-.filter-row-tr .col-filter.active { border-color: var(--accent); color: var(--accent); }
+/* A data URI cannot read a custom property, so the arrow's fill repeats
+   --accent here, as the default arrow above repeats --text-dim. */
+.filter-row-tr .col-filter.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23d8232a'/%3E%3C/svg%3E");
+}
 .filter-row-tr .col-filter.no-uppercase { text-transform: none; }
 .filter-row-tr .col-filter[aria-expanded="true"] { border-color: var(--accent); }
 .col-filter-menu {
