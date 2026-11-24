@@ -647,18 +647,22 @@ h1 {
 .venue-view-bars #venue-map,
 .venue-view-map .venue-subtitle-bars,
 .venue-view-bars .venue-subtitle-map { display: none; }
-/* Switching views: the card's height eases to the incoming view's while
-   the outgoing view, lifted out of the flow, fades out over the incoming
-   one fading in. Both views are in their finished state throughout. */
+/* Switching views: the bars and circles turn into each other while the
+   card's height eases to the incoming view's and the outgoing view, lifted
+   out of the flow, fades out over the incoming one fading in. Both views
+   are in their finished state throughout, less their bars and circles and
+   the labeled circle's outline and label: those give way to stand-ins in
+   the layer on top. The height keeps the stand-ins' time and easing, so
+   that none of them is ever below the card's moving edge. */
 /* flow-root keeps the map's upward pull inside the wrapper, and the clip
    that hides the taller view during a switch leaves the band above the
    wrapper, and a phone's map out to the screen's edges, showing. */
 .venue-views { position: relative; display: flow-root; }
 .venue-views.is-switching {
   clip-path: inset(-400px -100px 0 -100px);
-  transition: height 0.5s cubic-bezier(0.22,1,0.36,1);
+  transition: height var(--venue-switch);
 }
-.venue-views.is-switching > * { transition: opacity 0.3s ease; }
+.venue-views.is-switching > * { transition: opacity 0.45s ease; }
 #sec-venues .venue-views > .is-leaving {
   display: block;
   position: absolute;
@@ -669,6 +673,22 @@ h1 {
 }
 #sec-venues .venue-views > #venue-chart.is-leaving { display: grid; }
 .venue-views > .is-faded { opacity: 0; }
+.venue-marks {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  overflow: visible;
+  pointer-events: none;
+}
+.venue-switching .bar-fill.has-stand-in,
+.venue-switching .venue-map-dots,
+.venue-switching .venue-map-other circle,
+.venue-switching #venue-map .venue-map-ring,
+.venue-switching #venue-map .venue-map-label,
+.venue-switching #venue-map .venue-map-label-halo { visibility: hidden; }
 /* In map view the header lies on the map as on The Economist's, 12px in
    from the map's sides: the red tag, title, toggle and subtitle from the
    left, the red tag flush with the title as on every chart, and the
@@ -694,9 +714,9 @@ h1 {
 /* The unchosen toggle's gray is too faint over the map's land. */
 #sec-venues.venue-view-map .cal-toggle:not(.active) { color: var(--text-dim); }
 #sec-venues.venue-view-map .cal-toggle:hover:not(.active) { color: var(--text); }
-#sec-venues.venue-switching::before { transition: margin-left 0.5s cubic-bezier(0.22,1,0.36,1); }
+#sec-venues.venue-switching::before { transition: margin-left var(--venue-switch); }
 #sec-venues.venue-switching .venue-header,
-#sec-venues.venue-switching .chart-subtitle { transition: padding 0.5s cubic-bezier(0.22,1,0.36,1); }
+#sec-venues.venue-switching .chart-subtitle { transition: padding var(--venue-switch); }
 
 /* FORMAT TREEMAP */
 /* Labels above the chart hang off the SVG's top margin, which must not collapse through the card. */
@@ -5634,7 +5654,7 @@ function renderVenueMap(force) {
     `<path d="${venueBasemap.rest}" fill="var(--map-land-outer)" fill-rule="evenodd"/>` +
     `<path d="${venueBasemap.ny}" fill="var(--map-land)" fill-rule="evenodd"/>` +
     `<path d="${venueBasemap.borders}" fill="none" stroke="#fff" stroke-width="${(1 / scale).toFixed(2)}" stroke-linejoin="round" stroke-linecap="round"/></g>`;
-  const dots = `<g fill="var(--map-circle)" fill-opacity="0.5">${circles.map(c =>
+  const dots = `<g class="venue-map-dots" fill="var(--map-circle)" fill-opacity="0.5">${circles.map(c =>
     `<circle cx="${c.cx.toFixed(1)}" cy="${c.cy.toFixed(1)}" r="${c.r.toFixed(1)}"/>`).join('')}</g>`;
   // One circle at a time carries an outline and a label: the one under
   // the pointer or, with nothing under it, the busiest venue's. On a
@@ -5715,6 +5735,14 @@ function renderVenueMap(force) {
     resting = true;
   };
   restLabel();
+  // For the view switch: the circles, largest first, in the drawing's own
+  // coordinates, and the one that is labeled, with its label.
+  venueMapEl._marks = () => ({
+    band,
+    circles: [...circles, ...(box ? [{ code: 'OTHER', cx: box.cx, cy: box.cy, r: radius(otherCount) }] : [])],
+    labeled: shown && shown.code,
+    label: [labelHaloEl, labelEl]
+  });
   const pointAt = (e, minRadius, offCircle) => {
     const r = svg.getBoundingClientRect();
     const c = circleAt((e.clientX - r.left) * (W / r.width), (e.clientY - r.top) * ((band + H) / r.height) - band, minRadius);
@@ -5755,10 +5783,87 @@ const venueViewToggles = {
   bars: document.getElementById('venue-toggle-bars')
 };
 const venueViewsEl = document.getElementById('venue-views');
-let venueView = 'map', venueSwitchTimer = null;
+let venueView = 'map', venueSwitchTimer = null, venueMarksEl = null;
+const VENUE_SWITCH_MS = 700, VENUE_SWITCH_EASING = 'cubic-bezier(0.6,0,0.2,1)';
+venueCard.style.setProperty('--venue-switch', `${VENUE_SWITCH_MS}ms ${VENUE_SWITCH_EASING}`);
+// Where the view on show has its venues' bars or circles, as boxes within
+// the views' wrapper by venue code, the circles' with the corner radius that
+// makes them round. For the map also the labeled circle and its label.
+function venueMarks() {
+  // Browsers put the edges of elements, drawings included, on whole device
+  // pixels, but not those of the shapes within a drawing.
+  const snap = v => Math.round(v * devicePixelRatio) / devicePixelRatio;
+  const wrapper = venueViewsEl.getBoundingClientRect();
+  const originX = snap(wrapper.left), originY = snap(wrapper.top);
+  const boxes = new Map();
+  if (venueView === 'bars') {
+    venueChartEl.querySelectorAll('.bar-row').forEach(row => {
+      const el = row.querySelector('.bar-fill'), r = el.getBoundingClientRect();
+      const [left, right, top, bottom] = [r.left, r.right, r.top, r.bottom].map(snap);
+      boxes.set(row.dataset.key, { x: left - originX, y: top - originY, width: right - left, height: bottom - top, rx: 0, el });
+    });
+    return { boxes };
+  }
+  const { band, circles, labeled, label } = venueMapEl._marks();
+  const svg = venueMapEl.querySelector('svg'), r = svg.getBoundingClientRect();
+  const k = r.width / svg.viewBox.baseVal.width;
+  const left = snap(r.left) - originX, top = snap(r.top) - originY + band * k;
+  circles.forEach(c => boxes.set(c.code, {
+    x: left + (c.cx - c.r) * k, y: top + (c.cy - c.r) * k, width: 2 * c.r * k, height: 2 * c.r * k, rx: c.r * k
+  }));
+  return { boxes, labeled, label: { left, top, k, parts: label.map(el => el.cloneNode(true)) } };
+}
+// The layer of stand-ins: a shape for each venue that has both a bar and a
+// circle, taking the box, corners and color of the one to those of the other.
+// Their order is the circles', largest at the back, with the labeled circle's
+// outline over them all and its label, which only fades, over that.
+function moveVenueMarks(bars, map, toMap) {
+  const svgEl = tag => document.createElementNS('http://www.w3.org/2000/svg', tag);
+  const play = (el, atBars, atMap, timing) =>
+    el.animate(toMap ? [atBars, atMap] : [atMap, atBars], { duration: VENUE_SWITCH_MS, easing: VENUE_SWITCH_EASING, fill: 'both', ...timing });
+  const shape = box => ({ x: `${box.x}px`, y: `${box.y}px`, width: `${box.width}px`, height: `${box.height}px`, rx: `${box.rx}px` });
+  const stage = svgEl('svg');
+  stage.setAttribute('class', 'venue-marks');
+  stage.setAttribute('aria-hidden', 'true');
+  map.boxes.forEach((circle, code) => {
+    const bar = bars.boxes.get(code);
+    if (!bar) return;
+    bar.el.classList.add('has-stand-in');
+    const other = code === 'OTHER';
+    const el = svgEl('rect');
+    if (other) {
+      el.setAttribute('stroke', 'var(--rating-unrated-color)');
+      el.setAttribute('stroke-width', 1.5);
+    }
+    stage.appendChild(el);
+    play(el,
+      { ...shape(bar), fill: `var(--${other ? 'rating-unrated-color' : 'chart-red'})`, fillOpacity: 1, strokeOpacity: 0 },
+      { ...shape(circle), fill: `var(--${other ? 'rating-unrated-color' : 'map-circle'})`, fillOpacity: 0.5, strokeOpacity: 1 });
+  });
+  const ringed = bars.boxes.has(map.labeled) && map.boxes.get(map.labeled);
+  if (ringed) {
+    const ring = svgEl('rect');
+    ring.setAttribute('fill', 'none');
+    ring.setAttribute('stroke', 'var(--map-red)');
+    ring.setAttribute('stroke-width', 1.5);
+    stage.appendChild(ring);
+    play(ring, { ...shape(bars.boxes.get(map.labeled)), strokeOpacity: 0 }, { ...shape(ringed), strokeOpacity: 1 });
+  }
+  const label = svgEl('g');
+  label.setAttribute('transform', `translate(${map.label.left} ${map.label.top}) scale(${map.label.k})`);
+  label.append(...map.label.parts);
+  stage.appendChild(label);
+  // The label is last to come and first to go.
+  play(label, { opacity: 0 }, { opacity: 1 }, { duration: 250, easing: 'ease', delay: toMap ? VENUE_SWITCH_MS - 250 : 0 });
+  venueMarksEl = stage;
+  venueViewsEl.appendChild(stage);
+}
 const endVenueSwitch = () => {
   clearTimeout(venueSwitchTimer);
   venueSwitchTimer = null;
+  if (venueMarksEl) venueMarksEl.remove();
+  venueMarksEl = null;
+  venueChartEl.querySelectorAll('.has-stand-in').forEach(el => el.classList.remove('has-stand-in'));
   venueViewsEl.classList.remove('is-switching');
   venueCard.classList.remove('venue-switching');
   venueViewsEl.style.height = '';
@@ -5773,6 +5878,7 @@ function setVenueView(view, animate) {
   const leaving = view === 'map' ? venueChartEl : venueMapEl;
   const startHeight = venueViewsEl.getBoundingClientRect().height;
   const animated = animate && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const before = animated && venueMarks();
   // Set before the views swap, so that the header's inset eases to its new value.
   if (animated) venueCard.classList.add('venue-switching');
   venueView = view;
@@ -5789,6 +5895,9 @@ function setVenueView(view, animate) {
   // a layout between them: first the starting state with nothing set to
   // transition, then the end state with the transitions on.
   const endHeight = venueViewsEl.getBoundingClientRect().height;
+  const after = venueMarks();
+  if (view === 'map') moveVenueMarks(before, after, true);
+  else moveVenueMarks(after, before, false);
   leaving.classList.add('is-leaving');
   entering.classList.add('is-faded');
   venueViewsEl.style.height = `${startHeight}px`;
@@ -5797,7 +5906,7 @@ function setVenueView(view, animate) {
   venueViewsEl.style.height = `${endHeight}px`;
   leaving.classList.add('is-faded');
   entering.classList.remove('is-faded');
-  venueSwitchTimer = setTimeout(endVenueSwitch, 550);
+  venueSwitchTimer = setTimeout(endVenueSwitch, VENUE_SWITCH_MS + 50);
 }
 venueViewToggles.map.addEventListener('click', () => setVenueView('map', true));
 venueViewToggles.bars.addEventListener('click', () => setVenueView('bars', true));
