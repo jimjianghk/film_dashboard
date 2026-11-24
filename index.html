@@ -3102,16 +3102,17 @@ function filmDecade(f) {
 // charts the data may run past the top gridline, by up to a quarter of a
 // step: `max` is the top gridline, `top` the value the plot runs up to.
 const AXIS_OVERSHOOT = 0.25;
-const axisOf = (maxVal, step, minIntervals) => {
-  const intervals = Math.max(minIntervals, Math.ceil(maxVal / step - AXIS_OVERSHOOT));
+const axisOf = (maxVal, step, minIntervals, overshoot = AXIS_OVERSHOOT) => {
+  const intervals = Math.max(minIntervals, Math.ceil(maxVal / step - overshoot));
   return { step, intervals, max: intervals * step, top: Math.max(intervals * step, maxVal) };
 };
 // The cumulative chart has four to six intervals: its step is 5 up to 30
 // screenings, and past that the smallest multiple of 10 that keeps to six.
-function cumAxis(maxVal) {
+// A forecast stays under the top gridline, its confidence area included.
+function cumAxis(maxVal, overshoot) {
   let step = maxVal <= 30 ? 5 : 10;
-  let axis = axisOf(maxVal, step, 4);
-  while (axis.intervals > 6) axis = axisOf(maxVal, step += 10, 4);
+  let axis = axisOf(maxVal, step, 4, overshoot);
+  while (axis.intervals > 6) axis = axisOf(maxVal, step += 10, 4, overshoot);
   return axis;
 }
 // The bar charts' number of intervals goes by the length of the count axis
@@ -3409,7 +3410,7 @@ function renderCumulativeChart(anim) {
   }
   const xScale = day => ML + (day / endIdx) * innerW;
   const offAxis = cumAxis(total);
-  const onAxis = cumForecast ? cumAxis(Math.max(total, cumForecast.maxHi)) : offAxis;
+  const onAxis = cumForecast ? cumAxis(Math.max(total, cumForecast.maxHi), 0) : offAxis;
   const axisTop = offAxis.top + (onAxis.top - offAxis.top) * p;
   const yScale = v => MT + innerH - (v / axisTop) * innerH;
   const pathD = points.map((p, i) =>
@@ -3463,9 +3464,8 @@ function renderCumulativeChart(anim) {
   const xEnd = xScale(endIdx);
   xAxis += `<line x1="${xEnd}" x2="${xEnd}" y1="${MT+innerH+0.75}" y2="${MT+innerH+5.75}" stroke="var(--text)" stroke-width="1.5"/>`;
   // The Economist forecast treatment: a grey band shades the forecast span
-  // (top edge on the top gridline, or past it where the data runs past it;
-  // bottom clear of the baseline; left edge on the data day), a "Forecast"
-  // label at the top, the
+  // (top edge on the top gridline, bottom clear of the baseline, left edge
+  // on the data day), a "Forecast" label at the top, the
   // salmon confidence area over the band, and the line running solid
   // through. The print original composites in CMYK, which no single sRGB
   // fill-plus-opacity reproduces, so each visible result is painted
