@@ -583,7 +583,7 @@ h1 {
 .hist-axis .hist-grid { left: 0; bottom: 0; }
 .hist-grid .grid-line { left: 0; right: 0; height: 1.5px; margin-bottom: -0.75px; }
 .hist-grid .grid-line[data-v="0"] { margin-bottom: -1.5px; }
-.hist-grid .grid-label { right: 0; bottom: calc(50% + var(--grid-label-bottom)); }
+.hist-grid .grid-label { font-size: var(--hist-label-size); right: 0; bottom: calc(50% + var(--grid-label-bottom)); }
 #runtime-chart > .hist-grid .grid-label { display: none; }
 #runtime-chart .bar-hover { z-index: 1; }
 
@@ -5142,7 +5142,9 @@ document.getElementById('rating-dedup').addEventListener('change', () => renderR
 // ====== RUNTIME DISTRIBUTION ======
 const RUNTIME_BIN_SIZE = 5;
 const RUNTIME_BAR_MAX_H = 160;
+const RUNTIME_LABEL_REM = 0.85; // the labels of both axes
 document.getElementById('runtime-chart').style.setProperty('--hist-height', `${RUNTIME_BAR_MAX_H}px`);
+document.getElementById('runtime-chart').style.setProperty('--hist-label-size', `${RUNTIME_LABEL_REM}rem`);
 function computeRuntimeBins(films) {
   const runtimes = films.map(f => f.runtime).filter(r => r > 0);
   const allRuntimes = FILMS.map(f => f.runtime).filter(r => r > 0);
@@ -5208,9 +5210,9 @@ function renderRuntimeChart(force) {
 
   // The count axis is a column at the right, as wide as its labels in
   // either dedup state, past a margin that holds the last bin's end label.
-  const fontPx = rootFontPx();
+  const labelPx = rootFontPx() * RUNTIME_LABEL_REM;
   const axisW = Math.ceil(Math.max(...[FILMS, dedupFilms(FILMS)].map(films =>
-    measureLabel(String(runtimeAxisFor(computeRuntimeBins(films).bins).max), fontPx, 350)))) + 4;
+    measureLabel(String(runtimeAxisFor(computeRuntimeBins(films).bins).max), labelPx, 350)))) + 4;
   const AXIS_MARGIN = 12;
   // Compute scaled gap: bars can grow to barW > MIN_BAR, and we want gap = barW / GAP_RATIO.
   // Floor at MIN_GAP so the chart becomes scrollable before bars shrink below MIN_BAR.
@@ -5230,7 +5232,7 @@ function renderRuntimeChart(force) {
   // positions), the browser can rasterize the overlay at slightly different subpixel
   // offsets from the bars under fractional page zoom, causing visible drift.
   // By nesting them in the same flex-item subtree, zoom transforms apply uniformly.
-  const labelCss = `position:absolute;top:0;transform:translateX(-50%);font-family:'Dashboard Sans',sans-serif;font-size:0.85rem;font-weight:350;color:var(--text);white-space:nowrap;`;
+  const labelCss = `position:absolute;top:0;transform:translateX(-50%);font-family:'Dashboard Sans',sans-serif;font-size:${RUNTIME_LABEL_REM}rem;font-weight:350;color:var(--text);white-space:nowrap;`;
   let barsHtml = '';
   items.forEach((it, idx) => {
     const shift = idx > 0 ? halfGap : 0;
