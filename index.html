@@ -518,6 +518,83 @@ h1 {
   margin-right: 6px;
 }
 
+/* COUNT GRIDLINES — the rating and decade charts' run down from a row of
+   labels above the bars, the runtime chart's run across under labels at the
+   right end. Lines and bars move together when a toggle rescales the axis. */
+.grid-line {
+  position: absolute;
+  background: rgb(192,192,191);
+  transition: left 0.8s cubic-bezier(0.22,1,0.36,1), bottom 0.8s cubic-bezier(0.22,1,0.36,1), opacity 0.8s cubic-bezier(0.22,1,0.36,1);
+}
+.grid-line[data-v="0"] { background: none; } /* the axis itself is drawn with the bars */
+/* A line box one em tall keeps 0.15em below the baseline, so this bottom
+   offset puts the baseline 2/7em above the line. */
+.grid-label {
+  --grid-label-bottom: calc((2 / 7 - 0.15) * 1em);
+  position: absolute;
+  font-size: 1rem;
+  font-weight: 350;
+  line-height: 1;
+  white-space: nowrap;
+}
+#rating-chart,
+#decade-chart {
+  position: relative;
+  display: flow-root;
+  padding-top: calc(1rem + 6px);
+}
+#rating-chart .bar-track,
+#decade-chart .bar-track { overflow: visible; margin-right: var(--bar-inset, 0px); }
+.bar-grid {
+  position: absolute;
+  left: var(--bar-axis-left, 60px);
+  right: var(--bar-inset, 0px);
+  top: 1rem;
+  bottom: 4px;
+}
+.is-still .bar-fill,
+.is-still .grid-line { transition: none; }
+.is-rescaling .bar-track { transition: margin-right 0.8s cubic-bezier(0.22,1,0.36,1); }
+.is-rescaling .bar-grid { transition: right 0.8s cubic-bezier(0.22,1,0.36,1); }
+.bar-grid .grid-line { top: 0; bottom: 0; width: 1.5px; margin-left: -0.75px; }
+.bar-grid .grid-line[data-v="0"] { margin-left: -1.5px; }
+.bar-grid .grid-label { bottom: calc(100% + var(--grid-label-bottom)); left: 50%; transform: translateX(-50%); }
+/* The label on the bar under the pointer. */
+.bar-hover {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  overflow: visible;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* RUNTIME HISTOGRAM — where the bars need more room than there is they
+   scroll under the count axis, which holds its place at the right edge. */
+#runtime-scroll { overflow-x: auto; padding-left: 18px; }
+#runtime-chart {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  /* The room below takes in the row of bin labels, so that the bars answer
+     a pointer anywhere along it. */
+  height: calc(var(--hist-height) + 46px);
+  padding: 20px 0 26px;
+}
+.hist-grid { position: absolute; left: -8px; right: 0; bottom: 26px; height: var(--hist-height); }
+.hist-axis { position: sticky; right: 0; z-index: 2; flex: none; height: var(--hist-height); }
+.hist-axis::before { content: ''; position: absolute; inset: -20px 0 -24px; background: var(--bg); }
+.hist-axis::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1.5px; height: 1.5px; background: var(--text); }
+.hist-axis .hist-grid { left: 0; bottom: 0; }
+.hist-grid .grid-line { left: 0; right: 0; height: 1.5px; margin-bottom: -0.75px; }
+.hist-grid .grid-line[data-v="0"] { margin-bottom: -1.5px; }
+.hist-grid .grid-label { right: 0; bottom: calc(50% + var(--grid-label-bottom)); }
+#runtime-chart > .hist-grid .grid-label { display: none; }
+#runtime-chart .bar-hover { z-index: 1; }
+
 /* RATING BAR COLORS — driven by --rating-N custom properties in :root */
 .rating-1  { background: rgb(var(--rating-1)); }
 .rating-2  { background: rgb(var(--rating-2)); }
@@ -2154,8 +2231,8 @@ footer img.footer-favicon {
         <span class="chart-num">5</span>
       </div>
       <div class="chart-subtitle">Minutes, each range includes the lower end</div>
-      <div style="overflow-x:auto;padding:12px 18px 22px;">
-        <div id="runtime-chart" style="display:flex;align-items:flex-end;gap:2px;height:160px;padding-top:12px;width:100%;"></div>
+      <div id="runtime-scroll">
+        <div id="runtime-chart"></div>
       </div>
     </div>
     <div class="chart-card full venue-view-map" id="sec-venues">
@@ -3001,6 +3078,60 @@ function filmDecade(f) {
   return decades.size === 1 ? String(decades.values().next().value) : 'various';
 }
 
+// ====== COUNT AXES ======
+// The gridlines of every chart with a count axis. As on The Economist's
+// charts the data may run past the top gridline, by up to a quarter of a
+// step: `max` is the top gridline, `top` the value the plot runs up to.
+const AXIS_OVERSHOOT = 0.25;
+const axisOf = (maxVal, step, minIntervals) => {
+  const intervals = Math.max(minIntervals, Math.ceil(maxVal / step - AXIS_OVERSHOOT));
+  return { step, intervals, max: intervals * step, top: Math.max(intervals * step, maxVal) };
+};
+// The cumulative chart has four to six intervals: its step is 5 up to 30
+// screenings, and past that the smallest multiple of 10 that keeps to six.
+function cumAxis(maxVal) {
+  let step = maxVal <= 30 ? 5 : 10;
+  let axis = axisOf(maxVal, step, 4);
+  while (axis.intervals > 6) axis = axisOf(maxVal, step += 10, 4);
+  return axis;
+}
+// The bar charts' number of intervals goes by the length of the count axis
+// on screen, which differs far more between them: about four up the flat
+// runtime chart, five or six across the rating and decade charts on a phone
+// and seven on a desktop, and never more than seven on a phone or eight on a
+// desktop. The step is the one that comes closest to that, rather above it
+// than below, less a little for an unround step (15s and 25s are left out
+// altogether) or for an axis running on past the data, with the gridlines
+// kept minSpacing(max) pixels apart. The step is that of the full count,
+// stepMax, so unique titles only slide the lines.
+const BAR_STEPS = [[1, 0], [2, 0], [5, 0], [3, 0.35], [4, 0.35], [6, 0.35]];
+function barAxis(maxVal, stepMax, length, minSpacing) {
+  const target = 1.32 * Math.sqrt(length / rootFontPx());
+  const maxIntervals = window.matchMedia('(max-width: 800px)').matches ? 7 : 8;
+  let best = 1, bestCost = Infinity;
+  for (let unit = 1; unit <= stepMax * 10; unit *= 10) {
+    for (const [multiple, unround] of BAR_STEPS) {
+      const step = multiple * unit;
+      if (step === 6) continue; // 60s fill a gap that 6s need not
+      const axis = axisOf(stepMax, step, 1);
+      if (axis.intervals > 1 && (axis.intervals > maxIntervals || length / axis.intervals < minSpacing(axis.max))) continue;
+      const off = Math.log(axis.intervals / target);
+      const cost = (off < 0 ? -1.25 * off : off) + unround + (axis.top - stepMax) / axis.top;
+      if (cost < bestCost) { best = step; bestCost = cost; }
+    }
+  }
+  return axisOf(maxVal, best, 1);
+}
+// A label over a gridline stands this far above it, baseline to line.
+const GRID_LABEL_RISE = 2 / 7; // em
+const rootFontPx = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+let labelCtx = null;
+const measureLabel = (text, fontPx, weight) => {
+  if (!labelCtx) labelCtx = document.createElement('canvas').getContext('2d');
+  labelCtx.font = `${weight} ${fontPx}px 'Dashboard Sans', sans-serif`;
+  return labelCtx.measureText(text).width;
+};
+
 // ====== CUMULATIVE CHART ======
 // Forecast (optional toggle, current year only), worked out afresh for
 // every remaining day through Dec. 31. For a target day, each past year
@@ -3168,15 +3299,8 @@ const cumClosureSpan = (() => {
   const dayIdx = ds => Math.round((new Date(ds + 'T12:00:00') - new Date(yearFirst + 'T12:00:00')) / dayMsForStats);
   return { startIdx: Math.max(0, dayIdx(first) - 1), endIdx: dayIdx(last) };
 })();
-// The closure label's wrappings, one to three lines, tried widest first, and
-// a canvas to measure them in the label's face.
+// The closure label's wrappings, one to three lines, tried widest first.
 const CLOSURE_LABEL_WRAPS = [['Covid-19 cinema closure'], ['Covid-19 cinema', 'closure'], ['Covid-19', 'cinema', 'closure']];
-let closureLabelCtx = null;
-const measureClosureLabel = (text, fontPx) => {
-  if (!closureLabelCtx) closureLabelCtx = document.createElement('canvas').getContext('2d');
-  closureLabelCtx.font = `400 ${fontPx}px 'Dashboard Sans', sans-serif`;
-  return closureLabelCtx.measureText(text).width;
-};
 // Step points from a per-day cumulative array, matching the single-year
 // build: the line starts at the day before the first screening, rises over
 // one day at each jump, and runs flat to endIdx. A nonzero startIdx anchors
@@ -3206,8 +3330,7 @@ function renderCumulativeChart(anim) {
   const innerW = W - ML - MR;
   const innerH = H - MT - MB;
   // All-years mode draws on the reference calendar instead of the dashboard
-  // year. The reference year always ends before today, so the axis math
-  // below settles on the full twelve months on its own.
+  // year, and always over the full twelve months.
   const chartYear = IS_ALL_MODE ? CUM_REF_YEAR : dashYear;
   const yearStart = new Date(chartYear + '-01-01T12:00:00');
   const yearEnd = new Date(chartYear + '-12-31T12:00:00');
@@ -3229,16 +3352,9 @@ function renderCumulativeChart(anim) {
     total = sortedFilms.length;
     sortedFilms.forEach(f => { dateCounts[f.date] = (dateCounts[f.date] || 0) + 1; });
   }
-  const todayDate = new Date(todayStr + 'T12:00:00');
-  const todayIdx = Math.round((todayDate - yearStart) / dayMs);
+  const todayIdx = Math.round((new Date(todayStr + 'T12:00:00') - yearStart) / dayMs);
   const hasFilmToday = !!dateCounts[todayStr];
   if (!IS_ALL_MODE) dataDayIdx = Math.max(0, Math.min(daysInYear - 1, hasFilmToday ? todayIdx : todayIdx - 1));
-  const chartEndDate = todayDate > yearEnd ? yearEnd : todayDate;
-  const chartEndMonth = chartEndDate.getMonth();
-  const daysInChartEndMonth = new Date(parseInt(chartYear), chartEndMonth + 1, 0).getDate();
-  // The axis picks up the next month once the 1st is five days away or closer,
-  // so the curve never crowds the right edge at the turn of a month.
-  const nextMonthDaysAway = daysInChartEndMonth - chartEndDate.getDate() + 1;
   // Forecast visibility runs 0..1. Static renders sit at the endpoints;
   // toggle-animation frames pass intermediate values, so the axes rescale
   // and the forecast layer fades in step, like the bar charts' toggles.
@@ -3246,7 +3362,10 @@ function renderCumulativeChart(anim) {
   cumForecastP = p;
   const fcst = p > 0 && cumForecast ? cumForecast : null;
   const forecastTarget = anim ? anim.on : p === 1;
-  const baseEndMonth = nextMonthDaysAway <= 5 ? Math.min(11, chartEndMonth + 1) : chartEndMonth;
+  // The axis ends with the month of the day after the data day, so the next
+  // month joins it only once the data reaches the current one's last day.
+  const dayAfterData = IS_ALL_MODE ? daysInYear - 1 : Math.min(daysInYear - 1, dataDayIdx + 1);
+  const baseEndMonth = new Date(yearStart.getTime() + dayAfterData * dayMs).getMonth();
   const baseEndMonthLastDay = new Date(parseInt(chartYear), baseEndMonth + 1, 0, 12, 0, 0);
   const baseEndIdx = Math.min(daysInYear - 1, Math.round((baseEndMonthLastDay - yearStart) / dayMs));
   const endMonth = p > 0 ? 11 : baseEndMonth;
@@ -3270,23 +3389,10 @@ function renderCumulativeChart(anim) {
     }
   }
   const xScale = day => ML + (day / endIdx) * innerW;
-  // Pick the smallest step such that the chart has at least 4 intervals (≥ 5
-  // ticks counting 0) and at most 6 intervals. Steps are multiples of 10,
-  // except for very low totals (≤ 30 films) which allow multiples of 5.
-  const yAxisFor = maxVal => {
-    const minStep = maxVal <= 30 ? 5 : 10;
-    let step = minStep;
-    while (step <= 1000) {
-      const m = Math.max(4 * step, Math.ceil(maxVal / step) * step);
-      if (m / step <= 6) break;
-      step += minStep;
-    }
-    return { step, max: Math.max(4 * step, Math.ceil(maxVal / step) * step) };
-  };
-  const offAxis = yAxisFor(total);
-  const onAxis = cumForecast ? yAxisFor(Math.max(total, Math.ceil(cumForecast.maxHi))) : offAxis;
-  const niceMax = offAxis.max + (onAxis.max - offAxis.max) * p;
-  const yScale = v => MT + innerH - (v / niceMax) * innerH;
+  const offAxis = cumAxis(total);
+  const onAxis = cumForecast ? cumAxis(Math.max(total, cumForecast.maxHi)) : offAxis;
+  const axisTop = offAxis.top + (onAxis.top - offAxis.top) * p;
+  const yScale = v => MT + innerH - (v / axisTop) * innerH;
   const pathD = points.map((p, i) =>
     `${i === 0 ? 'M' : 'L'}${xScale(p.x).toFixed(1)},${yScale(p.y).toFixed(1)}`
   ).join(' ');
@@ -3302,14 +3408,17 @@ function renderCumulativeChart(anim) {
   };
   addYTicks(offAxis, 'off');
   if (p > 0) addYTicks(onAxis, 'on');
+  // The lines run to the chart's right edge, past the plotted days, with
+  // each label standing on its own line at that end.
+  const labelRise = rootFontPx() * GRID_LABEL_RISE;
   let yAxis = '';
   yTickSet.forEach(({ v, off, on }) => {
     const alpha = off && on ? 1 : off ? 1 - p : p;
     if (alpha <= 0.001) return;
     const y = Math.max(MT, yScale(v));
     const op = alpha < 1 ? ` opacity="${alpha.toFixed(3)}"` : '';
-    yAxis += `<line x1="${v===0?ML-0.75:ML}" x2="${v===0?ML+innerW+0.75:ML+innerW}" y1="${y}" y2="${y}" stroke="${v===0?'var(--text)':'rgb(192,192,191)'}" stroke-width="1.5"${op}/>`;
-    yAxis += `<text x="${W-6}" y="${y+5}" text-anchor="end" font-family="'Dashboard Sans',sans-serif" font-size="1rem" font-weight="350" fill="var(--text)"${op}>${Math.round(v)}</text>`;
+    yAxis += `<line x1="${v===0?ML-0.75:ML}" x2="${W}" y1="${y}" y2="${y}" stroke="${v===0?'var(--text)':'rgb(192,192,191)'}" stroke-width="1.5"${op}/>`;
+    yAxis += `<text x="${W}" y="${(y - labelRise).toFixed(2)}" text-anchor="end" font-family="'Dashboard Sans',sans-serif" font-size="1rem" font-weight="350" fill="var(--text)"${op}>${Math.round(v)}</text>`;
   });
   const useShortLabels = (forecastTarget ? 11 : baseEndMonth) >= 10 && window.matchMedia('(max-width: 500px)').matches;
   const months = useShortLabels
@@ -3334,16 +3443,10 @@ function renderCumulativeChart(anim) {
   }
   const xEnd = xScale(endIdx);
   xAxis += `<line x1="${xEnd}" x2="${xEnd}" y1="${MT+innerH+0.75}" y2="${MT+innerH+5.75}" stroke="var(--text)" stroke-width="1.5"/>`;
-  let todayMark = '';
-  const baseExtendsToYearEnd = baseEndIdx >= daysInYear - 1;
-  if (!baseExtendsToYearEnd && (1 - p) > 0.001 && chartEndDate >= yearStart && chartEndDate <= yearEnd) {
-    const tx = xScale(dataDayIdx);
-    const op = p > 0 ? ` opacity="${(1 - p).toFixed(3)}"` : '';
-    todayMark = `<line x1="${tx}" x2="${tx}" y1="${MT}" y2="${MT+innerH-0.75}" stroke="rgb(192,192,191)" stroke-width="1.5" stroke-dasharray="8,5"${op}/>`;
-  }
   // The Economist forecast treatment: a grey band shades the forecast span
-  // (top edge on the top gridline, bottom clear of the baseline, left edge
-  // doing the data-day marker's job), a "Forecast" label at the top, the
+  // (top edge on the top gridline, or past it where the data runs past it;
+  // bottom clear of the baseline; left edge on the data day), a "Forecast"
+  // label at the top, the
   // salmon confidence area over the band, and the line running solid
   // through. The print original composites in CMYK, which no single sRGB
   // fill-plus-opacity reproduces, so each visible result is painted
@@ -3368,7 +3471,10 @@ function renderCumulativeChart(anim) {
     const bandGrid = stroke => gridAcross(bandX, bandX + bandW, onAxis, stroke);
     const fcstPt = (v, k) => `${xScale(fcst.startIdx + k).toFixed(1)},${yScale(v).toFixed(1)}`;
     const fanD = `M${fcst.hi.map(fcstPt).join(' L')} L${fcst.lo.map(fcstPt).reverse().join(' L')} Z`;
-    const centralD = fcst.central.map((v, k) => `${k === 0 ? 'M' : 'L'}${fcstPt(v, k)}`).join(' ');
+    // Starts with the screening line's last stretch, so that the two meet in
+    // a corner of one path and not end to end.
+    const centralD = [...points.slice(-2, -1).map(pt => `${xScale(pt.x).toFixed(1)},${yScale(pt.y).toFixed(1)}`), ...fcst.central.map(fcstPt)]
+      .map((pt, k) => `${k === 0 ? 'M' : 'L'}${pt}`).join(' ');
     ringBackdropLayers = `<g clip-path="url(#cum-plot-clip)" opacity="${p.toFixed(3)}"><rect x="${bandX.toFixed(1)}" y="${MT}" width="${bandW.toFixed(1)}" height="${innerH - 0.75}" fill="rgb(210,209,198)"/><path d="${fanD}" fill="rgb(216,172,149)"/></g>`;
     forecastLayer = `<g opacity="${p.toFixed(3)}" clip-path="url(#cum-plot-clip)">` +
       `<rect x="${bandX.toFixed(1)}" y="${MT}" width="${bandW.toFixed(1)}" height="${innerH - 0.75}" fill="rgb(210,209,198)"/>` +
@@ -3395,10 +3501,10 @@ function renderCumulativeChart(anim) {
     // the box's top at the label's left end, widened by half its stroke.
     const lastDay = daysInYear - 1;
     const settledBandW = innerW * (lastDay - fcst.startIdx) / lastDay;
-    const fontPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const fontPx = rootFontPx();
     const daysPerPx = lastDay / innerW;
-    const vPerPx = onAxis.max / innerH;
-    const labelDays = measureClosureLabel('Forecast', fontPx) * daysPerPx;
+    const vPerPx = onAxis.top / innerH;
+    const labelDays = measureLabel('Forecast', fontPx, 400) * daysPerPx;
     const vBottom = onAxis.max - onAxis.step / 2 - 5 * vPerPx;
     const vTop = vBottom + fontPx * 0.75 * vPerPx;
     const valueAt = (pts, day) => {
@@ -3433,7 +3539,7 @@ function renderCumulativeChart(anim) {
     forecastLayer += labelInBand
       ? `<text x="${(bandX + bandW / 2).toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="middle" font-family="'Dashboard Sans',sans-serif" font-size="1rem" font-weight="400" fill="rgb(89,89,89)">Forecast</text>`
       : `<text x="${(bandX - 8).toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="end" font-family="'Dashboard Sans',sans-serif" font-size="1rem" font-weight="400" fill="rgb(89,89,89)">Forecast</text>`;
-    forecastLayer += `<path d="${centralD}" fill="none" stroke="var(--chart-red)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></g>`;
+    forecastLayer += `</g><g opacity="${p.toFixed(3)}" clip-path="url(#cum-line-clip)"><path d="${centralD}" fill="none" stroke="var(--chart-red)" stroke-width="3" stroke-linejoin="bevel"/></g>`;
   }
 
   // Build per-day cumulative lookup so a cursor anywhere on the chart can
@@ -3466,7 +3572,7 @@ function renderCumulativeChart(anim) {
     const bandRect = `<rect x="${bandX.toFixed(1)}" y="${MT}" width="${bandW.toFixed(1)}" height="${innerH - 0.75}" fill="rgb(210,209,198)"/>`;
     ringBackdropLayers += `<g clip-path="url(#cum-plot-clip)">${bandRect}</g>`;
     closureLayer = `<g clip-path="url(#cum-plot-clip)">${bandRect}${gridAcross(bandX, bandX + bandW, offAxis, 'rgb(192,192,191)')}</g>`;
-    const fontPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const fontPx = rootFontPx();
     const gap = 8;
     const lineH = fontPx * 1.2;
     const topGapY = (Math.max(MT, yScale(offAxis.max)) + Math.max(MT, yScale(offAxis.max - offAxis.step))) / 2;
@@ -3478,7 +3584,7 @@ function renderCumulativeChart(anim) {
         : { anchor: 'start', x: bandX + bandW + gap, lo: bandX + bandW + gap, hi: ML + innerW - gap, cy: topGapY },
     ];
     const layouts = spots.flatMap(spot => CLOSURE_LABEL_WRAPS.map(lines => {
-      const textW = Math.max(...lines.map(text => measureClosureLabel(text, fontPx)));
+      const textW = Math.max(...lines.map(text => measureLabel(text, fontPx, 400)));
       const left = spot.anchor === 'middle' ? spot.x - textW / 2 : spot.anchor === 'end' ? spot.x - textW : spot.x;
       const halfInk = ((lines.length - 1) * lineH + fontPx * 0.75) / 2;
       return { ...spot, lines, textW, left, top: spot.cy - halfInk - 4, bottom: spot.cy + halfInk + 4 };
@@ -3486,8 +3592,8 @@ function renderCumulativeChart(anim) {
     // Whether the screening line runs through a label's patch, read off the
     // day totals: each day's rise spans the previous day's total to its own.
     const lineCrosses = ({ left, textW, top, bottom }) => {
-      const vLow = (MT + innerH - bottom) / innerH * niceMax;
-      const vHigh = (MT + innerH - top) / innerH * niceMax;
+      const vLow = (MT + innerH - bottom) / innerH * axisTop;
+      const vHigh = (MT + innerH - top) / innerH * axisTop;
       const d0 = Math.max(0, Math.floor((left - 4 - ML) / innerW * endIdx));
       const d1 = Math.min(cumByDay.length - 1, Math.ceil((left + textW + 4 - ML) / innerW * endIdx));
       for (let d = d0; d <= d1; d++) {
@@ -3516,11 +3622,11 @@ function renderCumulativeChart(anim) {
   // over the count, in the chart subtitle's weight, 5px from a trace line
   // that runs on above the plot to the top of the date; the label sits to
   // the trace's left on the right half of the chart and to its right on
-  // the left half. The count stands 3.5px below the top gridline, which
+  // the left half. The count stands 3.5px below the top of the plot, which
   // keeps it 8px clear of the "Forecast" label below when the gridlines
-  // are at their closest, 36px apart; wider gridlines only move "Forecast"
-  // further off.
-  const hoverFontPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  // are at their closest, 36px apart; wider gridlines, or a top one below
+  // the top of the plot, only move "Forecast" further off.
+  const hoverFontPx = rootFontPx();
   const hoverLabelFont = `font-family="'Dashboard Sans',sans-serif" font-size="1rem" font-weight="500"`;
   const hoverLabelYs = [MT + 3.5 - hoverFontPx * 17 / 16, MT + 3.5];
   const hoverLabelLines = fills => hoverLabelYs.map((y, i) => `<text y="${y.toFixed(1)}"${fills ? ` fill="${fills[i]}"` : ''}></text>`).join('');
@@ -3540,34 +3646,37 @@ function renderCumulativeChart(anim) {
   const hoverRing = `<g class="cum-hover-ring" mask="url(#cum-ring-mask)" visibility="hidden" pointer-events="none"><rect width="${W}" height="${H}" fill="var(--bg)"/>${ringBackdropLayers}</g>`;
   const hoverLabelHalo = `<g class="cum-hover-label-halo" ${hoverLabelFont} fill="var(--bg)" stroke="var(--bg)" stroke-width="4" stroke-linejoin="round" visibility="hidden" pointer-events="none">${hoverLabelLines()}</g>`;
   const hoverLabel = `<g class="cum-hover-label" ${hoverLabelFont} visibility="hidden" pointer-events="none">${hoverLabelLines(['var(--text)', 'var(--chart-red)'])}</g>`;
-  const hoverZone = `<rect class="cum-hover-zone" x="${ML}" y="${MT}" width="${innerW}" height="${innerH}" fill="transparent" style="cursor:crosshair;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none"/>`;
+  // The zone runs on past the x axis to the text of the gridline labels.
+  const gridLabelW = Math.max(...yTickSet.map(({ v }) => measureLabel(String(v), hoverFontPx, 350)));
+  const hoverZone = `<rect class="cum-hover-zone" x="${ML}" y="${MT}" width="${Math.max(innerW, W - gridLabelW - ML).toFixed(1)}" height="${innerH}" fill="transparent" style="cursor:crosshair;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none"/>`;
   container.style.touchAction = 'none';
   container.style.webkitUserSelect = 'none';
   container.style.userSelect = 'none';
   container.style.webkitTouchCallout = 'none';
 
-  // The plotted line and the forecast layer are clipped at the plot's
-  // left and right edges, where the line's rounded stroke ends would
-  // otherwise overhang the axes at Jan 1 and, once the chart runs
-  // through Dec 31, at the year end; the current year's mid-plot
-  // data-day line end keeps its cap. At rest the top and bottom stay
-  // open, so a line hugging the top gridline keeps its full stroke.
+  // The lines have beveled corners and square ends, as The Economist's do.
+  // The shading is clipped at the plot's left and right edges, and the
+  // lines 2px further out, which holds an animating forecast line to the
+  // plot without cutting into a line's own ends. At rest the top and
+  // bottom stay open, so a line hugging the top gridline keeps its full
+  // stroke.
   // Animation frames close the vertical bounds to the plot area, since
   // the interpolated scales push forecast geometry out of it while
   // everything settles, with 2px of grace at the top so a line hugging
   // the top gridline keeps its stroke mid-animation too.
   const clipTop = anim ? MT - 2 : -20;
   const clipBottom = anim ? MT + innerH + 2 : H + 20;
-  const plotClip = `<clipPath id="cum-plot-clip"><rect x="${ML}" y="${clipTop}" width="${innerW}" height="${clipBottom - clipTop}"/></clipPath>`;
+  const clipRect = (id, overhang) => `<clipPath id="${id}"><rect x="${ML - overhang}" y="${clipTop}" width="${innerW + 2 * overhang}" height="${clipBottom - clipTop}"/></clipPath>`;
+  const plotClip = clipRect('cum-plot-clip', 0) + clipRect('cum-line-clip', 2);
   // All-years mode: each year's own curve in muted paper grey under the
   // average line, plus the average's past-years continuation after the
   // one-day break at the data day.
   const yearLayer = yearLines.length
-    ? `<g clip-path="url(#cum-plot-clip)">${yearLines.map(pts =>
-        `<path d="${pts.map((pt, i) => `${i === 0 ? 'M' : 'L'}${xScale(pt.x).toFixed(1)},${yScale(pt.y).toFixed(1)}`).join(' ')}" fill="none" stroke="rgb(189,189,175)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`
+    ? `<g clip-path="url(#cum-line-clip)">${yearLines.map(pts =>
+        `<path d="${pts.map((pt, i) => `${i === 0 ? 'M' : 'L'}${xScale(pt.x).toFixed(1)},${yScale(pt.y).toFixed(1)}`).join(' ')}" fill="none" stroke="rgb(189,189,175)" stroke-width="3" stroke-linejoin="bevel"/>`
       ).join('')}</g>`
     : '';
-  container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;overflow:visible;">${plotClip}${yAxis}${xAxis}${todayMark}${closureLayer}${forecastLayer}${yearLayer}<g clip-path="url(#cum-plot-clip)"><path d="${pathD}" fill="none" stroke="var(--chart-red)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>${pastPathD ? `<path d="${pastPathD}" fill="none" stroke="var(--chart-red)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>` : ''}</g>${hoverLine}${ringMask}${hoverDot}${hoverRing}${hoverLabelHalo}${hoverLabel}${hoverZone}</svg>`;
+  container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;overflow:visible;">${plotClip}${yAxis}${xAxis}${closureLayer}${forecastLayer}${yearLayer}<g clip-path="url(#cum-line-clip)"><path d="${pathD}" fill="none" stroke="var(--chart-red)" stroke-width="3" stroke-linejoin="bevel"/>${pastPathD ? `<path d="${pastPathD}" fill="none" stroke="var(--chart-red)" stroke-width="3" stroke-linejoin="bevel"/>` : ''}</g>${hoverLine}${ringMask}${hoverDot}${hoverRing}${hoverLabelHalo}${hoverLabel}${hoverZone}</svg>`;
 
   const svg = container.querySelector('svg');
   const lineEl = svg.querySelector('.cum-hover-line');
@@ -3628,17 +3737,19 @@ function renderCumulativeChart(anim) {
     labelEl.setAttribute('visibility', 'hidden');
   };
 
+  // Past the last day with a value a mouse or a drag holds the trace on that
+  // day; a tap there hides it.
   zoneEl.addEventListener('pointerdown', e => {
     if (e.pointerType === 'touch' || e.pointerType === 'pen') {
       e.preventDefault();
       try { zoneEl.setPointerCapture(e.pointerId); } catch (_) {}
       isDragging = true;
     }
-    showHover(e.clientX, false);
+    showHover(e.clientX, e.pointerType === 'mouse');
   });
   zoneEl.addEventListener('pointermove', e => {
     if (e.pointerType !== 'mouse' && !zoneEl.hasPointerCapture?.(e.pointerId)) return;
-    showHover(e.clientX, isDragging);
+    showHover(e.clientX, isDragging || e.pointerType === 'mouse');
   });
   // Mouse: leaving the zone hides. Touch/pen: the label persists after release until the user taps elsewhere.
   zoneEl.addEventListener('pointerup', e => {
@@ -3800,6 +3911,156 @@ function syncBarLabelScope(container) {
   container.style.setProperty('--bar-label-width', `${labelWidth}px`);
   container.style.setProperty('--bar-axis-left', `${labelWidth + BAR_ROW_GAP}px`);
 }
+
+// ====== BAR CHART GRIDLINES AND LABELS ======
+// Sets a layer's gridlines, each with its label, to an axis. `side` is the
+// style that places a line, and `span` the axis value at the layer's far
+// end. When the axis changes, the lines move to their new places while the
+// ones coming and going fade, never past the top of the plot.
+function setGridlines(layer, axis, side, span) {
+  const was = layer._axis;
+  const at = (v, a) => `${Math.min(v, a.top) / a[span] * 100}%`;
+  const drawn = new Set([...layer.children].map(el => Number(el.dataset.v)));
+  for (let v = 0; v <= axis.max; v += axis.step) {
+    if (drawn.has(v)) continue;
+    const line = document.createElement('div');
+    line.className = 'grid-line';
+    line.dataset.v = v;
+    line.innerHTML = `<span class="grid-label">${v}</span>`;
+    line.style[side] = at(v, was || axis);
+    line.style.opacity = was ? 0 : 1;
+    layer.append(line);
+  }
+  if (was) layer.getBoundingClientRect(); // lays out the starting places
+  [...layer.children].forEach(line => {
+    const v = Number(line.dataset.v), stays = v <= axis.max && v % axis.step === 0;
+    line.style[side] = at(v, axis);
+    line.style.opacity = stays ? 1 : 0;
+    line.classList.toggle('is-leaving', !stays);
+  });
+  layer._axis = axis;
+  clearTimeout(layer._timer);
+  layer._timer = setTimeout(() => layer.querySelectorAll('.is-leaving').forEach(line => line.remove()), 850);
+}
+
+// The count of the bar under the pointer, in the cumulative chart's label:
+// the same face over a halo of the paper, in the bar's own color unless the
+// row carries another, 5px from the bar's end.
+const BAR_LABEL_GAP = 5;
+const BAR_LABEL_FONT = `font-family="'Dashboard Sans',sans-serif" font-size="1rem" font-weight="500"`;
+const BAR_HOVER = `<svg class="bar-hover" aria-hidden="true"><text ${BAR_LABEL_FONT} fill="var(--bg)" stroke="var(--bg)" stroke-width="4" stroke-linejoin="round"></text><text ${BAR_LABEL_FONT}></text></svg>`;
+function setBarLabel(container, label) {
+  const svg = container.querySelector(':scope > .bar-hover');
+  if (!svg) return;
+  svg.style.visibility = label ? 'visible' : 'hidden';
+  if (!label) return;
+  [...svg.children].forEach(text => {
+    text.textContent = label.text;
+    text.setAttribute('x', label.x.toFixed(1));
+    text.setAttribute('y', label.y.toFixed(1));
+    text.setAttribute('text-anchor', label.anchor);
+  });
+  svg.lastElementChild.setAttribute('fill', label.fill || 'var(--chart-red)');
+}
+// Mouse: the label follows the pointer. Touch: a tap on a bar shows its
+// label and a tap anywhere else clears it, a tap being as on the venue map
+// a touch that lifts within 10px of where it landed.
+function watchBars(container, labelAt, scroller) {
+  let mouse = null, touchStart = null;
+  const point = e => setBarLabel(container, labelAt(e.clientX, e.clientY));
+  const hide = () => { mouse = null; setBarLabel(container, null); };
+  container.addEventListener('pointermove', e => { if (e.pointerType === 'mouse') point(mouse = e); });
+  container.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') hide(); });
+  container.addEventListener('pointerdown', e => {
+    if (e.pointerType !== 'mouse') touchStart = { id: e.pointerId, x: e.clientX, y: e.clientY };
+  });
+  container.addEventListener('pointerup', e => {
+    if (!touchStart || touchStart.id !== e.pointerId) return;
+    const moved = Math.hypot(e.clientX - touchStart.x, e.clientY - touchStart.y);
+    touchStart = null;
+    if (moved < 10) point(e);
+  });
+  container.addEventListener('pointercancel', () => { touchStart = null; });
+  document.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse' && !container.contains(e.target)) hide(); });
+  // Bars scrolled along under a resting mouse.
+  if (scroller) scroller.addEventListener('scroll', () => { if (mouse) point(mouse); }, { passive: true });
+}
+
+// The rating and decade charts: each row carries its key in data-key. The
+// axis is set by maxCount, which need not be one of the counts shown, and
+// its step by stepCount, the same count with rewatches in.
+const barRowMarkup = (key, label, barClass, labelFill = '') =>
+  `<div class="bar-row" data-key="${key}" data-label-fill="${labelFill}">
+    <div class="bar-label">${label}</div>
+    <div class="bar-track" role="img"><div class="bar-fill ${barClass}" style="width:0"></div></div>
+  </div>`;
+function initBarChart(container, rowsMarkup) {
+  container.innerHTML = `<div class="bar-grid"></div>${rowsMarkup}${BAR_HOVER}`;
+  watchBars(container, (clientX, clientY) => {
+    const box = container.getBoundingClientRect();
+    for (const row of container.querySelectorAll('.bar-row')) {
+      const r = row.getBoundingClientRect();
+      // Rows answer halfway into the 6px between them.
+      if (clientY < r.top - 3 || clientY >= r.bottom + 3 || !Number(row.dataset.count)) continue;
+      const bar = row.querySelector('.bar-fill');
+      return {
+        text: row.dataset.count,
+        x: bar.getBoundingClientRect().right - box.left + BAR_LABEL_GAP,
+        y: (r.top + r.bottom) / 2 - box.top + rootFontPx() * 0.35,
+        anchor: 'start',
+        fill: row.dataset.labelFill || getComputedStyle(bar).backgroundColor
+      };
+    }
+    return null;
+  });
+}
+function updateBarChart(container, counts, maxCount, stepCount) {
+  const redraw = !!container._counts;
+  Object.assign(container, { _counts: counts, _maxCount: maxCount, _stepCount: stepCount });
+  if (redraw) {
+    container.classList.add('is-rescaling');
+    clearTimeout(container._rescaleTimer);
+    container._rescaleTimer = setTimeout(() => container.classList.remove('is-rescaling'), 850);
+  }
+  layoutBarChart(container, redraw);
+}
+// Draws the chart to fit the container, moving to the new state on a toggle
+// and otherwise going straight to it.
+function layoutBarChart(container, moves) {
+  const { _counts: counts, _maxCount: maxCount, _stepCount: stepCount } = container;
+  container.classList.toggle('is-still', !moves);
+  setBarLabel(container, null);
+  syncBarLabelColumn(container);
+  container._width = container.clientWidth;
+  const fontPx = rootFontPx();
+  const width = container._width - parseFloat(container.style.getPropertyValue('--bar-axis-left'));
+  const axis = barAxis(maxCount, stepCount, width, max => measureLabel(String(max), fontPx, 350) * 1.75);
+  container.querySelectorAll('.bar-row').forEach(row => {
+    const count = counts[row.dataset.key] || 0;
+    row.dataset.count = count;
+    row.querySelector('.bar-track').setAttribute('aria-label', count);
+    row.querySelector('.bar-fill').style.width = count / axis.max * 100 + '%';
+  });
+  setGridlines(container.querySelector('.bar-grid'), axis, 'left', 'max');
+  // The top gridline stands in from the right edge by half its label, which
+  // then ends flush with it, or by as much more as the longest bar needs to
+  // keep its own label inside that edge.
+  const toTop = width - measureLabel(String(axis.max), fontPx, 350) / 2;
+  const toLongest = width - BAR_LABEL_GAP - measureLabel(String(maxCount), fontPx, 500);
+  const inset = width - Math.min(toTop, toLongest * axis.max / maxCount);
+  container.style.setProperty('--bar-inset', `${Math.max(0, inset).toFixed(2)}px`);
+  container.getBoundingClientRect(); // lays out before transitions come back on
+  container.classList.remove('is-still');
+}
+let barChartResizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(barChartResizeTimer);
+  barChartResizeTimer = setTimeout(() => ['rating-chart', 'decade-chart'].forEach(id => {
+    const container = document.getElementById(id);
+    // Mobile browsers fire resize events on scroll: the same width keeps its label.
+    if (container._counts && container.clientWidth !== container._width) layoutBarChart(container);
+  }), 120);
+});
 
 // ====== FORMAT CHART ======
 function parseFormat(raw) {
@@ -4758,6 +5019,9 @@ const bases = BASE_ORDER.filter(b => formatBreakdown[b] && formatBreakdown[b].to
 })();
 
 // ====== RATING CHART ======
+// The 5 and 6 bars are too pale to read as text: their labels take the
+// color of the 4 and the 7.
+const ratingLabelFill = { 5: 'rgb(var(--rating-4))', 6: 'rgb(var(--rating-7))' };
 const ratingLabel = r => r === 1 ? '1 out of 10' : String(r);
 const allRatingCounts = {};
 for (let i=1;i<=10;i++) allRatingCounts[i] = 0;
@@ -4777,36 +5041,17 @@ function renderRatingChart(filter) {
   ratingCounts['unrated'] = 0;
   subset.forEach(f => { if (f.rating != null) ratingCounts[f.rating]++; else ratingCounts['unrated']++; });
   const container = document.getElementById('rating-chart');
-  if (!container.dataset.init) {
-    container.innerHTML = Object.keys(ratingCounts).filter(r => r !== 'unrated').map(r =>
-      `<div class="bar-row" data-rating="${r}">
-        <div class="bar-label">${ratingLabel(Number(r))}</div>
-        <div class="bar-track"><div class="bar-fill rating-${r}" style="width:0"></div></div>
-        <div class="bar-count">0</div>
-      </div>`
-    ).join('') + (allRatingCounts['unrated'] ? `<div class="bar-row" data-rating="unrated">
-        <div class="bar-label">Unrated</div>
-        <div class="bar-track"><div class="bar-fill rating-unrated" style="width:0"></div></div>
-        <div class="bar-count">0</div>
-      </div>` : '');
-    container.dataset.init = '1';
+  if (!container._counts) {
+    initBarChart(container, Object.keys(ratingCounts).filter(r => r !== 'unrated').map(r =>
+      barRowMarkup(r, ratingLabel(Number(r)), `rating-${r}`, ratingLabelFill[r])
+    ).join('') + (allRatingCounts['unrated'] ? barRowMarkup('unrated', 'Unrated', 'rating-unrated') : ''));
   }
   const allSubset = dedup ? dedupFilms(FILMS) : FILMS;
   const allCounts = {};
   for (let i=1;i<=10;i++) allCounts[i] = 0;
   allCounts['unrated'] = 0;
   allSubset.forEach(f => { if (f.rating != null) allCounts[f.rating]++; else allCounts['unrated']++; });
-  const maxRating = Math.max(...Object.values(allCounts), 1);
-  for (const [r, c] of Object.entries(ratingCounts)) {
-    const row = container.querySelector(`.bar-row[data-rating="${r}"]`);
-    if (!row) continue;
-    row.querySelector('.bar-fill').style.width = (c / maxRating) * 100 + '%';
-    row.querySelector('.bar-count').textContent = c;
-  }
-  // The label column is measured after the widths are set: measuring flushes
-  // layout, and bars first laid out at zero would play the toggle transition
-  // on page load.
-  syncBarLabelColumn(container);
+  updateBarChart(container, ratingCounts, Math.max(...Object.values(allCounts), 1), maxRatingAll);
 }
 renderRatingChart('all');
 let activeRatFilter = 'all';
@@ -4822,7 +5067,8 @@ document.getElementById('rating-dedup').addEventListener('change', () => renderR
 
 // ====== RUNTIME DISTRIBUTION ======
 const RUNTIME_BIN_SIZE = 5;
-const RUNTIME_BAR_MAX_H = 140;
+const RUNTIME_BAR_MAX_H = 160;
+document.getElementById('runtime-chart').style.setProperty('--hist-height', `${RUNTIME_BAR_MAX_H}px`);
 function computeRuntimeBins(films) {
   const runtimes = films.map(f => f.runtime).filter(r => r > 0);
   const allRuntimes = FILMS.map(f => f.runtime).filter(r => r > 0);
@@ -4833,35 +5079,33 @@ function computeRuntimeBins(films) {
   runtimes.forEach(r => { bins[Math.floor(r / RUNTIME_BIN_SIZE) * RUNTIME_BIN_SIZE]++; });
   return { bins, minBin, maxBin };
 }
+const maxRuntimeAll = Math.max(...Object.values(computeRuntimeBins(FILMS).bins), 1);
+const runtimeAxisFor = bins => barAxis(Math.max(...Object.values(bins), 1), maxRuntimeAll, RUNTIME_BAR_MAX_H, () => rootFontPx() * 2);
+// Sets the bars and gridlines to the current dedup state.
 function updateRuntimeHeights() {
+  const chartEl = document.getElementById('runtime-chart');
   const dedup = document.getElementById('runtime-dedup').checked;
-  const films = dedup ? dedupFilms(FILMS) : FILMS;
-  const { bins } = computeRuntimeBins(films);
-  const maxBinCount = Math.max(...Object.values(bins), 1);
-  document.querySelectorAll('#runtime-chart [data-bin]').forEach(el => {
-    const b = Number(el.dataset.bin);
-    const c = bins[b] || 0;
-    const h = Math.round((c / maxBinCount) * RUNTIME_BAR_MAX_H);
+  const { bins } = computeRuntimeBins(dedup ? dedupFilms(FILMS) : FILMS);
+  const axis = runtimeAxisFor(bins);
+  setBarLabel(chartEl, null);
+  chartEl.querySelectorAll('[data-bin]').forEach(el => {
+    const c = bins[el.dataset.bin] || 0;
+    el.dataset.count = c;
     const bar = el.querySelector('.hist-bar');
-    if (bar) {
-      bar.style.height = h + 'px';
-      bar.style.visibility = c ? '' : 'hidden';
-    }
-    const label = el.querySelector('.hist-count');
-    if (label) {
-      label.textContent = c || '';
-      label.style.color = c ? 'var(--text)' : 'var(--text-dim)';
-    }
+    bar.style.height = (c / axis.top * RUNTIME_BAR_MAX_H).toFixed(2) + 'px';
+    bar.style.visibility = c ? '' : 'hidden';
+    bar.setAttribute('aria-label', c);
   });
+  chartEl.querySelectorAll('.hist-grid').forEach(layer => setGridlines(layer, axis, 'bottom', 'top'));
 }
-function renderRuntimeChart() {
-  const dedup = document.getElementById('runtime-dedup').checked;
+function renderRuntimeChart(force) {
+  const chartEl = document.getElementById('runtime-chart');
+  const scroller = document.getElementById('runtime-scroll');
+  // Mobile browsers fire resize events on scroll: the same width is left alone.
+  if (!force && chartEl._width === scroller.clientWidth) return;
+  chartEl._width = scroller.clientWidth;
   const binSize = RUNTIME_BIN_SIZE;
-  const films = dedup ? dedupFilms(FILMS) : FILMS;
-  const { bins: allBins } = computeRuntimeBins(FILMS);
-  const { bins, maxBin } = computeRuntimeBins(films);
-  const maxBinCount = Math.max(...Object.values(bins), 1);
-  const barMaxH = RUNTIME_BAR_MAX_H;
+  const { bins: allBins, maxBin } = computeRuntimeBins(FILMS);
   const binArr = Object.entries(allBins).map(([b]) => ({ bin: Number(b), count: allBins[b] }));
 
   const items = [];
@@ -4888,7 +5132,12 @@ function renderRuntimeChart() {
     }
   }
 
-  const chartEl = document.getElementById('runtime-chart');
+  // The count axis is a column at the right, as wide as its labels in
+  // either dedup state, past a margin that holds the last bin's end label.
+  const fontPx = rootFontPx();
+  const axisW = Math.ceil(Math.max(...[FILMS, dedupFilms(FILMS)].map(films =>
+    measureLabel(String(runtimeAxisFor(computeRuntimeBins(films).bins).max), fontPx, 350)))) + 4;
+  const AXIS_MARGIN = 12;
   // Compute scaled gap: bars can grow to barW > MIN_BAR, and we want gap = barW / GAP_RATIO.
   // Floor at MIN_GAP so the chart becomes scrollable before bars shrink below MIN_BAR.
   const MIN_BAR = 24, MIN_GAP = 2, GAP_RATIO = 12;
@@ -4896,9 +5145,8 @@ function renderRuntimeChart() {
   const gapItemCountForCalc = items.filter(i => i.type === 'gap').length;
   const totalUnits = barCountForCalc + 2 * gapItemCountForCalc;
   const flexGaps = Math.max(0, items.length - 1);
-  // Reset to measure available width
-  chartEl.style.cssText = `display:flex;align-items:flex-end;gap:${MIN_GAP}px;position:relative;padding-bottom:4px;height:160px;padding-top:12px;width:100%;`;
-  const availableW = chartEl.getBoundingClientRect().width;
+  chartEl.style.minWidth = `${totalUnits * MIN_BAR + flexGaps * MIN_GAP + AXIS_MARGIN + axisW}px`;
+  const availableW = scroller.clientWidth - parseFloat(getComputedStyle(scroller).paddingLeft) - AXIS_MARGIN - axisW;
   const estBarW = availableW / (totalUnits + flexGaps / GAP_RATIO);
   const gap = estBarW >= MIN_BAR ? Math.max(MIN_GAP, Math.round(estBarW / GAP_RATIO)) : MIN_GAP;
   chartEl.style.gap = gap + 'px';
@@ -4929,24 +5177,41 @@ function renderRuntimeChart() {
       dotsLabel = `<span style="left:50%;bottom:-22px;letter-spacing:2px;${labelCss.replace('top:0;','')}">···</span>`;
       barsHtml += `<div style="flex:2 2 0;min-width:48px;position:relative;">${tick}${label}${dotsLabel}${endTick}${endLabel}</div>`;
     } else {
-      const c = bins[it.bin] || 0;
-      const h = Math.round((c / maxBinCount) * barMaxH);
       const prevIsBar = idx > 0 && items[idx-1].type === 'bar';
       const nextIsBar = idx < items.length-1 && items[idx+1].type === 'bar';
       const lo = prevIsBar ? halfGap : 8;
-      const ro = nextIsBar ? halfGap : 8;
+      // The axis line runs on under the count axis, which carries it to the edge.
+      const ro = isLast ? AXIS_MARGIN + axisW : nextIsBar ? halfGap : 8;
       barsHtml += `<div data-bin="${it.bin}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:24px;position:relative;">
-        <div class="hist-count" style="font-family:'Dashboard Sans',sans-serif;font-size:0.9rem;font-weight:350;color:${c ? 'var(--text)' : 'var(--text-dim)'};margin-bottom:4px;">${c || ''}</div>
-        <div class="hist-bar" style="width:100%;height:${h}px;background:var(--chart-red);border-radius:0;${c ? '' : 'visibility:hidden;'}"></div>
+        <div class="hist-bar" role="img" style="width:100%;background:var(--chart-red);border-radius:0;"></div>
         <div style="position:absolute;left:-${lo}px;right:-${ro}px;bottom:-1.5px;height:1.5px;background:var(--text);pointer-events:none;"></div>
         ${tick}${label}${endTick}${endLabel}
       </div>`;
     }
   });
-  chartEl.innerHTML = barsHtml;
+  chartEl.innerHTML = `<div class="hist-grid"></div>${barsHtml}${BAR_HOVER}` +
+    `<div class="hist-axis" style="width:${axisW}px;margin-left:${AXIS_MARGIN - gap}px"><div class="hist-grid"></div></div>`;
+  updateRuntimeHeights();
 }
-renderRuntimeChart();
+renderRuntimeChart(true);
 document.getElementById('runtime-dedup').addEventListener('change', updateRuntimeHeights);
+watchBars(document.getElementById('runtime-chart'), clientX => {
+  const chartEl = document.getElementById('runtime-chart');
+  const box = chartEl.getBoundingClientRect();
+  const left = document.getElementById('runtime-scroll').getBoundingClientRect().left;
+  const right = chartEl.querySelector('.hist-axis').getBoundingClientRect().left;
+  if (clientX < left || clientX >= right) return null;
+  const halfGap = parseFloat(chartEl.style.gap) / 2;
+  for (const el of chartEl.querySelectorAll('[data-bin]')) {
+    const r = el.getBoundingClientRect();
+    if (clientX < r.left - halfGap || clientX >= r.right + halfGap || !Number(el.dataset.count)) continue;
+    // Centered on the bar, kept whole where the bar is scrolled partly out of view.
+    const halfW = measureLabel(el.dataset.count, rootFontPx(), 500) / 2 + 2;
+    const x = Math.max(left + halfW, Math.min(right - halfW, (r.left + r.right) / 2));
+    return { text: el.dataset.count, x: x - box.left, y: el.querySelector('.hist-bar').getBoundingClientRect().top - box.top - BAR_LABEL_GAP, anchor: 'middle' };
+  }
+  return null;
+}, document.getElementById('runtime-scroll'));
 // Re-render on resize so the flex gap rescales with bar width
 let runtimeResizeTimer;
 window.addEventListener('resize', () => {
@@ -5530,32 +5795,20 @@ function renderDecadeChart() {
         ? 'Shorts programmes whose production years span multiple decades'
         : 'Shorts programme whose production years span multiple decades')
     : '';
-  if (!container.dataset.init) {
-    container.innerHTML = decadeArr.map(d =>
-      `<div class="bar-row" data-decade="${d}">
-        <div class="bar-label">${d === 'various' ? 'Various' + variousMark : d + 's'}</div>
-        <div class="bar-track"><div class="bar-fill venue-bar" style="width:0"></div></div>
-        <div class="bar-count">0</div>
-      </div>`
-    ).join('');
-    container.dataset.init = '1';
+  if (!container._counts) {
+    initBarChart(container, decadeArr.map(d =>
+      barRowMarkup(d, d === 'various' ? 'Various' + variousMark : d + 's', 'venue-bar')
+    ).join(''));
   }
-  for (const d of decadeArr) {
-    const c = decadeCounts[d] || 0;
-    const row = container.querySelector(`.bar-row[data-decade="${d}"]`);
-    if (!row) continue;
-    row.querySelector('.bar-fill').style.width = (c / maxDecade) * 100 + '%';
-    row.querySelector('.bar-count').textContent = c;
-  }
-  // Measured after the widths are set, as in the rating chart.
-  syncBarLabelColumn(container);
+  updateBarChart(container, decadeCounts, maxDecade, Math.max(...Object.values(allDecadeCounts), 1));
 }
 renderDecadeChart();
 document.getElementById('decade-dedup').addEventListener('change', renderDecadeChart);
 if (document.fonts && document.fonts.ready) {
   document.fonts.ready.then(() => {
-    syncBarLabelColumn(document.getElementById('rating-chart'));
-    syncBarLabelColumn(document.getElementById('decade-chart'));
+    layoutBarChart(document.getElementById('rating-chart'));
+    layoutBarChart(document.getElementById('decade-chart'));
+    renderRuntimeChart(true);
     syncBarLabelColumn(document.getElementById('venue-chart'));
     // The map's corner box is sized from its label's measured width.
     renderVenueMap(true);
