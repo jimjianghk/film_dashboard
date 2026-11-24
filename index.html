@@ -436,7 +436,6 @@ h1 {
 .bar-row {
   display: flex;
   align-items: center;
-  gap: 12px;
   margin-bottom: 6px;
   cursor: default;
   position: relative;
@@ -456,21 +455,23 @@ h1 {
 #decade-chart .bar-row::before,
 #venue-chart .bar-row::before { left: calc(var(--bar-axis-left, 60px) - var(--bar-axis-width, 1.5px)); }
 .hist-bar { transition: height 0.8s cubic-bezier(0.22,1,0.36,1); cursor: default; }
+/* A label's box runs to the axis and halfway into the 6px between rows, so
+   that a venue's full name comes up wherever its count does. */
 .bar-label {
   font-family: 'Dashboard Sans', sans-serif;
   font-size: 1rem;
   font-weight: 400;
   color: var(--text);
-  width: 48px;
   text-align: left;
-  padding-left: 4px;
+  margin: -3px 0;
+  padding: 3px 12px 3px 4px;
   flex-shrink: 0;
   position: relative;
 }
 #rating-chart .bar-label,
 #decade-chart .bar-label,
 #venue-chart .bar-label {
-  width: var(--bar-label-width, 48px);
+  width: var(--bar-label-width, 60px);
   white-space: nowrap;
 }
 .venue-tip {
@@ -3862,7 +3863,7 @@ if (!IS_ALL_MODE && isCurrentDashboardYear && cumForecastSeasonOpen && cumForeca
   });
 }
 
-const BAR_ROW_GAP = 12, BAR_AXIS_WIDTH = 1.5;
+const BAR_AXIS_WIDTH = 1.5;
 // Whether the half-width charts are sitting two to a row.
 const chartsPaired = () => {
   const [first, second] = document.querySelectorAll('.charts-grid > .chart-card:not(.full)');
@@ -3894,7 +3895,7 @@ function syncBarLabelScope(container) {
   const labelWidth = Math.max(...labels.map(label => Math.ceil(label.scrollWidth)));
   tips.forEach(tip => { tip.style.display = ''; });
   container.style.setProperty('--bar-label-width', `${labelWidth}px`);
-  container.style.setProperty('--bar-axis-left', `${labelWidth + BAR_ROW_GAP}px`);
+  container.style.setProperty('--bar-axis-left', `${labelWidth}px`);
 }
 
 // ====== BAR CHART GRIDLINES AND LABELS ======
@@ -3985,30 +3986,31 @@ function initBarChart(container, ...columns) {
   const cols = columns.filter((rows, i) => rows || i === 0).map(rows => `<div class="bar-grid"></div>${rows}`);
   container.innerHTML = (columns.length > 1 ? cols.map(col => `<div class="venue-col">${col}</div>`).join('') : cols[0]) + BAR_HOVER;
   watchBars(container, (clientX, clientY) => {
-    const box = container.getBoundingClientRect();
-    for (const row of container.querySelectorAll('.bar-row')) {
-      const r = row.getBoundingClientRect();
-      // Rows answer halfway into the 6px between them.
-      if (clientY < r.top - 3 || clientY >= r.bottom + 3 || clientX < r.left || clientX > r.right || !Number(row.dataset.count)) continue;
-      const bar = row.querySelector('.bar-fill');
-      return {
-        text: row.dataset.count,
-        x: Math.max(bar.getBoundingClientRect().right, venueTipRight(row, clientX, clientY)) - box.left + BAR_LABEL_GAP,
-        y: (r.top + r.bottom) / 2 - box.top + rootFontPx() * 0.35,
-        anchor: 'start',
-        fill: row.dataset.labelFill || getComputedStyle(bar).backgroundColor
-      };
-    }
-    return null;
+    // Rows answer halfway into the 6px between them. On a label, whose box
+    // takes that in, the label under the pointer gives the row.
+    const label = document.elementFromPoint(clientX, clientY)?.closest('.bar-label');
+    const row = [...container.querySelectorAll('.bar-row')].find(el => {
+      if (label) return el.contains(label);
+      const r = el.getBoundingClientRect();
+      return clientY >= r.top - 3 && clientY < r.bottom + 3 && clientX >= r.left && clientX <= r.right;
+    });
+    if (!row || !Number(row.dataset.count)) return null;
+    const box = container.getBoundingClientRect(), r = row.getBoundingClientRect();
+    const bar = row.querySelector('.bar-fill');
+    return {
+      text: row.dataset.count,
+      x: Math.max(bar.getBoundingClientRect().right, venueTipRight(row, !!label)) - box.left + BAR_LABEL_GAP,
+      y: (r.top + r.bottom) / 2 - box.top + rootFontPx() * 0.35,
+      anchor: 'start',
+      fill: row.dataset.labelFill || getComputedStyle(bar).backgroundColor
+    };
   });
 }
 // How far right the tip with a venue's full name reaches, where it is up or
 // the pointer is on the label that brings it up: the count clears it.
-function venueTipRight(row, clientX, clientY) {
+function venueTipRight(row, onLabel) {
   const tip = row.querySelector('.venue-tip');
   if (!tip) return -Infinity;
-  const label = tip.parentElement.getBoundingClientRect();
-  const onLabel = clientX >= label.left && clientX < label.right && clientY >= label.top && clientY < label.bottom;
   if (onLabel) tip.style.display = 'block';
   const box = tip.getBoundingClientRect();
   tip.style.display = '';
