@@ -463,9 +463,8 @@ h1 {
   font-weight: 400;
   color: var(--text);
   text-align: left;
-  --axis-gap: 12px;
   margin: -3px 0;
-  padding: 3px var(--axis-gap) 3px 0;
+  padding: 3px 12px 3px 0;
   flex-shrink: 0;
   position: relative;
 }
@@ -476,10 +475,9 @@ h1 {
   white-space: nowrap;
 }
 .venue-tip {
-  --tip-outset: -9px;
   display: none;
   position: absolute;
-  left: var(--tip-outset);
+  left: -9px;
   top: 50%;
   transform: translateY(-50%);
   background: #fffdf5;
@@ -494,7 +492,8 @@ h1 {
   box-shadow: 2px 2px 0 rgba(0,0,0,0.15);
 }
 .bar-label:hover .venue-tip { display: block; }
-.is-split .venue-col + .venue-col .venue-tip { left: auto; right: calc(var(--axis-gap) + var(--tip-outset)); }
+/* In the right column the tips end at the axis line, and extend left. */
+.is-split .venue-col + .venue-col .venue-tip { left: auto; right: var(--bar-axis-width, 1.5px); }
 .bar-track {
   flex: 1;
   height: 22px;
@@ -1939,13 +1938,12 @@ footer img.footer-favicon {
       inset -1px -1px 1px rgb(255 255 255 / 0.15);
   }
   .tooltip { border-radius: 18px; border-width: 0; }
-  /* -11px + 11px padding keeps tip text flush with the label text or, in the
-     venue chart's right column, with the right end of the longest label */
+  /* left -11px + 11px padding keeps tip text flush with the label text */
   .venue-tip {
     border-radius: 999px;
     border-width: 0;
     padding: 4px 11px;
-    --tip-outset: -11px;
+    left: -11px;
   }
   .seg-tooltip {
     border-radius: 999px;
