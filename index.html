@@ -463,8 +463,9 @@ h1 {
   font-weight: 400;
   color: var(--text);
   text-align: left;
+  --axis-gap: 12px;
   margin: -3px 0;
-  padding: 3px 12px 3px 4px;
+  padding: 3px var(--axis-gap) 3px 0;
   flex-shrink: 0;
   position: relative;
 }
@@ -475,9 +476,10 @@ h1 {
   white-space: nowrap;
 }
 .venue-tip {
+  --tip-outset: -9px;
   display: none;
   position: absolute;
-  left: -5px;
+  left: var(--tip-outset);
   top: 50%;
   transform: translateY(-50%);
   background: #fffdf5;
@@ -492,6 +494,7 @@ h1 {
   box-shadow: 2px 2px 0 rgba(0,0,0,0.15);
 }
 .bar-label:hover .venue-tip { display: block; }
+.is-split .venue-col + .venue-col .venue-tip { left: auto; right: calc(var(--axis-gap) + var(--tip-outset)); }
 .bar-track {
   flex: 1;
   height: 22px;
@@ -566,7 +569,7 @@ h1 {
 
 /* RUNTIME HISTOGRAM — where the bars need more room than there is they
    scroll under the count axis, which holds its place at the right edge. */
-#runtime-scroll { overflow-x: auto; padding-left: 18px; }
+#runtime-scroll { overflow-x: auto; padding-left: 8px; }
 #runtime-chart {
   position: relative;
   display: flex;
@@ -587,22 +590,23 @@ h1 {
 #runtime-chart > .hist-grid .grid-label { display: none; }
 #runtime-chart .bar-hover { z-index: 1; }
 
-/* RATING BAR COLORS — driven by --rating-N custom properties in :root */
-.rating-1  { background: rgb(var(--rating-1)); }
-.rating-2  { background: rgb(var(--rating-2)); }
-.rating-3  { background: rgb(var(--rating-3)); }
-.rating-4  { background: rgb(var(--rating-4)); }
-.rating-5  { background: rgb(var(--rating-5)); }
-.rating-6  { background: rgb(var(--rating-6)); }
-.rating-7  { background: rgb(var(--rating-7)); }
-.rating-8  { background: rgb(var(--rating-8)); }
-.rating-9  { background: rgb(var(--rating-9)); }
-.rating-10 { background: rgb(var(--rating-10)); }
-.rating-unrated { background: var(--rating-unrated-color); }
+/* RATING BAR COLORS — driven by --rating-N custom properties in :root. The
+   text color is that of a count inside the bar. */
+.rating-1  { background: rgb(var(--rating-1)); color: rgb(var(--rating-1-text)); }
+.rating-2  { background: rgb(var(--rating-2)); color: rgb(var(--rating-2-text)); }
+.rating-3  { background: rgb(var(--rating-3)); color: rgb(var(--rating-3-text)); }
+.rating-4  { background: rgb(var(--rating-4)); color: rgb(var(--rating-4-text)); }
+.rating-5  { background: rgb(var(--rating-5)); color: rgb(var(--rating-5-text)); }
+.rating-6  { background: rgb(var(--rating-6)); color: rgb(var(--rating-6-text)); }
+.rating-7  { background: rgb(var(--rating-7)); color: rgb(var(--rating-7-text)); }
+.rating-8  { background: rgb(var(--rating-8)); color: rgb(var(--rating-8-text)); }
+.rating-9  { background: rgb(var(--rating-9)); color: rgb(var(--rating-9-text)); }
+.rating-10 { background: rgb(var(--rating-10)); color: rgb(var(--rating-10-text)); }
+.rating-unrated { background: var(--rating-unrated-color); color: var(--rating-unrated-text); }
 
 /* VENUE / DECADE BARS — signature red */
-.venue-bar { background: var(--chart-red); }
-.venue-bar-other { background: var(--rating-unrated-color); }
+.venue-bar { background: var(--chart-red); color: #ffffff; }
+.venue-bar-other { background: var(--rating-unrated-color); color: var(--rating-unrated-text); }
 .venue-grid {
   position: relative;
   display: grid;
@@ -753,7 +757,7 @@ h1 {
 }
 
 /* CALENDAR HEATMAP */
-.heatmap-wrap { overflow-x: auto; }
+.heatmap-wrap { overflow-x: auto; container-type: inline-size; }
 .calendars-row {
   display: grid;
   gap: 24px;
@@ -761,6 +765,11 @@ h1 {
   /* Months hold their size and reflow a column at a time as the width narrows;
      the container caps the row at six. */
   grid-template-columns: repeat(auto-fill, 180px);
+}
+/* Six full-size months need 1200px. Their gaps take up whatever is over, so
+   that the outer tiles line up with the header's ends. */
+@container (min-width: 1200px) {
+  .calendars-row { justify-content: space-between; }
 }
 /* Two full-size months need 416px, wider than most phones, so phones keep two
    columns rather than stack a single narrow one. The gap between them gives
@@ -1930,12 +1939,13 @@ footer img.footer-favicon {
       inset -1px -1px 1px rgb(255 255 255 / 0.15);
   }
   .tooltip { border-radius: 18px; border-width: 0; }
-  /* left -7px + 11px padding keeps tip text flush with the 4px-inset label text */
+  /* -11px + 11px padding keeps tip text flush with the label text or, in the
+     venue chart's right column, with the right end of the longest label */
   .venue-tip {
     border-radius: 999px;
     border-width: 0;
     padding: 4px 11px;
-    left: -7px;
+    --tip-outset: -11px;
   }
   .seg-tooltip {
     border-radius: 999px;
@@ -3342,7 +3352,9 @@ function renderCumulativeChart(anim) {
   const container = document.getElementById('cumulative-chart');
   const W = container.getBoundingClientRect().width;
   if (!W) return;
-  const ML = 10, MR = 39, MT = 16, MB = 28, MONTH_LABEL_Y = 20;
+  // The left margin is half the first tick's width, which puts its edge and
+  // the gridlines' ends flush with the title.
+  const ML = 0.75, MR = 39, MT = 16, MB = 28, MONTH_LABEL_Y = 20;
   // Side by side with the format chart on desktop, the month labels' baseline sits level with the treemap's bottom edge.
   const treemap = document.querySelector('#format-chart .tm-bg');
   const besideTreemap = treemap && Math.abs(container.closest('.chart-card').getBoundingClientRect().top - treemap.closest('.chart-card').getBoundingClientRect().top) < 1;
@@ -3437,7 +3449,7 @@ function renderCumulativeChart(anim) {
     if (alpha <= 0.001) return;
     const y = Math.max(MT, yScale(v));
     const op = alpha < 1 ? ` opacity="${alpha.toFixed(3)}"` : '';
-    yAxis += `<line x1="${v===0?ML-0.75:ML}" x2="${W}" y1="${y}" y2="${y}" stroke="${v===0?'var(--text)':'rgb(192,192,191)'}" stroke-width="1.5"${op}/>`;
+    yAxis += `<line x1="0" x2="${W}" y1="${y}" y2="${y}" stroke="${v===0?'var(--text)':'rgb(192,192,191)'}" stroke-width="1.5"${op}/>`;
     yAxis += `<text x="${W}" y="${(y - labelRise).toFixed(2)}" text-anchor="end" font-family="'Dashboard Sans',sans-serif" font-size="1rem" font-weight="350" fill="var(--text)"${op}>${Math.round(v)}</text>`;
   });
   const useShortLabels = (forecastTarget ? 11 : baseEndMonth) >= 10 && window.matchMedia('(max-width: 500px)').matches;
@@ -3661,8 +3673,8 @@ function renderCumulativeChart(anim) {
   // the paper colour, which blocks the top gridline, the band, the
   // confidence area and any line from around the glyphs.
   const hoverDot = `<g class="cum-hover-dot" visibility="hidden" pointer-events="none"><circle r="4" fill="var(--chart-red)"/></g>`;
-  const ringMask = `<mask id="cum-ring-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="black"/><circle class="cum-ring-mask-circle" cx="-10" cy="-10" r="4" fill="none" stroke="white" stroke-width="2"/></mask>`;
-  const hoverRing = `<g class="cum-hover-ring" mask="url(#cum-ring-mask)" visibility="hidden" pointer-events="none"><rect width="${W}" height="${H}" fill="var(--bg)"/>${ringBackdropLayers}</g>`;
+  const ringMask = `<mask id="cum-ring-mask" maskUnits="userSpaceOnUse" x="-6" y="0" width="${W + 6}" height="${H}"><rect x="-6" width="${W + 6}" height="${H}" fill="black"/><circle class="cum-ring-mask-circle" cx="-10" cy="-10" r="4" fill="none" stroke="white" stroke-width="2"/></mask>`;
+  const hoverRing = `<g class="cum-hover-ring" mask="url(#cum-ring-mask)" visibility="hidden" pointer-events="none"><rect x="-6" width="${W + 6}" height="${H}" fill="var(--bg)"/>${ringBackdropLayers}</g>`;
   const hoverLabelHalo = `<g class="cum-hover-label-halo" ${hoverLabelFont} fill="var(--bg)" stroke="var(--bg)" stroke-width="4" stroke-linejoin="round" visibility="hidden" pointer-events="none">${hoverLabelLines()}</g>`;
   const hoverLabel = `<g class="cum-hover-label" ${hoverLabelFont} visibility="hidden" pointer-events="none">${hoverLabelLines(['var(--text)', 'var(--chart-red)'])}</g>`;
   // The zone runs on past the x axis to the text of the gridline labels.
@@ -3951,7 +3963,8 @@ function setGridlines(layer, axis, side, span) {
 
 // The count of the bar under the pointer, in the cumulative chart's label:
 // the same face over a halo of the paper, in the bar's own color unless the
-// row carries another, 5px from the bar's end.
+// row carries another, 5px from the bar's end. A count inside its bar has no
+// halo.
 const BAR_LABEL_GAP = 5;
 const BAR_LABEL_FONT = `font-family="'Dashboard Sans',sans-serif" font-size="1rem" font-weight="500"`;
 const BAR_HOVER = `<svg class="bar-hover" aria-hidden="true"><text ${BAR_LABEL_FONT} fill="var(--bg)" stroke="var(--bg)" stroke-width="4" stroke-linejoin="round"></text><text ${BAR_LABEL_FONT}></text></svg>`;
@@ -3966,6 +3979,7 @@ function setBarLabel(container, label) {
     text.setAttribute('y', label.y.toFixed(1));
     text.setAttribute('text-anchor', label.anchor);
   });
+  svg.firstElementChild.style.display = label.inside ? 'none' : '';
   svg.lastElementChild.setAttribute('fill', label.fill || 'var(--chart-red)');
 }
 // Mouse: the label follows the pointer. Touch: a tap on a bar shows its
@@ -4016,13 +4030,16 @@ function initBarChart(container, ...columns) {
     });
     if (!row || !Number(row.dataset.count)) return null;
     const box = container.getBoundingClientRect(), r = row.getBoundingClientRect();
-    const bar = row.querySelector('.bar-fill');
+    const bar = row.querySelector('.bar-fill'), barEnd = bar.getBoundingClientRect().right, style = getComputedStyle(bar);
+    // With no room for it before the chart's right edge the count goes inside.
+    const inside = barEnd + BAR_LABEL_GAP + measureLabel(row.dataset.count, rootFontPx(), 500) > box.right + 0.5;
     return {
       text: row.dataset.count,
-      x: Math.max(bar.getBoundingClientRect().right, venueTipRight(row, !!label)) - box.left + BAR_LABEL_GAP,
+      x: (inside ? barEnd - BAR_LABEL_GAP : Math.max(barEnd, venueTipRight(row, !!label)) + BAR_LABEL_GAP) - box.left,
       y: (r.top + r.bottom) / 2 - box.top + rootFontPx() * 0.35,
-      anchor: 'start',
-      fill: row.dataset.labelFill || getComputedStyle(bar).backgroundColor
+      anchor: inside ? 'end' : 'start',
+      inside,
+      fill: inside ? style.color : row.dataset.labelFill || style.backgroundColor
     };
   });
 }
@@ -4045,16 +4062,6 @@ function updateBarChart(container, counts, maxCount, stepCount) {
     container._rescaleTimer = setTimeout(() => container.classList.remove('is-rescaling'), 850);
   }
   layoutBarChart(container, redraw);
-}
-// How far into a panel its venues' full names reach, with the count that
-// follows each where the bar is the shorter.
-function venueTipReach(panel, counts) {
-  const tips = [...panel.querySelectorAll('.venue-tip')], left = panel.getBoundingClientRect().left;
-  tips.forEach(tip => { tip.style.display = 'block'; });
-  const reach = Math.max(0, ...tips.map(tip => tip.getBoundingClientRect().right - left + BAR_LABEL_GAP +
-    measureLabel(String(counts[tip.closest('.bar-row').dataset.key]), rootFontPx(), 500)));
-  tips.forEach(tip => { tip.style.display = ''; });
-  return reach;
 }
 // The gap between the venue chart's two columns, in pixels, and the distance
 // from the first's top gridline to the second's axis, in steps.
@@ -4079,20 +4086,17 @@ function layoutBarChart(container, moves) {
   const room = panels[last].getBoundingClientRect().right - panels[0].getBoundingClientRect().left -
     axisLefts.reduce((sum, left) => sum + left);
   const gridLabelWidth = v => measureLabel(String(v), fontPx, 350);
-  // A panel needs its top gridline to stand in from the right edge by half its
-  // label, which then ends flush with it, and its longest bar to keep its own
-  // label inside that edge. The next panel stands apart from it, its axis at
-  // least two steps on from the top gridline, so that the two do not read as
-  // one, and stands in from the chart's right edge by what its venues' names
-  // need to stay inside that. The panels share the largest scale that leaves
-  // room for all of it.
-  const tipNeeds = last ? [{ count: 0, px: venueTipReach(panels[last], counts) - axisLefts[last] }] : [];
+  // A panel ends where the label of its top gridline does, or its longest bar
+  // where that runs on past it. A panel with another after it keeps room for
+  // the longest bar's count too, and the next one stands apart from it, its
+  // axis at least two steps on from the top gridline, so that the two do not
+  // read as one. The panels share the largest scale that leaves room for all
+  // of it.
   const fitTo = step => {
     const axes = maxes.map(max => axisOf(max, step, 1));
     const plotNeeds = axes.map((axis, i) => [
       { count: axis.max, px: gridLabelWidth(axis.max) / 2 },
-      { count: maxes[i], px: BAR_LABEL_GAP + measureLabel(String(maxes[i]), fontPx, 500) },
-      ...(i === last ? tipNeeds : [])
+      { count: maxes[i], px: i === last ? 0 : BAR_LABEL_GAP + measureLabel(String(maxes[i]), fontPx, 500) }
     ]);
     const needs = plotNeeds.map((list, i) => i === last ? list : [
       ...list.map(need => ({ count: need.count, px: need.px + VENUE_MIN_GAP })),
