@@ -98,10 +98,11 @@
   --rating-unrated-text: #ECEAE2;
 
   /* CALENDAR COLORS: the screening calendar's red scale, palest (1) to
-     darkest (7). Number of screenings uses color 1, the midpoint of colors
-     2 and 3, then colors 4-6 for 1 to 5+ films; total runtime uses colors
-     1-7. Space-separated RGB like the rating colors; the JS runtime palette
-     is read from these. */
+     darkest (7). Number of screenings uses the midpoint of colors 2 and 3,
+     --chart-red (which the runtime blend passes through between colors 4
+     and 5), then colors 6 and 7, for 1 to 4+ films; total runtime uses
+     colors 1-7. Space-separated RGB like the rating colors; the JS runtime
+     palette is read from these. */
   --calendar-1: 247 207 185;
   --calendar-2: 241 174 149;
   --calendar-2-3-mid: 237 154 128;
@@ -845,11 +846,10 @@ h1 {
    its future dates. */
 .heatmap-month.future .heatmap-month-label,
 .heatmap-month.future .cal-dayname { color: var(--text-dimmer); opacity: 0.4; }
-.heatmap-cell.watched-1 { background: rgb(var(--calendar-1)); color: var(--text); }
-.heatmap-cell.watched-2 { background: rgb(var(--calendar-2-3-mid)); color: var(--text); }
-.heatmap-cell.watched-3 { background: rgb(var(--calendar-4)); color: #fff; }
-.heatmap-cell.watched-4 { background: rgb(var(--calendar-5)); color: #fff; }
-.heatmap-cell.watched-5 { background: rgb(var(--calendar-6)); color: #fff; }
+.heatmap-cell.watched-1 { background: rgb(var(--calendar-2-3-mid)); color: var(--text); }
+.heatmap-cell.watched-2 { background: var(--chart-red); color: #fff; }
+.heatmap-cell.watched-3 { background: rgb(var(--calendar-6)); color: #fff; }
+.heatmap-cell.watched-4 { background: rgb(var(--calendar-7)); color: #fff; }
 .heatmap-cell.runtime-colored { color: var(--text); }
 .heatmap-cell.runtime-colored-dark { color: #fff; }
 .heatmap-cell.rating-colored { color: var(--text); }
@@ -857,7 +857,7 @@ h1 {
 .heatmap-cell.rating-colored-unrated { color: var(--rating-unrated-text); }
 
 .calendar-legend {
-  --calendar-legend-width: 240px;
+  --calendar-legend-width: 200px;
   --calendar-legend-unrated-width: 56px;
   --calendar-legend-unrated-gap: 12px;
   order: 4;
@@ -896,11 +896,10 @@ h1 {
 .calendar-legend-block {
   flex: 1 1 0;
 }
-.calendar-legend-block:nth-child(1) { background: rgb(var(--calendar-1)); }
-.calendar-legend-block:nth-child(2) { background: rgb(var(--calendar-2-3-mid)); }
-.calendar-legend-block:nth-child(3) { background: rgb(var(--calendar-4)); }
-.calendar-legend-block:nth-child(4) { background: rgb(var(--calendar-5)); }
-.calendar-legend-block:nth-child(5) { background: rgb(var(--calendar-6)); }
+.calendar-legend-block:nth-child(1) { background: rgb(var(--calendar-2-3-mid)); }
+.calendar-legend-block:nth-child(2) { background: var(--chart-red); }
+.calendar-legend-block:nth-child(3) { background: rgb(var(--calendar-6)); }
+.calendar-legend-block:nth-child(4) { background: rgb(var(--calendar-7)); }
 .calendar-legend-runtime-scale {
   opacity: 0;
 }
@@ -931,8 +930,8 @@ h1 {
 }
 .calendar-legend-labels span:first-child { margin-left: -0.04em; }
 .calendar-legend-labels span:last-child { margin-right: -0.04em; }
-.calendar-legend-screenings-labels span:first-child { color: #b98c7f; }
-.calendar-legend-screenings-labels span:last-child { color: rgb(var(--calendar-6)); }
+.calendar-legend-screenings-labels span:first-child { color: #b26958; }
+.calendar-legend-screenings-labels span:last-child { color: rgb(var(--calendar-7)); }
 .calendar-legend-runtime-labels {
   opacity: 0;
 }
@@ -2298,7 +2297,6 @@ footer img.footer-favicon {
                 <span class="calendar-legend-block"></span>
                 <span class="calendar-legend-block"></span>
                 <span class="calendar-legend-block"></span>
-                <span class="calendar-legend-block"></span>
               </span>
               <span class="calendar-legend-scale calendar-legend-runtime-scale"></span>
               <span class="calendar-legend-scale calendar-legend-rating-scale"></span>
@@ -2306,7 +2304,7 @@ footer img.footer-favicon {
             <span class="calendar-legend-label-wrap">
               <span class="calendar-legend-labels calendar-legend-screenings-labels">
                 <span>1 screening</span>
-                <span>5 or more</span>
+                <span>4 or more</span>
               </span>
               <span class="calendar-legend-labels calendar-legend-runtime-labels">
                 <span class="calendar-legend-runtime-min"></span>
@@ -6067,7 +6065,7 @@ if (!IS_ALL_MODE) {
         html += `<div class="heatmap-cell future">${d}</div>`;
       } else {
         if (films.length > 0 && films.every(f => f.rating == null)) hasUnratedCalendarDay = true;
-        const cls = films.length >= 5 ? 'watched-5' : films.length === 4 ? 'watched-4' : films.length === 3 ? 'watched-3' : films.length === 2 ? 'watched-2' : films.length === 1 ? 'watched-1' : '';
+        const cls = films.length >= 4 ? 'watched-4' : films.length === 3 ? 'watched-3' : films.length === 2 ? 'watched-2' : films.length === 1 ? 'watched-1' : '';
         const closed = !films.length && ds >= COVID_CLOSURE.first && ds <= COVID_CLOSURE.last;
         const dayRuntime = films.reduce((sum,f) => sum + (f.runtime || 0), 0);
         const filmTitlesJson = escapeHtml(JSON.stringify(films.map(f => f.title)));
@@ -6160,18 +6158,18 @@ if (!IS_ALL_MODE) {
       if (calMode === 'screenings') {
         cell.style.background = '';
         cell.classList.remove('rating-colored', 'rating-colored-dark', 'rating-colored-unrated', 'runtime-colored', 'runtime-colored-dark');
-        const cls = films.length >= 5 ? 'watched-5' : films.length === 4 ? 'watched-4' : films.length === 3 ? 'watched-3' : films.length === 2 ? 'watched-2' : films.length === 1 ? 'watched-1' : '';
-        cell.classList.remove('watched-1','watched-2','watched-3','watched-4','watched-5');
+        const cls = films.length >= 4 ? 'watched-4' : films.length === 3 ? 'watched-3' : films.length === 2 ? 'watched-2' : films.length === 1 ? 'watched-1' : '';
+        cell.classList.remove('watched-1','watched-2','watched-3','watched-4');
         if (cls) cell.classList.add(cls);
       } else if (calMode === 'runtime') {
-        cell.classList.remove('watched-1','watched-2','watched-3','watched-4','watched-5');
+        cell.classList.remove('watched-1','watched-2','watched-3','watched-4');
         cell.classList.remove('rating-colored', 'rating-colored-dark', 'rating-colored-unrated');
         if (films.length > 0) {
           const total = Number(cell.dataset.runtime || 0);
           const [r,g,b] = runtimeColor(total);
           cell.style.background = `rgb(${r},${g},${b})`;
           cell.classList.add('runtime-colored');
-          // White day numbers from color 4 on (as for 3+ screenings).
+          // White day numbers from color 4 on (as for 2+ screenings).
           cell.classList.toggle('runtime-colored-dark', runtimeRampIndex(total) >= 2);
         } else {
           cell.style.background = '';
@@ -6179,7 +6177,7 @@ if (!IS_ALL_MODE) {
         }
       } else {
         cell.classList.remove('runtime-colored', 'runtime-colored-dark');
-        cell.classList.remove('watched-1','watched-2','watched-3','watched-4','watched-5');
+        cell.classList.remove('watched-1','watched-2','watched-3','watched-4');
         cell.classList.remove('rating-colored-dark', 'rating-colored-unrated');
         const rated = ratings.filter(r => r != null);
         if (rated.length > 0) {
